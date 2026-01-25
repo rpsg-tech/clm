@@ -1,0 +1,67 @@
+# Docker Compose for CLM Enterprise Platform
+# Development environment with PostgreSQL and Redis
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: clm-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: clm_enterprise
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and job queues
+  redis:
+    image: redis:7-alpine
+    container_name: clm-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (for production use)
+  # Uncomment when ready to containerize
+  # backend:
+  #   build:
+  #     context: ./apps/backend
+  #     dockerfile: Dockerfile
+  #   container_name: clm-backend
+  #   restart: unless-stopped
+  #   environment:
+  #     NODE_ENV: production
+  #     DATABASE_URL: postgresql://postgres:postgres@postgres:5432/clm_enterprise
+  #     REDIS_URL: redis://redis:6379
+  #   ports:
+  #     - "3001:3001"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: clm-network

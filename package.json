@@ -1,0 +1,38 @@
+{
+    "name": "clm-enterprise",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Enterprise Contract Lifecycle Management Platform",
+    "scripts": {
+        "build": "turbo run build",
+        "dev": "turbo run dev",
+        "dev:backend": "turbo run dev --filter=backend",
+        "dev:user": "turbo run dev --filter=user-app",
+        "dev:admin": "turbo run dev --filter=admin-app",
+        "lint": "turbo run lint",
+        "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+        "check-types": "turbo run check-types",
+        "test": "turbo run test",
+        "test:e2e": "turbo run test:e2e",
+        "db:generate": "turbo run db:generate --filter=backend",
+        "db:push": "turbo run db:push --filter=backend",
+        "db:migrate": "turbo run db:migrate --filter=backend",
+        "db:seed": "turbo run db:seed --filter=backend",
+        "db:studio": "turbo run db:studio --filter=backend",
+        "clean": "turbo run clean && rm -rf node_modules"
+    },
+    "devDependencies": {
+        "autoprefixer": "^10.4.23",
+        "prettier": "^3.4.2",
+        "turbo": "^2.7.5",
+        "typescript": "^5.7.3"
+    },
+    "engines": {
+        "node": ">=20"
+    },
+    "packageManager": "npm@11.6.4",
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ]
+}

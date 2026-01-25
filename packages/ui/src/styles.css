@@ -1,0 +1,210 @@
+/**
+ * Base styles for @repo/ui
+ * Import this in your application's root layout
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============ CSS VARIABLES FOR DESIGN TOKENS ============ */
+:root {
+  /* Primary - Orange */
+  --primary-50: 33 100% 96%;
+  --primary-100: 34 100% 92%;
+  --primary-200: 32 98% 83%;
+  --primary-300: 31 97% 72%;
+  --primary-400: 27 96% 61%;
+  --primary-500: 24 95% 53%;
+  --primary-600: 21 90% 48%;
+  --primary-700: 17 88% 40%;
+  --primary-800: 15 79% 34%;
+  --primary-900: 15 75% 28%;
+  --primary-950: 13 81% 15%;
+
+  /* Neutral */
+  --neutral-50: 0 0% 98%;
+  --neutral-100: 0 0% 96%;
+  --neutral-200: 0 0% 90%;
+  --neutral-300: 0 0% 83%;
+  --neutral-400: 0 0% 64%;
+  --neutral-500: 0 0% 45%;
+  --neutral-600: 0 0% 32%;
+  --neutral-700: 0 0% 25%;
+  --neutral-800: 0 0% 15%;
+  --neutral-900: 0 0% 9%;
+  --neutral-950: 0 0% 4%;
+
+  /* Semantic */
+  --success: 142 71% 45%;
+  --success-light: 142 76% 94%;
+  --success-dark: 142 71% 35%;
+  
+  --warning: 45 93% 47%;
+  --warning-light: 45 100% 94%;
+  --warning-dark: 45 93% 37%;
+  
+  --error: 0 84% 60%;
+  --error-light: 0 86% 94%;
+  --error-dark: 0 84% 50%;
+  
+  --info: 217 91% 60%;
+  --info-light: 217 100% 94%;
+  --info-dark: 217 91% 50%;
+
+  /* Background & Foreground */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 9%;
+  
+  /* Card */
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  
+  /* Border */
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  
+  /* Ring */
+  --ring: 24 95% 53%;
+  
+  /* Radius */
+  --radius: 0.5rem;
+}
+
+/* Dark mode */
+.dark {
+  --background: 0 0% 4%;
+  --foreground: 0 0% 98%;
+  
+  --card: 0 0% 9%;
+  --card-foreground: 0 0% 98%;
+  
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  
+  /* Swap neutral scale for dark mode */
+  --neutral-50: 0 0% 4%;
+  --neutral-100: 0 0% 9%;
+  --neutral-200: 0 0% 15%;
+  --neutral-300: 0 0% 25%;
+  --neutral-400: 0 0% 45%;
+  --neutral-500: 0 0% 64%;
+  --neutral-600: 0 0% 83%;
+  --neutral-700: 0 0% 90%;
+  --neutral-800: 0 0% 96%;
+  --neutral-900: 0 0% 98%;
+  --neutral-950: 0 0% 100%;
+}
+
+/* ============ BASE STYLES ============ */
+@layer base {
+  * {
+    @apply border-neutral-200;
+  }
+
+  body {
+    @apply bg-white text-neutral-900 antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Focus visible styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+  }
+
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Selection colors */
+  ::selection {
+    @apply bg-primary-500/20 text-primary-900;
+  }
+}
+
+/* ============ ANIMATIONS ============ */
+@layer utilities {
+  /* Shimmer animation for skeletons */
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+
+  /* Fade in */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  /* Slide up */
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  /* Scale in */
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.2s ease-out;
+  }
+}
+
+/* ============ SCROLLBAR STYLES ============ */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--neutral-300)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--neutral-300));
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--neutral-400));
+  }
+}

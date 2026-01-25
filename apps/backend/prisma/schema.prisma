@@ -1,0 +1,459 @@
+// This is your Prisma schema file for CLM Enterprise Platform
+// Multi-organization architecture with RBAC
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ ORGANIZATION ============
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  type        OrgType  @default(ENTITY)
+  parentId    String?
+  parent      Organization?  @relation("OrgHierarchy", fields: [parentId], references: [id])
+  children    Organization[] @relation("OrgHierarchy")
+  
+  isActive    Boolean  @default(true)
+  settings    Json?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userRoles      UserOrganizationRole[]
+  contracts      Contract[]
+  templateAccess TemplateOrganization[]
+  featureFlags   FeatureFlag[]
+  auditLogs      AuditLog[]
+
+  @@index([parentId])
+  @@index([code])
+  @@index([isActive])
+}
+
+enum OrgType {
+  PARENT
+  ENTITY
+}
+
+// ============ USER ============
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  name          String
+  phone         String?
+  avatarUrl     String?
+  
+  isActive      Boolean  @default(true)
+  mustChangePassword Boolean @default(false)
+  lastLoginAt   DateTime?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  organizationRoles UserOrganizationRole[]
+  contractsCreated  Contract[]       @relation("CreatedContracts")
+  approvals         Approval[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  savedSearches     SavedSearch[]
+
+  @@index([email])
+  @@index([isActive])
+}
+
+// ============ ROLE & PERMISSIONS ============
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  description String?
+  isSystem    Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  permissions RolePermission[]
+  userRoles   UserOrganizationRole[]
+
+  @@index([code])
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  module      String
+  description String?
+  
+  roles       RolePermission[]
+
+  @@index([code])
+  @@index([module])
+}
+
+model RolePermission {
+  id           String @id @default(uuid())
+  roleId       String
+  permissionId String
+  
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+model UserOrganizationRole {
+  id             String   @id @default(uuid())
+  userId         String
+  organizationId String
+  roleId         String
+  
+  isActive       Boolean  @default(true)
+  assignedAt     DateTime @default(now())
+  assignedBy     String?
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           Role         @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, organizationId, roleId])
+  @@index([userId])
+  @@index([organizationId])
+  @@index([roleId])
+}
+
+// ============ TEMPLATES ============
+
+model Template {
+  id              String           @id @default(uuid())
+  name            String
+  code            String           @unique
+  category        TemplateCategory
+  description     String?
+  
+  baseContent     String
+  isGlobal        Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdByUserId String
+
+  annexures          Annexure[]
+  contracts          Contract[]
+  organizationAccess TemplateOrganization[]
+
+  @@index([code])
+  @@index([category])
+  @@index([isActive])
+}
+
+enum TemplateCategory {
+  SERVICE_AGREEMENT
+  NDA
+  PURCHASE_ORDER
+  VENDOR_AGREEMENT
+  EMPLOYMENT
+  LEASE
+  OTHER
+}
+
+model Annexure {
+  id           String   @id @default(uuid())
+  templateId   String
+  name         String
+  title        String
+  content      String
+  fieldsConfig Json
+  order        Int
+
+  template     Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@index([order])
+}
+
+model TemplateOrganization {
+  id             String   @id @default(uuid())
+  templateId     String
+  organizationId String
+  isEnabled      Boolean  @default(true)
+  
+  template       Template     @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, organizationId])
+}
+
+// ============ CONTRACTS ============
+
+model Contract {
+  id               String         @id @default(uuid())
+  organizationId   String
+  templateId       String
+  
+  title            String
+  reference        String         @unique
+  status           ContractStatus @default(DRAFT)
+  
+  counterpartyName  String?
+  counterpartyEmail String?
+
+  startDate        DateTime?
+  endDate          DateTime?
+  amount           Decimal?       @db.Decimal(15, 2)
+  description      String?        @db.Text
+  
+  annexureData     String
+  fieldData        Json
+  
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  createdByUserId  String
+  
+  submittedAt      DateTime?
+  approvedAt       DateTime?
+  sentAt           DateTime?
+  signedAt         DateTime?
+
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  template       Template          @relation(fields: [templateId], references: [id])
+  createdByUser  User              @relation("CreatedContracts", fields: [createdByUserId], references: [id])
+  versions       ContractVersion[]
+  approvals      Approval[]
+  auditLogs      AuditLog[]
+  analyses       ContractAnalysis[]
+  attachments    ContractAttachment[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([createdByUserId])
+  @@index([createdAt])
+  @@index([reference])
+  @@index([organizationId, status]) // Compound index for filtering
+  @@index([organizationId, createdAt]) // Compound index for sorting
+}
+
+enum ContractStatus {
+  DRAFT
+  PENDING_LEGAL
+  PENDING_FINANCE
+  LEGAL_APPROVED
+  FINANCE_APPROVED
+  APPROVED
+  SENT_TO_COUNTERPARTY
+  COUNTERSIGNED
+  ACTIVE
+  EXPIRED
+  TERMINATED
+  REJECTED
+}
+
+model ContractVersion {
+  id              String   @id @default(uuid())
+  contractId      String
+  versionNumber   Int
+  contentSnapshot String
+  changeLog       Json?
+  createdAt       DateTime @default(now())
+  createdByUserId String
+
+  contract        Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, versionNumber])
+  @@index([contractId])
+}
+
+// ============ APPROVALS ============
+
+model Approval {
+  id           String         @id @default(uuid())
+  contractId   String
+  type         ApprovalType
+  status       ApprovalStatus @default(PENDING)
+  
+  comment      String?
+  actorId      String?
+  actedAt      DateTime?
+  
+  escalatedTo  String?
+  escalatedAt  DateTime?
+  escalatedBy  String?
+  
+  dueDate      DateTime?
+  createdAt    DateTime       @default(now())
+
+  contract     Contract       @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  actor        User?          @relation(fields: [actorId], references: [id])
+
+  @@unique([contractId, type])
+  @@index([contractId])
+  @@index([status])
+  @@index([type])
+  @@index([actorId])
+}
+
+enum ApprovalType {
+  LEGAL
+  FINANCE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ESCALATED
+}
+
+// ============ FEATURE FLAGS ============
+
+model FeatureFlag {
+  id             String   @id @default(uuid())
+  organizationId String
+  featureCode    String
+  isEnabled      Boolean  @default(false)
+  config         Json?
+  
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, featureCode])
+  @@index([featureCode])
+}
+
+// ============ AUDIT LOG ============
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String?
+  contractId     String?
+  userId         String
+  
+  action         String
+  module         String
+  targetType     String?
+  targetId       String?
+  
+  oldValue       Json?
+  newValue       Json?
+  metadata       Json?
+  
+  ipAddress      String?
+  userAgent      String?
+  
+  createdAt      DateTime @default(now())
+
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  contract       Contract?     @relation(fields: [contractId], references: [id])
+  user           User          @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([contractId])
+  @@index([userId])
+  @@index([action])
+
+  @@index([module])
+  @@index([createdAt])
+  @@index([organizationId, createdAt]) // Audit trail sorting
+  @@index([contractId, createdAt])
+}
+
+// ============ AI ANALYSIS ============
+
+model ContractAnalysis {
+  id           String   @id @default(uuid())
+  contractId   String
+  
+  riskScore    Int      // 1-10
+  riskLevel    String   // LOW, MEDIUM, HIGH
+  
+  keyTerms     Json     // Array of extracted terms
+  issues       Json     // Array of flagged issues  
+  suggestions  Json     // Array of AI suggestions
+  summary      String   @db.Text
+  
+  analyzedAt   DateTime @default(now())
+  analyzedBy   String?  // User ID who triggered analysis
+  
+  contract     Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([riskScore])
+  @@index([analyzedAt])
+}
+
+// ============ NOTIFICATIONS ============
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  
+  type        String   // CONTRACT_UPDATE, APPROVAL_REQUEST, SYSTEM, etc.
+  title       String
+  message     String   @db.Text
+  link        String?
+  
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ============ SAVED SEARCHES ============
+
+model SavedSearch {
+  id        String   @id @default(uuid())
+  userId    String
+  
+  name      String
+  query     Json     // Search query parameters
+  filters   Json?    // Advanced filter configuration
+  
+  isDefault Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isDefault])
+}
+
+// ============ ATTACHMENTS ============
+
+model ContractAttachment {
+  id          String   @id @default(uuid())
+  contractId  String
+  
+  fileName    String
+  fileUrl     String
+  fileType    String   // PDF, DOCX, IMAGE
+  category    String   // ANNEXURE, SUPPORTING_DOC
+  fileSize    Int?
+  
+  uploadedAt  DateTime @default(now())
+  uploadedBy  String?
+  
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([category])
+}
+
