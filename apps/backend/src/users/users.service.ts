@@ -21,8 +21,8 @@ export class UsersService {
      * Find users by organization (Paginated)
      */
     async findAllByOrganization(organizationId: string, params: { page?: number; limit?: number; search?: string }) {
-        const page = params.page || 1;
-        const limit = params.limit || 10;
+        const page = Number(params.page) || 1;
+        const limit = Number(params.limit) || 10;
         const skip = (page - 1) * limit;
 
         const where: Prisma.UserWhereInput = {
@@ -73,8 +73,8 @@ export class UsersService {
      * Find ALL users (Global Admin) - Paginated
      */
     async findAll(params: { page?: number; limit?: number; search?: string }) {
-        const page = params.page || 1;
-        const limit = params.limit || 10;
+        const page = Number(params.page) || 1;
+        const limit = Number(params.limit) || 10;
         const skip = (page - 1) * limit;
 
         const where: Prisma.UserWhereInput = {

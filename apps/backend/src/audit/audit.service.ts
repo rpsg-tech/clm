@@ -144,8 +144,8 @@ export class AuditService {
                 user: { select: { name: true, email: true } },
             },
             orderBy: { createdAt: 'desc' },
-            skip: params?.skip,
-            take: params?.take,
+            skip: params?.skip !== undefined ? Number(params.skip) : undefined,
+            take: params?.take !== undefined ? Number(params.take) : undefined,
         });
     }
 
