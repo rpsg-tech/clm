@@ -16,6 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { AppLogger } from './common/logger/logger.service';
@@ -63,7 +64,7 @@ async function bootstrap() {
     app.use(helmet());
 
     // Cookie Parser
-    app.use(require('cookie-parser')());
+    app.use(cookieParser());
 
     // CORS Configuration with validation
     const corsOrigins = configService.get('CORS_ORIGINS', '').split(',').map((o: string) => o.trim());
@@ -94,8 +95,7 @@ async function bootstrap() {
 
     // ============ PERFORMANCE ============
 
-    // Cookie Parser
-    app.use(require('cookie-parser')());
+
 
     // Compression for responses
     app.use(compression());

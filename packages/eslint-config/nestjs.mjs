@@ -3,6 +3,7 @@ import baseConfig from "./base.mjs";
 export default [
     ...baseConfig,
     {
+        files: ["**/*.ts", "**/*.tsx"],
         rules: {
             "@typescript-eslint/interface-name-prefix": "off",
             "@typescript-eslint/explicit-function-return-type": "off",
