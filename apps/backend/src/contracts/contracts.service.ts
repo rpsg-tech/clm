@@ -10,7 +10,7 @@ import { Contract, ContractStatus, Prisma } from '@prisma/client';
 import { sanitizeContractContent } from '../common/utils/sanitize.util';
 import { EmailService } from '../common/email/email.service';
 import { ConfigService } from '@nestjs/config';
-import { nanoid } from 'nanoid';
+import { randomBytes } from 'crypto';
 import { DiffService } from '../common/services/diff.service';
 
 import { NotificationsService } from '../notifications/notifications.service';
@@ -132,7 +132,7 @@ export class ContractsService {
         const date = new Date();
         const year = date.getFullYear().toString().slice(-2);
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const unique = nanoid(6).toUpperCase();
+        const unique = randomBytes(3).toString('hex').toUpperCase();
         return `${orgCode}-${year}${month}-${unique}`;
     }
 

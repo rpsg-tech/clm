@@ -8,7 +8,7 @@ import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { nanoid } from 'nanoid';
+import { randomBytes, randomUUID } from 'crypto';
 import { RedisService } from '../redis/redis.service';
 import { EmailService } from '../common/email/email.service';
 import { UsersService } from '../users/users.service';
@@ -38,6 +38,8 @@ export interface TokenResponse {
         mustChangePassword: boolean;
     };
 }
+
+
 
 @Injectable()
 export class AuthService {
@@ -146,7 +148,7 @@ export class AuthService {
         }
 
         // Generate tokens with unique JTI and Default Context
-        const jti = nanoid();
+        const jti = randomUUID();
         const payload: JwtPayload = {
             sub: user.id,
             email: user.email,
@@ -158,7 +160,7 @@ export class AuthService {
         const refreshToken = this.jwtService.sign(payload, {
             secret: this.configService.get('JWT_REFRESH_SECRET'),
             expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
-            jwtid: nanoid(),
+            jwtid: randomUUID(),
         });
 
         this.logger.log(`User logged in: ${user.email} (Default Org: ${defaultOrg?.organization.name || 'None'})`);
@@ -223,11 +225,11 @@ export class AuthService {
         const user = await this.prisma.user.findUnique({ where: { id: userId } });
         payload.email = user?.email || '';
 
-        const accessToken = this.jwtService.sign(payload, { jwtid: nanoid() });
+        const accessToken = this.jwtService.sign(payload, { jwtid: randomUUID() });
         const refreshToken = this.jwtService.sign(payload, {
             secret: this.configService.get('JWT_REFRESH_SECRET'),
             expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
-            jwtid: nanoid(),
+            jwtid: randomUUID(),
         });
 
         return {
@@ -284,11 +286,11 @@ export class AuthService {
             };
 
             return {
-                accessToken: this.jwtService.sign(newPayload, { jwtid: nanoid() }),
+                accessToken: this.jwtService.sign(newPayload, { jwtid: randomUUID() }),
                 refreshToken: this.jwtService.sign(newPayload, {
                     secret: this.configService.get('JWT_REFRESH_SECRET'),
                     expiresIn: this.configService.get('JWT_REFRESH_EXPIRES_IN', '7d'),
-                    jwtid: nanoid(),
+                    jwtid: randomUUID(),
                 }),
             };
         } catch {
@@ -309,7 +311,7 @@ export class AuthService {
         const user = await this.usersService.findByEmail(email);
 
         // Generate token and prepare email even if user doesn't exist
-        const token = nanoid(32);
+        const token = randomBytes(16).toString('hex');
         const frontendUrl = this.configService.getOrThrow<string>('FRONTEND_URL');
         const resetUrl = `${frontendUrl}/auth/reset-password?token=${token}`;
 
