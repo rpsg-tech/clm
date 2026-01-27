@@ -25,8 +25,8 @@ export class TemplatesService {
             category?: string;
         },
     ) {
-        const page = params?.page || 1;
-        const limit = params?.limit || 12; // Grid view usually benefits from larger default pages or multiple of 2/3/4
+        const page = Number(params?.page) || 1;
+        const limit = Number(params?.limit) || 12; // Grid view usually benefits from larger default pages or multiple of 2/3/4
         const skip = (page - 1) * limit;
 
         const where: Prisma.TemplateWhereInput = {
