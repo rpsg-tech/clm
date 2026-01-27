@@ -22,8 +22,8 @@ export class RolesController {
     async listRoles(
         @Query() query: PaginationDto
     ) {
-        const page = query.page || 1;
-        const limit = query.limit || 10;
+        const page = Number(query.page) || 1;
+        const limit = Number(query.limit) || 10;
         const skip = (page - 1) * limit;
 
         const where: Prisma.RoleWhereInput = {
