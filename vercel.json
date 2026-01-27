@@ -10,10 +10,17 @@
             "use": "@vercel/node"
         }
     ],
-    "rewrites": [
+    "routes": [
         {
-            "source": "/api/v1/(.*)",
-            "destination": "/apps/backend/src/vercel"
+            "src": "/api/v1/(.*)",
+            "dest": "/apps/backend/src/vercel.ts"
+        },
+        {
+            "handle": "filesystem"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/apps/user-app/$1"
         }
     ],
     "crons": [
