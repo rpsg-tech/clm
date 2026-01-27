@@ -10,8 +10,13 @@ export default [
             },
         },
         rules: {
-            // Disable no-undef as TypeScript handles this
+            // Disable no-undef as TypeScript handles this (and other tools)
             "no-undef": "off",
+        },
+    },
+    {
+        files: ["**/*.ts", "**/*.tsx"],
+        rules: {
             // Warn only for ts-ignore to allow build to pass
             "@typescript-eslint/ban-ts-comment": "warn",
             // Ensure these are warnings (inherited from base but explicitly stating for clarity)
