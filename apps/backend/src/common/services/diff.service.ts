@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import * as Diff from 'diff';
+import * as DiffLib from 'diff';
+
+// Handle ESM/CJS interop for diff library
+const Diff = (DiffLib as any).default || DiffLib;
 
 export interface FieldChange {
     field: string;
