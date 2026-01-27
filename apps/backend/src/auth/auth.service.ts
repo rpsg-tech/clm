@@ -401,9 +401,9 @@ export class AuthService {
             throw new UnauthorizedException('User not found');
         }
 
-        let role = null;
+        let role: string | null = null;
         let permissions: string[] = [];
-        let organization = null;
+        let organization: any = null;
 
         if (orgId) {
             const userOrgRole = await this.prisma.userOrganizationRole.findUnique({
