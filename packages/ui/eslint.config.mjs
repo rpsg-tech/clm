@@ -1,3 +1,13 @@
-import nextjsConfig from "@repo/eslint-config/nextjs.mjs";
+import nextConfig from "../../packages/eslint-config/nextjs.mjs";
+import globals from "globals";
 
-export default nextjsConfig;
+export default [
+    ...nextConfig,
+    {
+        languageOptions: {
+            globals: {
+                ...globals.browser,
+            },
+        },
+    },
+];

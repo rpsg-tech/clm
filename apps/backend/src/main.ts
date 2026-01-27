@@ -158,6 +158,26 @@ async function bootstrap() {
 
     logger.log(`🚀 CLM Enterprise API running on http://localhost:${port}/api/v1`);
     logger.log(`📊 Environment: ${configService.get('NODE_ENV', 'development')}`);
+
+    // ============ GRACEFUL SHUTDOWN ============
+    const gracefulShutdown = async (signal: string) => {
+        logger.log(`\n📴 Received ${signal}. Starting graceful shutdown...`);
+
+        try {
+            // Close the NestJS app (triggers all onModuleDestroy hooks)
+            await app.close();
+            logger.log('✅ Application closed successfully');
+            process.exit(0);
+        } catch (error) {
+            logger.error('❌ Error during shutdown:', error);
+            process.exit(1);
+        }
+    };
+
+    // Listen for termination signals
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
 bootstrap();
+

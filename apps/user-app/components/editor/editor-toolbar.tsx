@@ -38,8 +38,8 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             onClick={onClick}
             title={title}
             className={`p-2 rounded-lg transition-all ${isActive
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                 } ${className}`}
             type="button"
         >
@@ -237,6 +237,29 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
             {/* Inserts */}
             <div className="flex items-center gap-1 pr-2 border-r border-slate-100 mr-1">
+                <select
+                    onChange={(e) => {
+                        const [key, label] = e.target.value.split('|');
+                        if (key && label) {
+                            editor.chain().focus().insertContent({
+                                type: 'variable',
+                                attrs: { id: key, label: label }
+                            }).run();
+                            e.target.value = ""; // Reset
+                        }
+                    }}
+                    className="h-8 px-2 text-sm bg-transparent border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-100 cursor-pointer text-slate-700 font-medium w-32"
+                    title="Insert Variable"
+                >
+                    <option value="">+ Variable</option>
+                    <option value="counterpartyName|Client Name">Client Name</option>
+                    <option value="counterpartyEmail|Client Email">Client Email</option>
+                    <option value="contractTitle|Contract Title">Contract Title</option>
+                    <option value="amount|Contract Value">Contract Value</option>
+                    <option value="startDate|Start Date">Start Date</option>
+                    <option value="endDate|End Date">End Date</option>
+                </select>
+
                 <ToggleButton onClick={addLink} isActive={editor.isActive('link')} title="Link">
                     <LinkIcon size={16} />
                 </ToggleButton>
@@ -268,29 +291,51 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             {editor.isActive('table') && (
                 <div className="flex items-center gap-1 pl-2 border-l border-slate-100 ml-1 bg-slate-50 rounded-r-lg overflow-x-auto">
                     <span className="text-[10px] uppercase font-bold text-slate-400 mr-1">Table:</span>
-                    <ToggleButton onClick={() => editor.chain().focus().mergeCells().run()} title="Merge Cells">
-                        <Merge size={14} />
-                    </ToggleButton>
-                    <ToggleButton onClick={() => editor.chain().focus().splitCell().run()} title="Split Cell">
-                        <Split size={14} />
-                    </ToggleButton>
+
+                    {/* Cells */}
+                    <div className="flex gap-0.5">
+                        <ToggleButton onClick={() => editor.chain().focus().mergeCells().run()} title="Merge Cells">
+                            <Merge size={14} />
+                        </ToggleButton>
+                        <ToggleButton onClick={() => editor.chain().focus().splitCell().run()} title="Split Cell">
+                            <Split size={14} />
+                        </ToggleButton>
+                    </div>
+
                     <div className="w-px h-4 bg-slate-300 mx-1"></div>
-                    <ToggleButton onClick={() => editor.chain().focus().addColumnBefore().run()} title="Add Col Before">
-                        <span className="text-[10px] font-bold">+Col&lt;</span>
-                    </ToggleButton>
-                    <ToggleButton onClick={() => editor.chain().focus().addColumnAfter().run()} title="Add Col After">
-                        <span className="text-[10px] font-bold">+Col&gt;</span>
-                    </ToggleButton>
+
+                    {/* Columns */}
+                    <div className="flex gap-0.5 items-center">
+                        <ToggleButton onClick={() => editor.chain().focus().addColumnBefore().run()} title="Add Column Before">
+                            <span className="text-[10px] font-bold">+Col&lt;</span>
+                        </ToggleButton>
+                        <ToggleButton onClick={() => editor.chain().focus().addColumnAfter().run()} title="Add Column After">
+                            <span className="text-[10px] font-bold">+Col&gt;</span>
+                        </ToggleButton>
+                        <ToggleButton onClick={() => editor.chain().focus().deleteColumn().run()} title="Delete Column" className="text-rose-500 hover:bg-rose-50 hover:text-rose-600">
+                            <span className="text-[10px] font-bold px-1">×Col</span>
+                        </ToggleButton>
+                    </div>
+
                     <div className="w-px h-4 bg-slate-300 mx-1"></div>
-                    <ToggleButton onClick={() => editor.chain().focus().addRowBefore().run()} title="Add Row Before">
-                        <span className="text-[10px] font-bold">+Row^</span>
-                    </ToggleButton>
-                    <ToggleButton onClick={() => editor.chain().focus().addRowAfter().run()} title="Add Row After">
-                        <span className="text-[10px] font-bold">+Rowv</span>
-                    </ToggleButton>
+
+                    {/* Rows */}
+                    <div className="flex gap-0.5 items-center">
+                        <ToggleButton onClick={() => editor.chain().focus().addRowBefore().run()} title="Add Row Before">
+                            <span className="text-[10px] font-bold">+Row^</span>
+                        </ToggleButton>
+                        <ToggleButton onClick={() => editor.chain().focus().addRowAfter().run()} title="Add Row After">
+                            <span className="text-[10px] font-bold">+Rowv</span>
+                        </ToggleButton>
+                        <ToggleButton onClick={() => editor.chain().focus().deleteRow().run()} title="Delete Row" className="text-rose-500 hover:bg-rose-50 hover:text-rose-600">
+                            <span className="text-[10px] font-bold px-1">×Row</span>
+                        </ToggleButton>
+                    </div>
+
                     <div className="w-px h-4 bg-slate-300 mx-1"></div>
-                    <ToggleButton onClick={() => editor.chain().focus().deleteTable().run()} title="Delete Table">
-                        <Scissors size={14} className="text-red-500" />
+
+                    <ToggleButton onClick={() => editor.chain().focus().deleteTable().run()} title="Delete Entire Table">
+                        <Scissors size={14} className="text-red-600" />
                     </ToggleButton>
                 </div>
             )}

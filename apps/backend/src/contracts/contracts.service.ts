@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Contract, ContractStatus, Prisma } from '@prisma/client';
 import { sanitizeContractContent } from '../common/utils/sanitize.util';
 import { EmailService } from '../common/email/email.service';
+import { ConfigService } from '@nestjs/config';
 import { nanoid } from 'nanoid';
 import { DiffService } from '../common/services/diff.service';
 
@@ -24,6 +25,7 @@ export class ContractsService {
         private emailService: EmailService,
         private notificationsService: NotificationsService,
         private storageService: StorageService,
+        private configService: ConfigService,
     ) { }
 
     // ... (existing methods until sendToCounterparty)
@@ -477,8 +479,11 @@ export class ContractsService {
             });
 
             // Notify Approvers
+            const legalApproverEmail = this.configService.get<string>('LEGAL_APPROVER_EMAIL', 'legal@clm.com');
+            const financeApproverEmail = this.configService.get<string>('FINANCE_APPROVER_EMAIL', 'finance@clm.com');
+
             await this.emailService.sendApprovalRequest(
-                'legal@clm.com',
+                legalApproverEmail,
                 contract.title,
                 contract.reference,
                 'LEGAL',
@@ -487,7 +492,7 @@ export class ContractsService {
             );
 
             await this.emailService.sendApprovalRequest(
-                'finance@clm.com',
+                financeApproverEmail,
                 contract.title,
                 contract.reference,
                 'FINANCE',

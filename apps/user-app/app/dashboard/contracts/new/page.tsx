@@ -24,62 +24,71 @@ interface ContractDetailsFormProps {
 }
 
 function ContractDetailsForm({ data, onChange, templateName, onError }: ContractDetailsFormProps) {
-    const [error, setError] = useState<string | null>(null);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const handleChange = (field: string, value: any) => {
-        // Clear error on change - assume valid until proven otherwise for this field
-        let newError = null;
-        setError(null);
+        const newErrors = { ...errors };
+        delete newErrors[field]; // Clear error for this field
 
-        // Date Validation Logic
+        // Validation Logic
         if (field === "startDate" && value) {
             const selectedDate = new Date(value);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             if (selectedDate < today) {
-                newError = "Start date must be today or in the future";
+                newErrors.startDate = "Start date must be today or in the future";
             } else if (data.endDate && new Date(data.endDate) < selectedDate) {
-                newError = "End Date cannot be earlier than Start Date";
+                newErrors.endDate = "End Date cannot be earlier than Start Date";
+            } else {
+                // If start date becomes valid, re-check end date if it was previously invalid due to start date
+                if (data.endDate && new Date(data.endDate) >= selectedDate) {
+                    delete newErrors.endDate;
+                }
             }
         }
 
         if (field === "endDate" && data.startDate && value) {
             if (new Date(value) < new Date(data.startDate)) {
-                newError = "End Date cannot be earlier than Start Date";
+                newErrors.endDate = "End Date cannot be earlier than Start Date";
             }
         }
 
-        if (field === "counterpartyEmail" && value) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(value)) {
-                newError = "Please enter a valid email address";
+        if (field === "counterpartyEmail") {
+            if (value) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                    newErrors.counterpartyEmail = "Please enter a valid email address";
+                }
             }
         }
 
-        if (field === "title" && (!value || value.trim() === "")) {
-            newError = "Contract Title is required";
-        }
-
-        if (field === "counterpartyName" && (!value || value.trim() === "")) {
-            newError = "Entity Name is required";
-        }
-
-        if (newError) {
-            setError(newError);
-            onError(true);
-        } else {
-            // Check if other fields have errors (simplification: clear error state if current change is valid)
-            // In a real app we'd validate whole form or check other fields, but here we just check if *this* interaction cleared the error.
-            if (error) {
-                // If we had an error and now don't search specifically for this field error, we might be clear. 
-                // Ideally we re-validate everything.
-                onError(false);
+        if (field === "title") {
+            if (!value || value.trim() === "") {
+                newErrors.title = "Contract Title is required";
             }
         }
 
-        // Re-validate strictly
+        if (field === "counterpartyName") {
+            if (!value || value.trim() === "") {
+                newErrors.counterpartyName = "Entity Name is required";
+            }
+        }
+
+        setErrors(newErrors);
+
+        // Re-validate strictly for navigation blocking
         const potentialData = { ...data, [field]: value };
         let isInvalid = false;
+
+        // Check for any active visual errors first
+        if (Object.keys(newErrors).length > 0) {
+            isInvalid = true;
+        }
+
+        // Also run the strict checks again to ensure we catch empty required fields (though visual errors should catch them if touched)
+        // Ideally, we depend on visual errors + checking required fields presence
+        if (!potentialData.title || potentialData.title.trim() === "") isInvalid = true;
+        if (!potentialData.counterpartyName || potentialData.counterpartyName.trim() === "") isInvalid = true;
 
         if (potentialData.startDate) {
             const sd = new Date(potentialData.startDate);
@@ -96,14 +105,6 @@ function ContractDetailsForm({ data, onChange, templateName, onError }: Contract
         if (potentialData.counterpartyEmail) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(potentialData.counterpartyEmail)) isInvalid = true;
-        }
-
-        if (!potentialData.title || potentialData.title.trim() === "") {
-            isInvalid = true;
-        }
-
-        if (!potentialData.counterpartyName || potentialData.counterpartyName.trim() === "") {
-            isInvalid = true;
         }
 
         onError(isInvalid);
@@ -123,6 +124,7 @@ function ContractDetailsForm({ data, onChange, templateName, onError }: Contract
 
             <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl p-8 space-y-8">
                 {/* Basic Info Group */}
+                {/* Basic Info Group */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
                         <FileText className="w-4 h-4 text-orange-600" />
@@ -135,8 +137,9 @@ function ContractDetailsForm({ data, onChange, templateName, onError }: Contract
                             value={data.title || ""}
                             onChange={(e) => handleChange("title", e.target.value)}
                             placeholder="e.g. Master Service Agreement - Q4 2024"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-bold text-base"
+                            className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-bold text-base ${errors.title ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
                         />
+                        {errors.title && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.title}</p>}
                     </div>
                 </div>
 
@@ -154,8 +157,9 @@ function ContractDetailsForm({ data, onChange, templateName, onError }: Contract
                                 value={data.counterpartyName || ""}
                                 onChange={(e) => handleChange("counterpartyName", e.target.value)}
                                 placeholder="Client or Vendor Name"
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm"
+                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm ${errors.counterpartyName ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
                             />
+                            {errors.counterpartyName && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.counterpartyName}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -165,8 +169,9 @@ function ContractDetailsForm({ data, onChange, templateName, onError }: Contract
                                 value={data.counterpartyEmail || ""}
                                 onChange={(e) => handleChange("counterpartyEmail", e.target.value)}
                                 placeholder="contact@example.com"
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm"
+                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm ${errors.counterpartyEmail ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
                             />
+                            {errors.counterpartyEmail && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.counterpartyEmail}</p>}
                         </div>
                     </div>
                 </div>
@@ -184,8 +189,9 @@ function ContractDetailsForm({ data, onChange, templateName, onError }: Contract
                                 type="date"
                                 value={data.startDate || ""}
                                 onChange={(e) => handleChange("startDate", e.target.value)}
-                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm ${error ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
+                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm ${errors.startDate ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
                             />
+                            {errors.startDate && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.startDate}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -194,8 +200,9 @@ function ContractDetailsForm({ data, onChange, templateName, onError }: Contract
                                 type="date"
                                 value={data.endDate || ""}
                                 onChange={(e) => handleChange("endDate", e.target.value)}
-                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm ${error ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
+                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm ${errors.endDate ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
                             />
+                            {errors.endDate && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.endDate}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -212,12 +219,6 @@ function ContractDetailsForm({ data, onChange, templateName, onError }: Contract
                             </div>
                         </div>
                     </div>
-
-                    {error && (
-                        <div className="p-3 bg-rose-50 text-rose-600 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-1 border border-rose-100">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> {error}
-                        </div>
-                    )}
 
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Scope / Brief</label>
@@ -240,7 +241,7 @@ const STEPS = ["Assistant", "Template", "Details", "Editor", "Annexures", "Revie
 
 // Initial single annexure
 const INITIAL_ANNEXURES: AnnexureItem[] = [
-    { id: "annex-a", title: "Annexure A", subtitle: "Scope of Services", content: "The Service Provider agrees to perform the following services...\n\n1. Initial Consultation\n2. Implementation Strategy\n3. Ongoing Maintenance" }
+    { id: "annex-a", title: "Price", content: "The Service Provider agrees to perform the following services...\n\n1. Initial Consultation\n2. Implementation Strategy\n3. Ongoing Maintenance" }
 ];
 
 export default function NewContractPage() {
@@ -249,7 +250,7 @@ export default function NewContractPage() {
     const [currentStep, setCurrentStep] = useState(0);
     const [loading, setLoading] = useState(false);
     const [stepError, setStepError] = useState(false);
-    const [showAiPanel, setShowAiPanel] = useState(true);
+    const [showAiPanel, setShowAiPanel] = useState(false);
 
     // Data State
     const [templates, setTemplates] = useState<Template[]>([]);
@@ -335,7 +336,6 @@ export default function NewContractPage() {
                 {
                     id: `annex-${Date.now()}`,
                     title: `Annexure ${nextLetter}`,
-                    subtitle: "New Section",
                     content: "Enter content here..."
                 }
             ];
@@ -353,11 +353,29 @@ export default function NewContractPage() {
 
         // Append Annexures
         if (annexures.length > 0) {
-            finalHtml += "<br/><br/><hr/><br/>";
-            finalHtml += "<h2 style='text-align:center'>ANNEXURES</h2><br />";
-            annexures.forEach(annexure => {
-                finalHtml += `<br/><h3>${annexure.title}: ${annexure.subtitle}</h3>`;
+            // Force start on new page for the Annexures section
+            finalHtml += '<div style="page-break-before: always; break-before: page; height: 1px; display: block;"></div>';
+
+            finalHtml += "<h2 style='text-align:center; text-transform: uppercase; margin-bottom: 2rem; margin-top: 2rem;'>ANNEXURES</h2>";
+
+            annexures.forEach((annexure, index) => {
+                // Start each specific annexure on a new page if it's not the first one (or even if it is, relative to main header?)
+                // Generally, "ANNEXURES" header is on a page, then maybe the first annexure starts.
+                // Let's keep them flowing after the header, but break BETWEEN annexures.
+
+                if (index > 0) {
+                    finalHtml += '<div style="page-break-before: always; break-before: page; height: 1px; display: block;"></div>';
+                }
+
+                // If this is the first annexure, just add some spacing from the main header
+                if (index === 0) {
+                    finalHtml += "<br/>";
+                }
+
+                finalHtml += `<div class="annexure-section">`;
+                finalHtml += `<h3>${annexure.title}</h3>`;
                 finalHtml += `<div>${annexure.content.replace(/\n/g, "<br/>")}</div>`;
+                finalHtml += `</div>`;
             });
         }
 
@@ -451,7 +469,7 @@ export default function NewContractPage() {
                                     </Button>
                                 </div>
                                 <div className="flex-1 overflow-hidden">
-                                    <ContractAssistantSidebar />
+                                    <ContractAssistantSidebar embedded className="h-full" />
                                 </div>
                             </div>
                         </div>
@@ -484,7 +502,7 @@ export default function NewContractPage() {
                             <div className="flex-1 overflow-hidden relative">
                                 <FinalReviewView
                                     content={getFinalDocumentContent()}
-                                    details={contractDetails}
+                                    details={contractDetails || {}}
                                     templateName={selectedTemplate?.name}
                                     onSubmit={handleContractSubmit}
                                     loading={loading}
@@ -519,7 +537,7 @@ export default function NewContractPage() {
                                     </Button>
                                 </div>
                                 <div className="flex-1 overflow-hidden">
-                                    <ContractAssistantSidebar />
+                                    <ContractAssistantSidebar embedded className="h-full" />
                                 </div>
                             </div>
                         </div>

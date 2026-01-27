@@ -13,7 +13,6 @@ import { ContractEditorView } from "@/components/contract-editor-view";
 export interface AnnexureItem {
     id: string;
     title: string;
-    subtitle: string;
     content: string;
 }
 
@@ -123,9 +122,7 @@ export function AnnexuresView({ annexures, onAnnexureChange, onUpdate, onAdd, on
                                             className="bg-transparent border-none p-0 text-base font-bold text-slate-900 focus:ring-0 placeholder-slate-400 w-full"
                                             placeholder="Annexure Title (e.g. Scope of Work)"
                                         />
-                                        <p className="text-xs text-slate-400 font-medium mt-0.5">
-                                            {annexure.subtitle || "Start typing to add content..."}
-                                        </p>
+
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
