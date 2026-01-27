@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, Button, Badge, Skeleton } from '@repo/ui';
 import { useAuth, usePermission } from '@/lib/auth-context';
@@ -51,8 +51,16 @@ export default function ContractsListPage() {
     const [meta, setMeta] = useState<any>(null);
     const [statusFilter, setStatusFilter] = useState<string>('');
 
+    const isFirstRun = useRef(true);
+
     // Debounce search
     useEffect(() => {
+        // Skip initial run to avoid double fetch (handled by pagination effect)
+        if (isFirstRun.current) {
+            isFirstRun.current = false;
+            return;
+        }
+
         const timer = setTimeout(() => {
             setPage(1);
             fetchContracts();

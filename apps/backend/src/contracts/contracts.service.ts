@@ -4,7 +4,7 @@
  * Handles contract lifecycle operations with organization scoping.
  */
 
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Contract, ContractStatus, Prisma } from '@prisma/client';
 import { sanitizeContractContent } from '../common/utils/sanitize.util';
@@ -18,6 +18,7 @@ import { StorageService } from '../common/storage/storage.service';
 
 @Injectable()
 export class ContractsService {
+    private readonly logger = new Logger(ContractsService.name);
     private diffService = new DiffService();
 
     constructor(
@@ -52,14 +53,14 @@ export class ContractsService {
 
         // Send email
         if (contract.counterpartyEmail) {
-            await this.emailService.sendContractToCounterparty(
+            this.emailService.sendContractToCounterparty(
                 contract.counterpartyEmail,
                 contract.counterpartyName || 'Valued Partner',
                 contract.title,
                 contract.reference,
                 'RPSG Group',
                 `${process.env.FRONTEND_URL}/contracts/${id}`,
-            );
+            ).catch(err => this.logger.error(`Failed to send counterparty email: ${err.message}`));
         }
 
         return updated;
@@ -109,7 +110,7 @@ export class ContractsService {
 
         // Notify creator
         if (contract.createdByUser?.email) {
-            await this.emailService.send({
+            this.emailService.send({
                 to: contract.createdByUser.email,
                 template: 'CONTRACT_SIGNED' as any,
                 subject: `Contract Active: ${contract.title}`,
@@ -119,7 +120,7 @@ export class ContractsService {
                     signedDate: new Date().toLocaleDateString(),
                     contractUrl: `${process.env.FRONTEND_URL}/dashboard/contracts/${id}`,
                 },
-            });
+            }).catch(err => this.logger.error(`Failed to send activation email: ${err.message}`));
         }
 
         return updated;
@@ -460,8 +461,8 @@ export class ContractsService {
             throw new ForbiddenException('Can only submit DRAFT contracts');
         }
 
-        // Update status and create approval records
-        return this.prisma.$transaction(async (tx) => {
+        // 1. Database Updates (State Transition)
+        const updatedContract = await this.prisma.$transaction(async (tx) => {
             await tx.contract.update({
                 where: { id },
                 data: {
@@ -478,51 +479,67 @@ export class ContractsService {
                 ],
             });
 
-            // Notify Approvers
-            const legalApproverEmail = this.configService.get<string>('LEGAL_APPROVER_EMAIL', 'legal@clm.com');
-            const financeApproverEmail = this.configService.get<string>('FINANCE_APPROVER_EMAIL', 'finance@clm.com');
-
-            await this.emailService.sendApprovalRequest(
-                legalApproverEmail,
-                contract.title,
-                contract.reference,
-                'LEGAL',
-                contract.createdByUser?.name || 'System',
-                `${process.env.FRONTEND_URL}/dashboard/approvals/legal`,
-            );
-
-            await this.emailService.sendApprovalRequest(
-                financeApproverEmail,
-                contract.title,
-                contract.reference,
-                'FINANCE',
-                contract.createdByUser?.name || 'System',
-                `${process.env.FRONTEND_URL}/dashboard/approvals/finance`,
-            );
-
-            // Notify Legal Approvers
-            await this.notifyApprovers(
-                organizationId,
-                'approval:legal:act',
-                'LEGAL',
-                contract.title,
-                contract.id
-            );
-
-            // Notify Finance Approvers
-            await this.notifyApprovers(
-                organizationId,
-                'approval:finance:act',
-                'FINANCE',
-                contract.title,
-                contract.id
-            );
-
             return tx.contract.findUnique({
                 where: { id },
-                include: { approvals: true },
+                include: {
+                    approvals: true,
+                    createdByUser: {
+                        select: { name: true, email: true }
+                    }
+                },
             });
         });
+
+        // 2. Async Notifications (Post-Transaction)
+        if (updatedContract) {
+            try {
+                // Email Approvers
+                const legalApproverEmail = this.configService.get<string>('LEGAL_APPROVER_EMAIL', 'legal@clm.com');
+                const financeApproverEmail = this.configService.get<string>('FINANCE_APPROVER_EMAIL', 'finance@clm.com');
+
+                // We don't await these to return the response faster, 
+                // but we catch errors to prevent crashing the successful request
+                this.emailService.sendApprovalRequest(
+                    legalApproverEmail,
+                    updatedContract.title,
+                    updatedContract.reference,
+                    'LEGAL',
+                    updatedContract.createdByUser?.name || 'System',
+                    `${process.env.FRONTEND_URL}/dashboard/approvals/legal`,
+                ).catch(err => this.logger.error(`Failed to send legal approval email: ${err.message}`));
+
+                this.emailService.sendApprovalRequest(
+                    financeApproverEmail,
+                    updatedContract.title,
+                    updatedContract.reference,
+                    'FINANCE',
+                    updatedContract.createdByUser?.name || 'System',
+                    `${process.env.FRONTEND_URL}/dashboard/approvals/finance`,
+                ).catch(err => this.logger.error(`Failed to send finance approval email: ${err.message}`));
+
+                // Internal Notifications
+                this.notifyApprovers(
+                    organizationId,
+                    'approval:legal:act',
+                    'LEGAL',
+                    updatedContract.title,
+                    updatedContract.id
+                ).catch(err => this.logger.error(`Failed to notify legal approvers: ${err.message}`));
+
+                this.notifyApprovers(
+                    organizationId,
+                    'approval:finance:act',
+                    'FINANCE',
+                    updatedContract.title,
+                    updatedContract.id
+                ).catch(err => this.logger.error(`Failed to notify finance approvers: ${err.message}`));
+            } catch (error) {
+                // Log but don't fail the request since DB is already updated
+                this.logger.error('Error triggering post-submission notifications:', error);
+            }
+        }
+
+        return updatedContract;
     }
 
     /**

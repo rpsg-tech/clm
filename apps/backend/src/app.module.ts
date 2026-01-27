@@ -10,6 +10,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CorrelationMiddleware } from './common/middleware/correlation.middleware';
+import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
+import { IdempotencyMiddleware } from './common/middleware/idempotency.middleware';
 import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { validateEnvironment } from './common/config/config.validation';
 
@@ -101,7 +103,12 @@ import { NotificationsModule } from './notifications/notifications.module';
 export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
         consumer
-            .apply(CorrelationMiddleware, CsrfMiddleware)
+            .apply(
+                CorrelationMiddleware,
+                RequestLoggerMiddleware,
+                IdempotencyMiddleware,
+                CsrfMiddleware
+            )
             .forRoutes({ path: '*', method: RequestMethod.ALL });
     }
 }

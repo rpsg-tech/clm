@@ -389,15 +389,31 @@ export class AuthService {
      * Get user profile with current context
      */
     async getProfile(userId: string, orgId?: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { id: userId },
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                mustChangePassword: true,
-            },
-        });
+        // Parallelize fetching user and their roles to reduce latency
+        const [user, userOrgs] = await Promise.all([
+            this.prisma.user.findUnique({
+                where: { id: userId },
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    mustChangePassword: true,
+                },
+            }),
+            this.prisma.userOrganizationRole.findMany({
+                where: { userId, isActive: true },
+                include: {
+                    organization: true,
+                    role: {
+                        include: {
+                            permissions: {
+                                include: { permission: true }
+                            }
+                        }
+                    },
+                },
+            })
+        ]);
 
         if (!user) {
             throw new UnauthorizedException('User not found');
@@ -407,48 +423,21 @@ export class AuthService {
         let permissions: string[] = [];
         let organization: any = null;
 
+        // If orgId is provided, find the context from the pre-fetched list
+        // This avoids an extra database round-trip
         if (orgId) {
-            const userOrgRole = await this.prisma.userOrganizationRole.findUnique({
-                where: {
-                    userId_organizationId_roleId: {
-                        userId,
-                        organizationId: orgId,
-                        roleId: (await this.prisma.userOrganizationRole.findFirst({
-                            where: { userId, organizationId: orgId, isActive: true }
-                        }))?.roleId || ''
-                    }
-                },
-                include: {
-                    organization: true,
-                    role: {
-                        include: {
-                            permissions: {
-                                include: { permission: true }
-                            }
-                        }
-                    }
-                }
-            });
+            const currentOrgRole = userOrgs.find(uo => uo.organizationId === orgId);
 
-            if (userOrgRole) {
-                role = userOrgRole.role.code;
-                permissions = userOrgRole.role.permissions.map(p => p.permission.code);
+            if (currentOrgRole) {
+                role = currentOrgRole.role.code;
+                permissions = currentOrgRole.role.permissions.map(p => p.permission.code);
                 organization = {
-                    id: userOrgRole.organization.id,
-                    name: userOrgRole.organization.name,
-                    code: userOrgRole.organization.code,
+                    id: currentOrgRole.organization.id,
+                    name: currentOrgRole.organization.name,
+                    code: currentOrgRole.organization.code,
                 };
             }
         }
-
-        // Get all available organizations
-        const userOrgs = await this.prisma.userOrganizationRole.findMany({
-            where: { userId, isActive: true },
-            include: {
-                organization: true,
-                role: true,
-            },
-        });
 
         return {
             user: {

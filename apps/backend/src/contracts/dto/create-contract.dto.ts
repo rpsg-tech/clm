@@ -42,7 +42,7 @@ export class CreateContractDto {
 
     @IsString()
     @IsNotEmpty({ message: 'Annexure data is required' })
-    @MaxLength(50000000, { message: 'Annexure data cannot exceed 50MB' })
+    @MaxLength(5000000, { message: 'Annexure data cannot exceed 5MB' })
     annexureData: string;
 
     /**

@@ -100,8 +100,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = useCallback(async () => {
         try {
+            // Attempt to notify backend
             await api.auth.logout();
+        } catch (error) {
+            console.error('Logout API call failed:', error);
         } finally {
+            // Always clear local state
             setState({
                 user: null,
                 currentOrg: null,

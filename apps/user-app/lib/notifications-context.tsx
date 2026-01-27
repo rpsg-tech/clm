@@ -85,12 +85,18 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }, [isAuthenticated]);
 
     useEffect(() => {
+        if (!isAuthenticated) {
+            setNotifications([]);
+            setUnreadCount(0);
+            return;
+        }
+
         fetchNotifications();
 
         // Poll every 30 seconds for updates
         const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
-    }, [fetchNotifications]);
+    }, [fetchNotifications, isAuthenticated]);
 
     // WebSocket implementation would go here
 

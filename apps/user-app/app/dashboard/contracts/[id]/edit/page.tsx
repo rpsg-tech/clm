@@ -29,7 +29,17 @@ interface Contract {
     counterpartyName?: string;
 }
 
+import { PageErrorBoundary } from '@/components/error-boundary';
+
 export default function EditContractPage() {
+    return (
+        <PageErrorBoundary>
+            <EditContractContent />
+        </PageErrorBoundary>
+    );
+}
+
+function EditContractContent() {
     const params = useParams();
     const router = useRouter();
     const { success, error: toastError } = useToast();
