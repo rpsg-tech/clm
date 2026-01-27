@@ -4,6 +4,7 @@
     "private": true,
     "description": "Enterprise Contract Lifecycle Management Platform",
     "scripts": {
+        "postinstall": "turbo run db:generate --filter=backend",
         "build": "turbo run build",
         "dev": "turbo run dev",
         "dev:user": "turbo run dev --filter=user-app",
