@@ -2,15 +2,10 @@
  * HTML Sanitization Utility
  * 
  * Provides server-side HTML sanitization for user-generated content.
- * Uses DOMPurify with jsdom for Node.js environment.
+ * Uses sanitize-html (clean, no jsdom dependency).
  */
 
-import { JSDOM } from 'jsdom';
-import DOMPurify from 'dompurify';
-
-// Create a virtual DOM window for DOMPurify
-const window = new JSDOM('').window;
-const purify = DOMPurify(window);
+import * as sanitizeHtmlLib from 'sanitize-html';
 
 /**
  * Allowed HTML tags for contract content
@@ -31,20 +26,16 @@ const CONTRACT_ALLOWED_TAGS = [
 ];
 
 /**
- * Allowed HTML attributes
+ * Allowed HTML attributes (Applied globally to all tags or specific ones)
  */
-const CONTRACT_ALLOWED_ATTR = [
-    // General
-    'class', 'id', 'style',
-    // Links
-    'href', 'target', 'rel',
-    // Images
-    'src', 'alt', 'width', 'height',
-    // Tables
-    'colspan', 'rowspan', 'scope',
-    // Data attributes
-    'data-*',
-];
+const CONTRACT_ALLOWED_ATTR = {
+    '*': ['class', 'id', 'style', 'data-*'],
+    'a': ['href', 'target', 'rel', 'name'],
+    'img': ['src', 'alt', 'width', 'height', 'title'],
+    'table': ['border', 'cellpadding', 'cellspacing'],
+    'th': ['scope', 'colspan', 'rowspan'],
+    'td': ['scope', 'colspan', 'rowspan'],
+};
 
 /**
  * Sanitization options for different contexts
@@ -55,36 +46,31 @@ export const SanitizeConfig = {
      * Allows formatting and structure, removes all scripts and dangerous content
      */
     CONTRACT_CONTENT: {
-        ALLOWED_TAGS: CONTRACT_ALLOWED_TAGS,
-        ALLOWED_ATTR: CONTRACT_ALLOWED_ATTR,
-        ALLOW_DATA_ATTR: true,
-        FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
-        FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'],
-        ADD_ATTR: ['target'],
-        // Force all links to open in new tab for security
-        ADD_TAGS: [],
-        KEEP_CONTENT: true,
-        // Allow safe URI schemes only
-        ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
-    },
+        allowedTags: CONTRACT_ALLOWED_TAGS,
+        allowedAttributes: CONTRACT_ALLOWED_ATTR,
+        allowedSchemes: ['http', 'https', 'ftp', 'mailto', 'tel'],
+        allowedSchemesAppliedToAttributes: ['href', 'src', 'cite'],
+        allowProtocolRelative: false,
+        enforceHtmlBoundary: false,
+    } as sanitizeHtmlLib.IOptions,
 
     /**
      * Minimal: For plain text fields that shouldn't have any HTML
      */
     PLAIN_TEXT: {
-        ALLOWED_TAGS: [],
-        ALLOWED_ATTR: [],
-        KEEP_CONTENT: true,
-    },
+        allowedTags: [],
+        allowedAttributes: {},
+    } as sanitizeHtmlLib.IOptions,
 
     /**
      * Rich Text: For user comments and descriptions
      */
     RICH_TEXT: {
-        ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li'],
-        ALLOWED_ATTR: ['href', 'target'],
-        ALLOW_DATA_ATTR: false,
-    },
+        allowedTags: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li'],
+        allowedAttributes: {
+            'a': ['href', 'target'],
+        },
+    } as sanitizeHtmlLib.IOptions,
 };
 
 /**
@@ -96,16 +82,13 @@ export const SanitizeConfig = {
  */
 export function sanitizeHtml(
     dirty: string,
-    config: DOMPurify.Config = SanitizeConfig.CONTRACT_CONTENT,
+    config: sanitizeHtmlLib.IOptions = SanitizeConfig.CONTRACT_CONTENT,
 ): string {
     if (!dirty || typeof dirty !== 'string') {
         return '';
     }
 
-    // Sanitize the HTML
-    const clean = purify.sanitize(dirty, config);
-
-    return clean;
+    return sanitizeHtmlLib.default(dirty, config);
 }
 
 /**
@@ -143,7 +126,7 @@ export function containsDangerousContent(html: string): boolean {
         /<object/i,
         /<embed/i,
         /vbscript:/i,
-        /data:/i,  // Data URIs
+        /data:/i,  // Data URIs (except images if we wanted to allow them, but stricter is better)
     ];
 
     return dangerous.some(pattern => pattern.test(html));
