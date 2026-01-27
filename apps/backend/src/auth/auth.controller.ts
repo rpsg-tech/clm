@@ -176,9 +176,21 @@ export class AuthController {
             await this.authService.revokeToken(req.user.jti, req.user.exp);
         }
 
-        // Clear Cookies
-        response.clearCookie('access_token');
-        response.clearCookie('refresh_token');
+        // Clear Cookies - MUST match paths used in setCookies
+        const isProd = process.env.NODE_ENV === 'production';
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProd,
+            sameSite: 'lax' as const,
+            path: '/',
+        };
+
+        response.clearCookie('access_token', cookieOptions);
+
+        response.clearCookie('refresh_token', {
+            ...cookieOptions,
+            path: '/api/v1/auth/refresh', // Critical: Match the specific path
+        });
 
         // Audit log logout
         await this.auditService.log({

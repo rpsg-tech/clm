@@ -3,12 +3,17 @@ import tsPlugin from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 import prettierConfig from "eslint-config-prettier";
 
+import globals from "globals";
+
 export default [
   js.configs.recommended,
   {
     files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {
       parser: tsParser,
+      globals: {
+        ...globals.node,
+      },
       parserOptions: {
         ecmaVersion: "latest",
         sourceType: "module",
@@ -24,6 +29,14 @@ export default [
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
       "no-console": ["warn", { allow: ["warn", "error"] }],
+    },
+  },
+  {
+    files: ["**/*.test.ts", "**/*.spec.ts", "test/**/*"],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
     },
   },
   prettierConfig,

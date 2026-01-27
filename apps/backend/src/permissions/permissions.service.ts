@@ -60,6 +60,28 @@ export class PermissionsService {
     }
 
     /**
+     * Get all permissions grouped by module
+     */
+    async findAllGrouped() {
+        const permissions = await this.getAllPermissions();
+
+        // Group by module
+        const grouped: Record<string, Permission[]> = {};
+
+        for (const p of permissions) {
+            if (!grouped[p.module]) {
+                grouped[p.module] = [];
+            }
+            grouped[p.module].push(p);
+        }
+
+        return {
+            list: permissions,
+            grouped
+        };
+    }
+
+    /**
      * Assign role to user in organization
      */
     async assignRole(userId: string, organizationId: string, roleId: string, assignedBy?: string) {

@@ -20,6 +20,7 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { Prisma } from '@prisma/client';
 
 @Controller('organizations')
@@ -28,7 +29,7 @@ export class OrganizationsController {
     constructor(private readonly organizationsService: OrganizationsService) { }
 
     @Post()
-    @Permissions('admin:org:manage')
+    @Permissions('org:create')
     async create(@Body() createDto: CreateOrganizationDto) {
         return this.organizationsService.create({
             ...createDto,
@@ -37,25 +38,27 @@ export class OrganizationsController {
     }
 
     @Get()
-    @Permissions('admin:org:manage')
+    @Permissions('org:view')
     async findAll(
+        @Query() query: PaginationDto,
         @Query('isActive') isActive?: boolean,
         @Query('type') type?: 'PARENT' | 'ENTITY',
     ) {
         return this.organizationsService.findAll({
+            ...query,
             isActive,
             type: type as any,
         });
     }
 
     @Get(':id')
-    @Permissions('admin:org:manage')
+    @Permissions('org:view')
     async findOne(@Param('id') id: string) {
         return this.organizationsService.findWithChildren(id);
     }
 
     @Put(':id')
-    @Permissions('admin:org:manage')
+    @Permissions('org:edit')
     async update(
         @Param('id') id: string,
         @Body() updateDto: UpdateOrganizationDto,
@@ -71,7 +74,7 @@ export class OrganizationsController {
     }
 
     @Put(':id/settings')
-    @Permissions('admin:org:manage')
+    @Permissions('org:edit')
     async updateSettings(
         @Param('id') id: string,
         @Body() settings: Record<string, unknown>,
@@ -80,7 +83,7 @@ export class OrganizationsController {
     }
 
     @Put(':id/deactivate')
-    @Permissions('admin:org:manage')
+    @Permissions('org:delete')
     async deactivate(@Param('id') id: string) {
         return this.organizationsService.deactivate(id);
     }

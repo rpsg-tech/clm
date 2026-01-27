@@ -4,7 +4,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Sparkles, Send, Bot, User, Check, AlertTriangle } from "lucide-react";
 
-export function ContractAssistantSidebar() {
+interface ContractAssistantSidebarProps {
+    className?: string;
+    embedded?: boolean;
+}
+
+export function ContractAssistantSidebar({ className = "", embedded = false }: ContractAssistantSidebarProps) {
     const [messages, setMessages] = useState<{ role: 'ai' | 'user', text: string }[]>([
         { role: 'ai', text: "I'm analyzing your contract in real-time. I can help you draft clauses, identify risks, or polish the language." }
     ]);
@@ -34,25 +39,27 @@ export function ContractAssistantSidebar() {
     };
 
     return (
-        <div className="bg-white border border-gray-200 rounded-3xl overflow-hidden flex flex-col h-[700px] shadow-sm animate-in fade-in slide-in-from-right-4 duration-700">
-            {/* Header */}
-            <div className="p-5 border-b border-gray-100 bg-white/95 backdrop-blur-md sticky top-0 z-10">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-200 text-white">
-                        <Sparkles size={20} />
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-gray-900 leading-tight">Contract Assistant</h3>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                            </span>
-                            <span className="text-xs text-green-600 font-medium">Active Analysis</span>
+        <div className={`flex flex-col h-full bg-white ${embedded ? 'rounded-none border-0 shadow-none' : 'border border-gray-200 rounded-3xl shadow-sm animate-in fade-in slide-in-from-right-4 duration-700 h-[700px]'} overflow-hidden ${className}`}>
+            {/* Header - Hide if embedded */}
+            {!embedded && (
+                <div className="p-5 border-b border-gray-100 bg-white/95 backdrop-blur-md sticky top-0 z-10">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-200 text-white">
+                            <Sparkles size={20} />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900 leading-tight">Contract Assistant</h3>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                </span>
+                                <span className="text-xs text-green-600 font-medium">Active Analysis</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* Chat Area */}
             <div className="flex-1 p-5 overflow-y-auto space-y-5 bg-gray-50/30 scroll-smooth">

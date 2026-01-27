@@ -13,29 +13,72 @@ export class TemplatesService {
     /**
      * Get templates available for an organization
      */
-    async findForOrganization(organizationId: string) {
-        return this.prisma.template.findMany({
-            where: {
-                isActive: true,
-                OR: [
-                    { isGlobal: true },
-                    {
-                        organizationAccess: {
-                            some: {
-                                organizationId,
-                                isEnabled: true,
-                            },
+    /**
+     * Get templates available for an organization (Paginated)
+     */
+    async findForOrganization(
+        organizationId: string,
+        params?: {
+            page?: number;
+            limit?: number;
+            search?: string;
+            category?: string;
+        },
+    ) {
+        const page = params?.page || 1;
+        const limit = params?.limit || 12; // Grid view usually benefits from larger default pages or multiple of 2/3/4
+        const skip = (page - 1) * limit;
+
+        const where: Prisma.TemplateWhereInput = {
+            isActive: true,
+            ...(params?.category && params.category !== 'ALL' ? { category: params.category as any } : {}),
+            OR: [
+                { isGlobal: true },
+                {
+                    organizationAccess: {
+                        some: {
+                            organizationId,
+                            isEnabled: true,
                         },
                     },
-                ],
-            },
-            include: {
-                annexures: {
-                    orderBy: { order: 'asc' },
                 },
+            ],
+            ...(params?.search && {
+                AND: {
+                    OR: [
+                        { name: { contains: params.search, mode: 'insensitive' } },
+                        { code: { contains: params.search, mode: 'insensitive' } },
+                    ],
+                },
+            }),
+        };
+
+        const [data, total] = await Promise.all([
+            this.prisma.template.findMany({
+                where,
+                include: {
+                    annexures: {
+                        orderBy: { order: 'asc' },
+                    },
+                },
+                orderBy: { name: 'asc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.template.count({ where }),
+        ]);
+
+        return {
+            data,
+            meta: {
+                total,
+                lastPage: Math.ceil(total / limit),
+                currentPage: page,
+                perPage: limit,
+                prev: page > 1 ? page - 1 : null,
+                next: page < Math.ceil(total / limit) ? page + 1 : null,
             },
-            orderBy: { name: 'asc' },
-        });
+        };
     }
 
     /**

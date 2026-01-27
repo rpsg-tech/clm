@@ -53,7 +53,7 @@ export default function NotificationsPage() {
                         <Bell className="w-8 h-8 text-primary-600" />
                         Notifications
                         {unreadCount > 0 && (
-                            <Badge variant="destructive" className="ml-2 px-2.5 py-1 text-sm rounded-full">
+                            <Badge variant="error" className="ml-2 px-2.5 py-1 text-sm rounded-full">
                                 {unreadCount} new
                             </Badge>
                         )}

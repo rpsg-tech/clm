@@ -6,6 +6,7 @@ import { Spinner } from '@repo/ui';
 import { useAuth } from '@/lib/auth-context';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardSidebar } from '@/components/dashboard-sidebar';
+import { MobileHeader } from '@/components/mobile-header';
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -40,10 +41,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     return (
         <div className="min-h-screen bg-[#FDFDFF] flex flex-col selection:bg-orange-100 selection:text-orange-900">
-            <DashboardHeader />
+            {/* Desktop Header */}
+            <div className="hidden lg:block">
+                <DashboardHeader />
+            </div>
+
+            {/* Mobile Header (includes Sidebar trigger) */}
+            <div className="lg:hidden">
+                <MobileHeader />
+            </div>
+
             <div className="flex flex-1 max-w-[1920px] mx-auto w-full relative">
-                <DashboardSidebar />
-                <main className="flex-1 p-8 lg:p-12 overflow-y-auto h-[calc(100vh-64px)] scroll-smooth">
+                {/* Desktop Sidebar */}
+                <div className="hidden lg:block">
+                    <DashboardSidebar />
+                </div>
+
+                <main className="flex-1 p-4 md:p-8 lg:p-12 overflow-y-auto h-[calc(100vh-64px)] lg:h-[calc(100vh-64px)] scroll-smooth pb-20 lg:pb-12">
                     <div className="max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
                         {children}
                     </div>

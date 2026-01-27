@@ -11,7 +11,7 @@ clm-enterprise/
 ├── apps/
 │   ├── backend/       # NestJS API Server
 │   ├── user-app/      # Next.js User Application
-│   └── admin-app/     # Next.js Admin Application
+
 ├── packages/
 │   ├── ui/            # Shared UI components
 │   ├── types/         # Shared TypeScript types
@@ -60,8 +60,7 @@ npm run dev:backend
 # User App only
 npm run dev:user
 
-# Admin App only
-npm run dev:admin
+
 ```
 
 ## 📦 Tech Stack

@@ -15,7 +15,7 @@ export class AuditController {
      * Get audit logs for the current organization
      */
     @Get()
-    @Permissions('audit:view')  // Changed from 'admin:audit:view' to allow org users
+    @Permissions('system:audit')
     async getAuditLogs(
         @CurrentUser() user: any,
         @Query('module') module?: string,

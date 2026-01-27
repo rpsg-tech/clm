@@ -20,28 +20,96 @@ interface ContractDetailsFormProps {
     data: any;
     onChange: (data: any) => void;
     templateName?: string;
+    onError: (hasError: boolean) => void;
 }
 
-function ContractDetailsForm({ data, onChange, templateName }: ContractDetailsFormProps) {
-    const [error, setError] = useState<string | null>(null);
+function ContractDetailsForm({ data, onChange, templateName, onError }: ContractDetailsFormProps) {
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const handleChange = (field: string, value: any) => {
-        // Clear error on change
-        setError(null);
+        const newErrors = { ...errors };
+        delete newErrors[field]; // Clear error for this field
 
-        // Date Validation Logic
+        // Validation Logic
+        if (field === "startDate" && value) {
+            const selectedDate = new Date(value);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (selectedDate < today) {
+                newErrors.startDate = "Start date must be today or in the future";
+            } else if (data.endDate && new Date(data.endDate) < selectedDate) {
+                newErrors.endDate = "End Date cannot be earlier than Start Date";
+            } else {
+                // If start date becomes valid, re-check end date if it was previously invalid due to start date
+                if (data.endDate && new Date(data.endDate) >= selectedDate) {
+                    delete newErrors.endDate;
+                }
+            }
+        }
+
         if (field === "endDate" && data.startDate && value) {
             if (new Date(value) < new Date(data.startDate)) {
-                setError("End Date cannot be earlier than Start Date");
-            }
-        }
-        if (field === "startDate" && data.endDate && value) {
-            if (new Date(data.endDate) < new Date(value)) {
-                setError("End Date cannot be earlier than Start Date");
+                newErrors.endDate = "End Date cannot be earlier than Start Date";
             }
         }
 
-        onChange({ ...data, [field]: value });
+        if (field === "counterpartyEmail") {
+            if (value) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                    newErrors.counterpartyEmail = "Please enter a valid email address";
+                }
+            }
+        }
+
+        if (field === "title") {
+            if (!value || value.trim() === "") {
+                newErrors.title = "Contract Title is required";
+            }
+        }
+
+        if (field === "counterpartyName") {
+            if (!value || value.trim() === "") {
+                newErrors.counterpartyName = "Entity Name is required";
+            }
+        }
+
+        setErrors(newErrors);
+
+        // Re-validate strictly for navigation blocking
+        const potentialData = { ...data, [field]: value };
+        let isInvalid = false;
+
+        // Check for any active visual errors first
+        if (Object.keys(newErrors).length > 0) {
+            isInvalid = true;
+        }
+
+        // Also run the strict checks again to ensure we catch empty required fields (though visual errors should catch them if touched)
+        // Ideally, we depend on visual errors + checking required fields presence
+        if (!potentialData.title || potentialData.title.trim() === "") isInvalid = true;
+        if (!potentialData.counterpartyName || potentialData.counterpartyName.trim() === "") isInvalid = true;
+
+        if (potentialData.startDate) {
+            const sd = new Date(potentialData.startDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (sd < today) isInvalid = true;
+
+            if (potentialData.endDate) {
+                const ed = new Date(potentialData.endDate);
+                if (ed < sd) isInvalid = true;
+            }
+        }
+
+        if (potentialData.counterpartyEmail) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(potentialData.counterpartyEmail)) isInvalid = true;
+        }
+
+        onError(isInvalid);
+
+        onChange(potentialData);
     };
 
     return (
@@ -56,6 +124,7 @@ function ContractDetailsForm({ data, onChange, templateName }: ContractDetailsFo
 
             <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl p-8 space-y-8">
                 {/* Basic Info Group */}
+                {/* Basic Info Group */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
                         <FileText className="w-4 h-4 text-orange-600" />
@@ -68,8 +137,9 @@ function ContractDetailsForm({ data, onChange, templateName }: ContractDetailsFo
                             value={data.title || ""}
                             onChange={(e) => handleChange("title", e.target.value)}
                             placeholder="e.g. Master Service Agreement - Q4 2024"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-bold text-base"
+                            className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-bold text-base ${errors.title ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
                         />
+                        {errors.title && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.title}</p>}
                     </div>
                 </div>
 
@@ -87,8 +157,9 @@ function ContractDetailsForm({ data, onChange, templateName }: ContractDetailsFo
                                 value={data.counterpartyName || ""}
                                 onChange={(e) => handleChange("counterpartyName", e.target.value)}
                                 placeholder="Client or Vendor Name"
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm"
+                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm ${errors.counterpartyName ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
                             />
+                            {errors.counterpartyName && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.counterpartyName}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -98,8 +169,9 @@ function ContractDetailsForm({ data, onChange, templateName }: ContractDetailsFo
                                 value={data.counterpartyEmail || ""}
                                 onChange={(e) => handleChange("counterpartyEmail", e.target.value)}
                                 placeholder="contact@example.com"
-                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm"
+                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm ${errors.counterpartyEmail ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
                             />
+                            {errors.counterpartyEmail && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.counterpartyEmail}</p>}
                         </div>
                     </div>
                 </div>
@@ -117,8 +189,9 @@ function ContractDetailsForm({ data, onChange, templateName }: ContractDetailsFo
                                 type="date"
                                 value={data.startDate || ""}
                                 onChange={(e) => handleChange("startDate", e.target.value)}
-                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm ${error ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
+                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm ${errors.startDate ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
                             />
+                            {errors.startDate && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.startDate}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -127,8 +200,9 @@ function ContractDetailsForm({ data, onChange, templateName }: ContractDetailsFo
                                 type="date"
                                 value={data.endDate || ""}
                                 onChange={(e) => handleChange("endDate", e.target.value)}
-                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm ${error ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
+                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm ${errors.endDate ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
                             />
+                            {errors.endDate && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.endDate}</p>}
                         </div>
 
                         <div className="space-y-2">
@@ -145,12 +219,6 @@ function ContractDetailsForm({ data, onChange, templateName }: ContractDetailsFo
                             </div>
                         </div>
                     </div>
-
-                    {error && (
-                        <div className="p-3 bg-rose-50 text-rose-600 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-1 border border-rose-100">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" /> {error}
-                        </div>
-                    )}
 
                     <div className="space-y-2">
                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Scope / Brief</label>
@@ -171,11 +239,9 @@ function ContractDetailsForm({ data, onChange, templateName }: ContractDetailsFo
 // --- Main Page Component ---
 const STEPS = ["Assistant", "Template", "Details", "Editor", "Annexures", "Review"];
 
-// Mock Data for "Standard Annexures"
-const STANDARD_ANNEXURES: AnnexureItem[] = [
-    { id: "annex-a", title: "Annexure A", subtitle: "Scope of Services", content: "The Service Provider agrees to perform the following services...\n\n1. Initial Consultation\n2. Implementation Strategy\n3. Ongoing Maintenance" },
-    { id: "annex-b", title: "Annexure B", subtitle: "Payment Schedule", content: "Payment shall be made according to the following schedule:\n\n- 50% upon signing\n- 25% upon completion of Phase 1\n- 25% upon final delivery" },
-    { id: "annex-c", title: "Annexure C", subtitle: "SLA Terms", content: "Service Level Agreement Terms...\n\nResponse time: 4 hours\nResolution time: 24 hours" },
+// Initial single annexure
+const INITIAL_ANNEXURES: AnnexureItem[] = [
+    { id: "annex-a", title: "Price", content: "The Service Provider agrees to perform the following services...\n\n1. Initial Consultation\n2. Implementation Strategy\n3. Ongoing Maintenance" }
 ];
 
 export default function NewContractPage() {
@@ -183,6 +249,8 @@ export default function NewContractPage() {
     const router = useRouter();
     const [currentStep, setCurrentStep] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [stepError, setStepError] = useState(false);
+    const [showAiPanel, setShowAiPanel] = useState(false);
 
     // Data State
     const [templates, setTemplates] = useState<Template[]>([]);
@@ -191,19 +259,22 @@ export default function NewContractPage() {
     // Wizard State
     const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
     const [contractDetails, setContractDetails] = useState<any>({});
-    const [editorContent, setEditorContent] = useState(""); // Lifted state for contract body
-    const [annexures, setAnnexures] = useState<AnnexureItem[]>(STANDARD_ANNEXURES);
+    const [editorContent, setEditorContent] = useState("");
+
+    // Dynamic Annexures State - Start with 1
+    const [annexures, setAnnexures] = useState<AnnexureItem[]>(INITIAL_ANNEXURES);
     const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
 
     useEffect(() => {
         const fetchTemplates = async () => {
             try {
-                const data = await api.templates.list() as unknown as Template[];
-                if (Array.isArray(data)) {
-                    setTemplates(data);
-                } else {
+                const response = await api.templates.list();
+                // @ts-ignore
+                if (response.data) {
                     // @ts-ignore
-                    setTemplates(data.data || []);
+                    setTemplates(response.data as Template[]);
+                } else {
+                    setTemplates([]);
                 }
             } catch (error) {
                 console.error("Failed to fetch templates:", error);
@@ -240,14 +311,40 @@ export default function NewContractPage() {
     const handleTemplateSelect = (template: Template) => {
         setSelectedTemplate(template);
         if (currentStep === 0) {
-            setCurrentStep(2); // Jump to Details
+            setCurrentStep(2);
         } else {
             goNext();
         }
     };
 
+    // --- Dynamic Annexure Handlers ---
+
     const handleAnnexureChange = (id: string, newContent: string) => {
         setAnnexures(prev => prev.map(a => a.id === id ? { ...a, content: newContent } : a));
+    };
+
+    const handleTitleChange = (id: string, newTitle: string) => {
+        setAnnexures(prev => prev.map(a => a.id === id ? { ...a, title: newTitle } : a));
+    };
+
+    const handleAddAnnexure = () => {
+        setAnnexures(prev => {
+            const nextIndex = prev.length;
+            const nextLetter = String.fromCharCode(65 + nextIndex); // A, B, C...
+            return [
+                ...prev,
+                {
+                    id: `annex-${Date.now()}`,
+                    title: `Annexure ${nextLetter}`,
+                    content: "Enter content here..."
+                }
+            ];
+        });
+    };
+
+    const handleRemoveAnnexure = (id: string) => {
+        if (annexures.length <= 1) return; // Prevent deleting the last one
+        setAnnexures(prev => prev.filter(a => a.id !== id));
     };
 
     // Compile the final document content
@@ -256,11 +353,29 @@ export default function NewContractPage() {
 
         // Append Annexures
         if (annexures.length > 0) {
-            finalHtml += "<br/><br/><hr/><br/>";
-            finalHtml += "<h2 style='text-align:center'>ANNEXURES</h2><br />";
-            annexures.forEach(annexure => {
-                finalHtml += `<br/><h3>${annexure.title}: ${annexure.subtitle}</h3>`;
+            // Force start on new page for the Annexures section
+            finalHtml += '<div style="page-break-before: always; break-before: page; height: 1px; display: block;"></div>';
+
+            finalHtml += "<h2 style='text-align:center; text-transform: uppercase; margin-bottom: 2rem; margin-top: 2rem;'>ANNEXURES</h2>";
+
+            annexures.forEach((annexure, index) => {
+                // Start each specific annexure on a new page if it's not the first one (or even if it is, relative to main header?)
+                // Generally, "ANNEXURES" header is on a page, then maybe the first annexure starts.
+                // Let's keep them flowing after the header, but break BETWEEN annexures.
+
+                if (index > 0) {
+                    finalHtml += '<div style="page-break-before: always; break-before: page; height: 1px; display: block;"></div>';
+                }
+
+                // If this is the first annexure, just add some spacing from the main header
+                if (index === 0) {
+                    finalHtml += "<br/>";
+                }
+
+                finalHtml += `<div class="annexure-section">`;
+                finalHtml += `<h3>${annexure.title}</h3>`;
                 finalHtml += `<div>${annexure.content.replace(/\n/g, "<br/>")}</div>`;
+                finalHtml += `</div>`;
             });
         }
 
@@ -309,17 +424,55 @@ export default function NewContractPage() {
         switch (currentStep) {
             case 0: return <AIAssistantView onTemplateSelect={handleTemplateSelect} templates={templates} />;
             case 1: return <TemplateSelectionView onSelect={handleTemplateSelect} selectedTemplateId={selectedTemplate?.id} templates={templates} />;
-            case 2: return <ContractDetailsForm data={contractDetails} onChange={setContractDetails} templateName={selectedTemplate?.name} />;
+            case 2: return <ContractDetailsForm data={contractDetails} onChange={setContractDetails} templateName={selectedTemplate?.name} onError={setStepError} />;
 
             case 3: // Editor
                 return (
-                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 h-[700px] animate-in fade-in zoom-in-95 duration-500">
-                        <ContractEditorView
-                            content={editorContent}
-                            onChange={setEditorContent}
-                            onContinue={goNext}
-                        />
-                        <ContractAssistantSidebar />
+                    <div className="flex h-[700px] border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative animate-in fade-in zoom-in-95 duration-500">
+                        {/* Main Editor Surface */}
+                        <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
+                            <div className="flex-1 overflow-hidden relative">
+                                <ContractEditorView
+                                    content={editorContent}
+                                    onChange={setEditorContent}
+                                    onContinue={goNext}
+                                    className="border-0 shadow-none rounded-none"
+                                />
+                                {/* Toggle Button when closed */}
+                                {!showAiPanel && (
+                                    <div className="absolute right-6 top-6 z-30">
+                                        <Button
+                                            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-lg rounded-full h-10 w-10 p-0 flex items-center justify-center group transition-all"
+                                            onClick={() => setShowAiPanel(true)}
+                                            title="Open AI Assistant"
+                                        >
+                                            <Wand2 className="w-4 h-4 text-orange-600 group-hover:scale-110 transition-transform" />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Collapsible Sidebar */}
+                        <div className={`
+                            border-l border-slate-200 bg-white transition-all duration-300 ease-in-out flex flex-col z-20
+                             ${showAiPanel ? 'w-[400px] translate-x-0 opacity-100' : 'w-0 translate-x-full opacity-0 overflow-hidden'}
+                        `}>
+                            <div className="h-full flex flex-col min-w-[400px]">
+                                <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                    <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                        <Wand2 className="w-4 h-4 text-orange-600" />
+                                        Contract Assistant
+                                    </div>
+                                    <Button variant="ghost" size="icon" onClick={() => setShowAiPanel(false)} className="h-7 w-7 text-slate-400 hover:text-slate-700">
+                                        <ArrowRight className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                                <div className="flex-1 overflow-hidden">
+                                    <ContractAssistantSidebar embedded className="h-full" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 );
 
@@ -330,6 +483,9 @@ export default function NewContractPage() {
                             annexures={annexures}
                             onAnnexureChange={handleAnnexureChange}
                             onUpdate={setAttachedFiles}
+                            onAdd={handleAddAnnexure}
+                            onRemove={handleRemoveAnnexure}
+                            onTitleChange={handleTitleChange}
                         />
                         <div className="p-6 flex justify-end border-t border-slate-50 mt-8">
                             <Button onClick={goNext} className="bg-orange-600 hover:bg-slate-900 text-white font-bold uppercase text-xs tracking-wide h-10 px-8 rounded-xl transition-all shadow-lg shadow-orange-600/20 hover:shadow-xl flex items-center gap-2">
@@ -339,17 +495,52 @@ export default function NewContractPage() {
                     </div>
                 );
 
-            case 5: // Final Review
+            case 5: // Final Review (Also collapsible)
                 return (
-                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8 h-[700px] animate-in fade-in zoom-in-95 duration-500">
-                        <FinalReviewView
-                            content={getFinalDocumentContent()}
-                            details={contractDetails}
-                            templateName={selectedTemplate?.name}
-                            onSubmit={handleContractSubmit}
-                            loading={loading}
-                        />
-                        <ContractAssistantSidebar />
+                    <div className="flex h-[700px] border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative animate-in fade-in zoom-in-95 duration-500">
+                        <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
+                            <div className="flex-1 overflow-hidden relative">
+                                <FinalReviewView
+                                    content={getFinalDocumentContent()}
+                                    details={contractDetails || {}}
+                                    templateName={selectedTemplate?.name}
+                                    onSubmit={handleContractSubmit}
+                                    loading={loading}
+                                    className="border-0 shadow-none rounded-none"
+                                />
+                                {!showAiPanel && (
+                                    <div className="absolute right-4 top-20 z-10">
+                                        <Button
+                                            className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-lg rounded-full h-10 w-10 p-0 flex items-center justify-center group transition-all"
+                                            onClick={() => setShowAiPanel(true)}
+                                            title="Open AI Assistant"
+                                        >
+                                            <Wand2 className="w-4 h-4 text-orange-600 group-hover:scale-110 transition-transform" />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className={`
+                            border-l border-slate-200 bg-white transition-all duration-300 ease-in-out flex flex-col z-20
+                             ${showAiPanel ? 'w-[400px] translate-x-0 opacity-100' : 'w-0 translate-x-full opacity-0 overflow-hidden'}
+                        `}>
+                            <div className="h-full flex flex-col min-w-[400px]">
+                                <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                    <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                                        <Wand2 className="w-4 h-4 text-orange-600" />
+                                        Final Checks
+                                    </div>
+                                    <Button variant="ghost" size="icon" onClick={() => setShowAiPanel(false)} className="h-7 w-7 text-slate-400 hover:text-slate-700">
+                                        <ArrowRight className="w-4 h-4" />
+                                    </Button>
+                                </div>
+                                <div className="flex-1 overflow-hidden">
+                                    <ContractAssistantSidebar embedded className="h-full" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 );
 
@@ -418,7 +609,10 @@ export default function NewContractPage() {
                         {currentStep > 0 && (
                             <Button
                                 onClick={goNext}
-                                disabled={currentStep === 2 && !contractDetails.title}
+                                disabled={
+                                    (currentStep === 2 && (!contractDetails.title || stepError)) ||
+                                    loading
+                                }
                                 className="flex items-center px-8 h-11 bg-slate-900 text-white rounded-xl font-bold uppercase text-[10px] tracking-wide hover:bg-orange-600 shadow-lg hover:shadow-orange-600/20 transition-all disabled:opacity-50 disabled:hover:bg-slate-900 disabled:shadow-none"
                             >
                                 Continue <ArrowRight size={14} className="ml-2" />

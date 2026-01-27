@@ -1,20 +1,18 @@
-
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
     Paperclip, Upload, X, File as FileIcon,
     Bold, Italic, Link as LinkIcon, Image as ImageIcon,
     List, Table as TableIcon, AlignLeft, AlignCenter, AlignRight,
-    Loader2
+    Loader2, Plus, Trash2, ChevronDown, ChevronUp
 } from "lucide-react";
-import { RichTextEditor } from "@/components/rich-text-editor";
+import { ContractEditorView } from "@/components/contract-editor-view";
 
 // Shared Types
 export interface AnnexureItem {
     id: string;
     title: string;
-    subtitle: string;
     content: string;
 }
 
@@ -22,9 +20,12 @@ interface AnnexuresViewProps {
     annexures: AnnexureItem[];
     onAnnexureChange: (id: string, newContent: string) => void;
     onUpdate: (files: File[]) => void;
+    onAdd: () => void;
+    onRemove: (id: string) => void;
+    onTitleChange: (id: string, title: string) => void;
 }
 
-export function AnnexuresView({ annexures, onAnnexureChange, onUpdate }: AnnexuresViewProps) {
+export function AnnexuresView({ annexures, onAnnexureChange, onUpdate, onAdd, onRemove, onTitleChange }: AnnexuresViewProps) {
     const [files, setFiles] = useState<File[]>([]);
     const [activeAnnexureId, setActiveAnnexureId] = useState<string>("annex-a");
     const [isDragging, setIsDragging] = useState(false);
@@ -67,86 +68,142 @@ export function AnnexuresView({ annexures, onAnnexureChange, onUpdate }: Annexur
         onUpdate(newFiles);
     };
 
-    return (
-        <div className="flex h-[600px] border border-gray-200 rounded-3xl overflow-hidden bg-white shadow-sm animate-in fade-in zoom-in-95 duration-300">
-            {/* Sidebar - Annexure List */}
-            <div className="w-1/3 border-r border-gray-200 bg-gray-50/50 flex flex-col">
-                <div className="p-5 border-b border-gray-100">
-                    <h3 className="font-bold text-gray-900">Contract Annexures</h3>
-                    <p className="text-xs text-gray-500 mt-1">Select an annexure to edit or upload.</p>
-                </div>
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set([annexures[0]?.id]));
 
-                <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                    {annexures.map((annexure) => (
-                        <button
-                            key={annexure.id}
-                            onClick={() => handleAnnexureClick(annexure)}
-                            className={`w-full text-left p-4 rounded-xl transition-all border ${activeAnnexureId === annexure.id
-                                ? "bg-white border-orange-200 shadow-md shadow-orange-500/5 ring-1 ring-orange-100" // Active State
-                                : "bg-transparent border-transparent hover:bg-white hover:border-gray-200"
-                                }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${activeAnnexureId === annexure.id ? "bg-orange-100 text-orange-600" : "bg-gray-200 text-gray-500"
-                                    }`}>
-                                    <Paperclip size={16} />
+    // Auto-expand new items
+    const prevCount = useRef(annexures.length);
+    if (annexures.length > prevCount.current) {
+        const newId = annexures[annexures.length - 1].id;
+        if (!expandedIds.has(newId)) {
+            const newSet = new Set(expandedIds);
+            newSet.add(newId);
+            setExpandedIds(newSet);
+        }
+        prevCount.current = annexures.length;
+    }
+
+    const toggleExpand = (id: string) => {
+        const newSet = new Set(expandedIds);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+        }
+        setExpandedIds(newSet);
+    };
+
+    return (
+        <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+            {/* Annexure List */}
+            <div className="space-y-8">
+                {annexures.map((annexure, index) => {
+                    const isExpanded = expandedIds.has(annexure.id);
+                    return (
+                        <div key={annexure.id} className="border border-slate-200 rounded-xl overflow-hidden group hover:border-orange-200 transition-colors bg-white shadow-sm">
+                            {/* Header / Title Edit */}
+                            <div
+                                className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
+                                onClick={() => toggleExpand(annexure.id)}
+                            >
+                                <div className="flex items-center gap-4 flex-1">
+                                    <div className="flex items-center gap-3">
+                                        <button className="text-slate-400 hover:text-slate-600 transition-colors">
+                                            {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                                        </button>
+                                        <span className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-500 shadow-sm">
+                                            {index + 1}
+                                        </span>
+                                    </div>
+                                    <div className="flex-1" onClick={(e) => e.stopPropagation()}>
+                                        <input
+                                            type="text"
+                                            value={annexure.title}
+                                            onChange={(e) => onTitleChange(annexure.id, e.target.value)}
+                                            className="bg-transparent border-none p-0 text-base font-bold text-slate-900 focus:ring-0 placeholder-slate-400 w-full"
+                                            placeholder="Annexure Title (e.g. Scope of Work)"
+                                        />
+
+                                    </div>
                                 </div>
-                                <div>
-                                    <h4 className={`font-semibold text-sm ${activeAnnexureId === annexure.id ? "text-gray-900" : "text-gray-600"}`}>
-                                        {annexure.title}
-                                    </h4>
-                                    <p className="text-xs text-gray-400">{annexure.subtitle}</p>
+                                <div className="flex items-center gap-2">
+                                    {annexures.length > 1 && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onRemove(annexure.id); }}
+                                            className="text-slate-400 hover:text-rose-500 p-2 hover:bg-rose-50 rounded-lg transition-colors"
+                                            title="Remove Annexure"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
-                        </button>
-                    ))}
 
-                    <div className="pt-4 mt-4 border-t border-gray-200/50">
-                        <label
-                            htmlFor="hidden-file-upload"
-                            className="w-full border-2 border-dashed border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center text-gray-400 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all cursor-pointer group"
-                            onDragOver={handleDragOver}
-                            onDragLeave={handleDragLeave}
-                            onDrop={handleDrop}
-                        >
-                            <Upload size={20} className="mb-2 group-hover:scale-110 transition-transform" />
-                            <span className="text-xs font-semibold">Upload New Attachment</span>
-                        </label>
-                        <input type="file" id="hidden-file-upload" className="hidden" multiple onChange={handleFileSelect} />
-                    </div>
+                            {/* Editor Area - Collapsible */}
+                            {isExpanded && (
+                                <div className="p-0 animate-in slide-in-from-top-2 duration-200">
+                                    <ContractEditorView
+                                        content={annexure.content}
+                                        onChange={(val: string) => onAnnexureChange(annexure.id, val)}
+                                        className="border-none shadow-none rounded-none min-h-[400px]"
+                                        toolbarSimple={true}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
 
-                    {/* Display Uploaded Files */}
+                {/* Add Button */}
+                <button
+                    onClick={onAdd}
+                    className="w-full py-6 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center gap-3 text-slate-500 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50/50 transition-all group font-medium text-base"
+                >
+                    <Plus size={20} className="group-hover:scale-110 transition-transform" />
+                    Add New Annexure
+                </button>
+            </div>
+
+            {/* Global Attachments */}
+            <div className="pt-6 border-t border-slate-100">
+                <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <Paperclip size={16} className="text-orange-600" />
+                    Additional Attachments
+                </h3>
+
+                <div className="space-y-4">
+                    {/* File List */}
                     {files.length > 0 && (
-                        <div className="space-y-2 mt-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {files.map((file, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-2 pl-3 bg-white border border-gray-200 rounded-lg text-xs">
-                                    <span className="truncate max-w-[120px] text-gray-600 font-medium">{file.name}</span>
-                                    <button onClick={(e) => { e.stopPropagation(); removeFile(idx); }} className="p-1 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded">
+                                <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm group hover:border-orange-200 transition-colors">
+                                    <div className="flex items-center gap-3 overflow-hidden">
+                                        <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-slate-100 text-slate-400">
+                                            <FileIcon size={14} />
+                                        </div>
+                                        <span className="truncate text-slate-700 font-medium">{file.name}</span>
+                                    </div>
+                                    <button onClick={(e) => { e.stopPropagation(); removeFile(idx); }} className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
                                         <X size={14} />
                                     </button>
                                 </div>
                             ))}
                         </div>
                     )}
-                </div>
-            </div>
 
-            {/* Main Content - Editor Area */}
-            <div className="flex-1 flex flex-col bg-white">
-                {/* Editor Content (Real) */}
-                <div className="flex-1 p-4 overflow-hidden flex flex-col bg-gray-50/20">
-                    <RichTextEditor
-                        value={activeAnnexure.content.replace(/\n/g, "<br/>")}
-                        onChange={handleContentChange}
-                        className="flex-1 shadow-sm border-gray-100 min-h-0"
-                        placeholder="Start typing annexure content..."
-                    />
-                </div>
-
-                {/* Editor Footer */}
-                <div className="p-4 border-t border-gray-100 bg-white flex justify-between items-center text-xs text-gray-400">
-                    <span>Last auto-saved just now</span>
-                    <span>{activeAnnexure.content.length} chars</span>
+                    <label
+                        htmlFor="hidden-file-upload"
+                        className="w-full border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-slate-400 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all cursor-pointer group"
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                    >
+                        <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-3 group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
+                            <Upload size={20} />
+                        </div>
+                        <span className="text-sm font-bold">Click to upload or drag and drop</span>
+                        <span className="text-xs text-slate-400 mt-1">PDF, DOCX, IMG up to 10MB</span>
+                    </label>
+                    <input type="file" id="hidden-file-upload" className="hidden" multiple onChange={handleFileSelect} />
                 </div>
             </div>
         </div>

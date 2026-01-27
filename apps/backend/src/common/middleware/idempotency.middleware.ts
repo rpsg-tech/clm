@@ -92,42 +92,42 @@ export class IdempotencyMiddleware implements NestMiddleware {
             // Capture the response for caching
             const originalJson = res.json.bind(res);
             const originalSend = res.send.bind(res);
-            const self = this;
+
 
             const cacheResponse = async (body: any) => {
                 // Only cache successful responses (2xx)
                 if (res.statusCode >= 200 && res.statusCode < 300) {
                     const responseToCache: CachedResponse = {
                         status: res.statusCode,
-                        headers: self.getResponseHeaders(res),
+                        headers: this.getResponseHeaders(res),
                         body,
                         timestamp: new Date().toISOString(),
                     };
 
-                    await self.redis.getClient().setex(
+                    await this.redis.getClient().setex(
                         cacheKey,
                         IDEMPOTENCY_TTL,
                         JSON.stringify(responseToCache)
                     );
 
-                    self.logger.debug(
+                    this.logger.debug(
                         `Cached idempotent response: ${req.method} ${req.path} (key: ${idempotencyKey})`
                     );
                 }
             };
 
             // Override res.json to cache response
-            res.json = function (body: any) {
+            res.json = (body: any) => {
                 cacheResponse(body).catch(err =>
-                    self.logger.error('Failed to cache idempotent response:', err)
+                    this.logger.error('Failed to cache idempotent response:', err)
                 );
                 return originalJson(body);
             };
 
             // Override res.send to cache response
-            res.send = function (body: any) {
+            res.send = (body: any) => {
                 cacheResponse(body).catch(err =>
-                    self.logger.error('Failed to cache idempotent response:', err)
+                    this.logger.error('Failed to cache idempotent response:', err)
                 );
                 return originalSend(body);
             };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Badge, Spinner, Skeleton } from '@repo/ui';
@@ -84,7 +84,7 @@ function ContractDetailContent() {
     const { success, error: toastError } = useToast();
     const canEdit = usePermission('contract:edit');
     const canSubmit = usePermission('contract:submit');
-    const canSend = usePermission('contract:send_counterparty');
+    const canSend = usePermission('contract:send');
 
     const [contract, setContract] = useState<Contract | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -141,12 +141,28 @@ function ContractDetailContent() {
         }
     };
 
-    const handleUploadSigned = async () => {
-        if (!contract) return;
+    // Hidden file input ref
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleUploadClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !contract) return;
+
+        // Reset input value so same file can be selected again if needed
+        e.target.value = '';
+
         setActionLoading(true);
         try {
-            const filename = `signed_${contract.reference}.pdf`;
-            await api.contracts.uploadSigned(contract.id, filename);
+            // Validate file type
+            if (file.type !== 'application/pdf') {
+                throw new Error('Please upload a valid PDF file');
+            }
+
+            await api.contracts.uploadSigned(contract.id, file);
             success('Active', 'Contract signed and activated');
             const data = await api.contracts.get(contract.id);
             setContract(data as Contract);
@@ -226,7 +242,7 @@ function ContractDetailContent() {
                             </Badge>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
                             {contract.status === 'DRAFT' && canEdit && (
                                 <Link href={`/dashboard/contracts/${contract.id}/edit`}>
                                     <Button variant="outline" className="shadow-sm bg-white hover:bg-neutral-50 border-neutral-300 text-neutral-700 font-medium">
@@ -256,16 +272,66 @@ function ContractDetailContent() {
                                 </Button>
                             )}
                             {contract.status === 'SENT_TO_COUNTERPARTY' && (
-                                <Button
-                                    onClick={handleUploadSigned}
-                                    disabled={actionLoading}
-                                    className="bg-success hover:bg-success-dark text-white shadow-lg shadow-success/20"
-                                >
-                                    {actionLoading ? <Spinner size="sm" className="mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
-                                    Upload Signed PDF
-                                </Button>
+                                <>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        className="hidden"
+                                        accept="application/pdf"
+                                        onChange={handleFileChange}
+                                    />
+                                    <Button
+                                        onClick={handleUploadClick}
+                                        disabled={actionLoading}
+                                        className="bg-success hover:bg-success-dark text-white shadow-lg shadow-success/20"
+                                    >
+                                        {actionLoading ? <Spinner size="sm" className="mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
+                                        Upload Signed PDF
+                                    </Button>
+                                </>
                             )}
                         </div>
+                    </div>
+                </div>
+            </div>
+
+
+            {/* Lifecycle Progress Stepper */}
+            <div className="max-w-[1600px] mx-auto mb-8">
+                <div className="bg-white border border-neutral-200 rounded-xl p-6 shadow-sm overflow-x-auto">
+                    <div className="flex items-center justify-between relative min-w-[600px] lg:min-w-0">
+                        {/* Connecting Line background */}
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-neutral-100 -z-0"></div>
+
+                        {statusFlow.map((step, index) => {
+                            const isCompleted = index <= currentStepIndex;
+                            const isCurrent = index === currentStepIndex;
+
+                            return (
+                                <div key={step.status} className="relative z-10 flex flex-col items-center bg-white px-2">
+                                    <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${isCurrent
+                                        ? 'border-orange-600 bg-orange-50 text-orange-600 ring-4 ring-orange-100 scale-110 shadow-lg'
+                                        : isCompleted
+                                            ? 'border-orange-600 bg-orange-600 text-white shadow-md'
+                                            : 'border-neutral-200 bg-white text-neutral-300'
+                                        }`}>
+                                        {isCompleted && !isCurrent ? (
+                                            <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5" />
+                                        ) : (
+                                            <span className="text-xs lg:text-sm font-bold">{index + 1}</span>
+                                        )}
+                                    </div>
+                                    <span className={`mt-3 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-center max-w-[80px] leading-tight ${isCurrent
+                                        ? 'text-orange-700'
+                                        : isCompleted
+                                            ? 'text-orange-600'
+                                            : 'text-neutral-400'
+                                        }`}>
+                                        {step.label}
+                                    </span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -294,11 +360,59 @@ function ContractDetailContent() {
                                         const html2pdf = (await import('html2pdf.js')).default;
                                         const element = document.getElementById('contract-content-view');
                                         if (!element) return;
-                                        // options...
+
+                                        const opt = {
+                                            margin: [10, 10, 10, 10],
+                                            filename: `${contract.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
+                                            image: { type: 'jpeg', quality: 0.98 },
+                                            pagebreak: { mode: ['css', 'legacy'] },
+                                            html2canvas: {
+                                                scale: 2,
+                                                useCORS: true,
+                                                onclone: (clonedDoc: Document) => {
+                                                    const allElements = clonedDoc.querySelectorAll('*');
+                                                    allElements.forEach((el) => {
+                                                        const htmlEl = el as HTMLElement;
+                                                        const style = getComputedStyle(htmlEl);
+
+                                                        // 1. Remove shadows and borders from pages to make them look seamless in PDF
+                                                        if (htmlEl.classList.contains('shadow-sm') || htmlEl.classList.contains('md:shadow-xl')) {
+                                                            htmlEl.style.boxShadow = 'none';
+                                                            htmlEl.style.border = 'none';
+                                                            htmlEl.style.marginBottom = '0'; // Remove gap between pages
+                                                        }
+
+                                                        // Remove the main wrapper gap
+                                                        if (htmlEl.id === 'contract-content-view') {
+                                                            htmlEl.style.gap = '0';
+                                                        }
+
+                                                        // 2. Aggressive oklch replacement
+                                                        const bg = style.backgroundColor;
+                                                        if (bg && bg.includes('oklch')) {
+                                                            htmlEl.style.backgroundColor = '#ffffff';
+                                                        }
+                                                        const color = style.color;
+                                                        if (color && color.includes('oklch')) {
+                                                            htmlEl.style.color = '#0f172a';
+                                                        }
+                                                        const border = style.borderColor;
+                                                        if (border && border.includes('oklch')) {
+                                                            htmlEl.style.borderColor = '#e2e8f0';
+                                                        }
+                                                    });
+                                                }
+                                            },
+                                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                                        };
+
                                         // @ts-ignore
-                                        await html2pdf().from(element).save();
+                                        await html2pdf().set(opt).from(element).save();
                                         success('Downloaded', 'PDF downloaded successfully');
-                                    } catch (err) { } finally { setActionLoading(false); }
+                                    } catch (err) {
+                                        console.error('Download failed', err);
+                                        toastError('Error', 'Failed to generate PDF');
+                                    } finally { setActionLoading(false); }
                                 }}
                                 className="text-neutral-500 hover:text-neutral-900"
                             >
@@ -308,26 +422,111 @@ function ContractDetailContent() {
                         </div>
 
                         {/* Actual Content - A4 Ratio Wrapper */}
-                        <div className="relative p-8 md:p-12 lg:p-16 bg-white min-h-[800px]">
-                            <div id="contract-content-view" className="max-w-[750px] mx-auto bg-white">
-                                <div className="mb-12 pb-8 border-b border-neutral-100">
-                                    <h1 className="text-3xl font-serif font-bold text-neutral-900 mb-4">{contract.title}</h1>
-                                    <div className="grid grid-cols-2 gap-4 text-sm text-neutral-600">
-                                        <div>
-                                            <span className="text-neutral-400 block text-xs uppercase tracking-wide mb-1">Reference</span>
-                                            <span className="font-mono">{contract.reference}</span>
-                                        </div>
-                                        <div>
-                                            <span className="text-neutral-400 block text-xs uppercase tracking-wide mb-1">Date</span>
-                                            <span>{new Date(contract.createdAt).toLocaleDateString()}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                        <div className="relative p-8 md:p-12 lg:p-16 bg-neutral-100/50 min-h-[800px] flex flex-col items-center gap-8">
+                            <div id="contract-content-view" className="w-full max-w-[750px] mx-auto flex flex-col gap-8 print:block print:gap-0">
 
-                                <SafeHtml
-                                    className="prose prose-neutral max-w-none font-serif leading-relaxed text-neutral-800"
-                                    html={contract.annexureData}
-                                />
+                                <style jsx global>{`
+                                    /* Table Borders for Preview */
+                                    .prose table {
+                                        width: 100%;
+                                        border-collapse: collapse;
+                                        margin-top: 1em;
+                                        margin-bottom: 1em;
+                                    }
+                                    .prose td, .prose th {
+                                        border: 1px solid #cbd5e1;
+                                        padding: 8px 12px;
+                                    }
+                                    .prose th {
+                                        background-color: #f8fafc;
+                                        font-weight: 600;
+                                    }
+                                `}</style>
+
+                                {(() => {
+                                    // Variable placement logic
+                                    const processVariables = (htmlContent: string, data: any) => {
+                                        if (!htmlContent) return "";
+
+                                        const replacer = (key: string) => {
+                                            if (!key) return "";
+                                            switch (key) {
+                                                case 'counterpartyName': return data.counterpartyName || '<span class="text-red-500">[Client Name]</span>';
+                                                case 'counterpartyEmail': return data.counterpartyEmail || '<span class="text-red-500">[Client Email]</span>';
+                                                case 'contractTitle': // Fallthrough
+                                                case 'title': return data.title || '[Contract Title]';
+                                                case 'amount': return data.amount ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(data.amount)) : '<span class="text-red-500">[Amount]</span>';
+                                                case 'startDate': return data.startDate ? new Date(data.startDate).toLocaleDateString() : '<span class="text-red-500">[Start Date]</span>';
+                                                case 'endDate': return data.endDate ? new Date(data.endDate).toLocaleDateString() : '<span class="text-red-500">[End Date]</span>';
+                                                default: return "";
+                                            }
+                                        };
+
+                                        let processed = htmlContent;
+
+                                        // 1. Match legacy format: <span data-variable="key">Label</span>
+                                        processed = processed.replace(/<span[^>]*data-variable="([^"]+)"[^>]*>.*?<\/span>/g, (match, key) => {
+                                            return replacer(key) || match;
+                                        });
+
+                                        // 2. Match TipTap node format: Any span with data-type="variable"
+                                        // We capture the attributes string to extract ID safely regardless of order
+                                        processed = processed.replace(/<span([^>]*data-type="variable"[^>]*)>.*?<\/span>/g, (match, attrs) => {
+                                            const idMatch = attrs.match(/id="([^"]+)"/);
+                                            const key = idMatch ? idMatch[1] : null;
+                                            return key ? (replacer(key) || match) : match;
+                                        });
+
+                                        return processed;
+                                    };
+
+                                    const processedContent = processVariables(contract.annexureData, contract);
+
+                                    return processedContent && processedContent.split(/<div\s+style="[^"]*page-break-before:\s*always[^"]*"[^>]*>[\s\S]*?<\/div>/gi)
+                                        .filter(content => {
+                                            if (!content) return false;
+                                            const textOnly = content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+                                            const hasStructure = /<(img|table|hr|iframe|video)/i.test(content);
+                                            return textOnly.length > 0 || hasStructure;
+                                        })
+                                        .map((pageContent, index) => (
+                                            <div
+                                                key={index}
+                                                className={`bg-white shadow-sm md:shadow-xl border border-neutral-200/50 print:border-none print:shadow-none min-h-[1000px] relative group p-12 md:p-16 ${index > 0 ? 'page-break-before-always' : ''}`}
+                                                style={index > 0 ? { pageBreakBefore: 'always' } : {}}
+                                            >
+                                                {/* Paper Texture/Header Effect - Only on first page */}
+                                                {index === 0 && (
+                                                    <>
+                                                        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-primary-500 via-primary-400 to-primary-500 opacity-90 rounded-t-sm" />
+                                                        <div className="mb-12 pb-8 border-b border-neutral-100">
+                                                            <h1 className="text-3xl font-serif font-bold text-neutral-900 mb-4">{contract.title}</h1>
+                                                            <div className="grid grid-cols-2 gap-4 text-sm text-neutral-600">
+                                                                <div>
+                                                                    <span className="text-neutral-400 block text-xs uppercase tracking-wide mb-1">Reference</span>
+                                                                    <span className="font-mono">{contract.reference}</span>
+                                                                </div>
+                                                                <div>
+                                                                    <span className="text-neutral-400 block text-xs uppercase tracking-wide mb-1">Date</span>
+                                                                    <span>{new Date(contract.createdAt).toLocaleDateString()}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
+
+                                                <SafeHtml
+                                                    className="prose prose-neutral max-w-none font-serif leading-relaxed text-neutral-800"
+                                                    html={pageContent}
+                                                />
+
+                                                {/* Pagination/Footer hint */}
+                                                <div className="absolute bottom-4 right-8 text-[10px] text-neutral-300 font-mono select-none">
+                                                    PAGE {index + 1}
+                                                </div>
+                                            </div>
+                                        ))
+                                })()}
                             </div>
                         </div>
                     </div>

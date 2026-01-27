@@ -6,7 +6,7 @@ import { Button, Spinner, Badge, Card, CardHeader, CardTitle, CardContent } from
 import { api } from '@/lib/api-client';
 import { useToast } from '@/lib/toast-context';
 import { ArrowLeft, Save, Send, CheckCircle, Upload, History, ChevronDown, PanelRightOpen, PanelRightClose, Sparkles, FileText, Globe } from 'lucide-react';
-import { RichTextEditor } from '@/components/rich-text-editor';
+import { TipTapEditor } from '@/components/editor/tip-tap-editor';
 import { AiClauseAssistant } from '@/components/ai-clause-assistant';
 import { format } from 'date-fns';
 
@@ -190,24 +190,19 @@ export default function EditContractPage() {
             </header>
 
             {/* 2. Main Workspace */}
-            <div className="flex-1 flex min-h-0 overflow-hidden">
+            <div className="flex-1 flex min-h-0 overflow-hidden bg-neutral-100">
 
                 {/* Editor Surface */}
                 <main className="flex-1 relative flex flex-col min-w-0 transition-all duration-300">
-                    <div className="flex-1 overflow-y-auto p-4 lg:p-8 custom-scrollbar bg-neutral-50/50">
-                        <div className={`mx-auto transition-all duration-300 ${showAiPanel ? 'max-w-4xl mr-auto ml-4 lg:ml-8' : 'max-w-5xl'}`}>
-                            {/* Document Surface */}
-                            <div className="bg-white rounded-[2px] shadow-sm border border-neutral-200 min-h-[800px] relative">
-                                <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary-500 via-purple-500 to-primary-500 opacity-50" />
-                                <RichTextEditor
-                                    value={content}
-                                    onChange={setContent}
-                                    placeholder="Start drafting your contract here..."
-                                    className="min-h-[800px] p-8 lg:p-12 outline-none prose prose-neutral max-w-none"
-                                />
-                            </div>
-                        </div>
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                        <TipTapEditor
+                            content={content}
+                            onChange={setContent}
+                            placeholder="Start drafting your contract here..."
+                            className="h-full border-0 rounded-none"
+                        />
                     </div>
+
 
                     {/* Focus Mode Toggle (Visible when AI Panel is hidden) */}
                     {!showAiPanel && (

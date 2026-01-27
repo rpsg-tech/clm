@@ -169,15 +169,17 @@ export const api = {
 
   // Contracts
   contracts: {
-    list: (params?: { status?: string; page?: number; limit?: number }) => {
+    list: (params?: { status?: string; page?: number; limit?: number; expiringDays?: number; search?: string }) => {
       const searchParams = new URLSearchParams();
       if (params?.status) searchParams.set('status', params.status);
       if (params?.page) searchParams.set('page', params.page.toString());
       if (params?.limit) searchParams.set('limit', params.limit.toString());
+      if (params?.expiringDays) searchParams.set('expiringDays', params.expiringDays.toString());
+      if (params?.search) searchParams.set('search', params.search);
       const query = searchParams.toString();
       return authFetch<{
-        contracts: unknown[];
-        total: number;
+        data: unknown[];
+        meta: { total: number; lastPage: number; currentPage: number; perPage: number; prev: number | null; next: number | null };
       }>(`/contracts${query ? `?${query}` : ''}`);
     },
 
@@ -212,11 +214,37 @@ export const api = {
     send: (id: string) =>
       authFetch(`/contracts/${id}/send`, { method: 'POST' }),
 
-    uploadSigned: (id: string, filename?: string) =>
-      authFetch(`/contracts/${id}/upload-signed`, {
+    uploadSigned: async (id: string, file: File) => {
+      // Step 1: Get Presigned URL
+      const { uploadUrl, key, publicUrl } = await authFetch<{ uploadUrl: string; key: string; publicUrl: string }>(
+        `/contracts/${id}/upload-url`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            filename: file.name,
+            contentType: file.type,
+          }),
+        }
+      );
+
+      // Step 2: Upload directly to S3 (no auth headers, just the signed URL)
+      await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+
+      // Step 3: Confirm upload
+      return authFetch(`/contracts/${id}/upload-confirm`, {
         method: 'POST',
-        body: JSON.stringify({ filename }),
-      }),
+        body: JSON.stringify({
+          key,
+          filename: file.name,
+        }),
+      });
+    },
 
     getVersions: (id: string) => authFetch<any[]>(`/contracts/${id}/versions`),
 
@@ -229,8 +257,35 @@ export const api = {
 
   // Templates
   templates: {
-    list: () => authFetch('/templates'),
+    list: (params?: { category?: string; page?: number; limit?: number; search?: string }) => {
+      const query = new URLSearchParams();
+      if (params?.category) query.set('category', params.category);
+      if (params?.page) query.set('page', params.page.toString());
+      if (params?.limit) query.set('limit', params.limit.toString());
+      if (params?.search) query.set('search', params.search);
+      const queryStr = query.toString();
+      return authFetch<{
+        data: unknown[];
+        meta: { total: number; lastPage: number; currentPage: number; perPage: number; prev: number | null; next: number | null };
+      }>(`/templates${queryStr ? `?${queryStr}` : ''}`);
+    },
     get: (id: string) => authFetch(`/templates/${id}`),
+
+    // Admin Methods
+    create: (data: { name: string; code: string; category: string; description?: string; baseContent: string; isGlobal?: boolean }) =>
+      authFetch<any>('/admin/templates', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    update: (id: string, data: { name?: string; description?: string; baseContent?: string; isGlobal?: boolean; isActive?: boolean }) =>
+      authFetch<any>(`/admin/templates/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      }),
+    enableForOrg: (templateId: string, orgId: string) =>
+      authFetch<any>(`/admin/templates/${templateId}/enable/${orgId}`, { method: 'PATCH' }),
+    disableForOrg: (templateId: string, orgId: string) =>
+      authFetch<any>(`/admin/templates/${templateId}/disable/${orgId}`, { method: 'PATCH' }),
   },
 
   // Approvals
@@ -322,6 +377,115 @@ export const api = {
       const query = searchParams.toString();
       return authFetch<{ logs: any[]; total: number }>(`/audit${query ? `?${query}` : ''}`);
     },
+  },
+
+  // ============ ADMIN MODULES ============
+
+  // Permissions
+  permissions: {
+    list: () => authFetch<any>('/permissions'),
+  },
+
+  // Organizations
+  organizations: {
+    list: (params?: { isActive?: boolean; type?: 'PARENT' | 'ENTITY'; page?: number; limit?: number; search?: string }) => {
+      const query = new URLSearchParams();
+      if (params?.isActive !== undefined) query.set('isActive', String(params.isActive));
+      if (params?.type) query.set('type', params.type);
+      if (params?.page) query.set('page', params.page.toString());
+      if (params?.limit) query.set('limit', params.limit.toString());
+      if (params?.search) query.set('search', params.search);
+      const queryStr = query.toString();
+      return authFetch<{
+        data: any[];
+        meta: { total: number; lastPage: number; currentPage: number; perPage: number; prev: number | null; next: number | null };
+      }>(`/organizations${queryStr ? `?${queryStr}` : ''}`);
+    },
+    get: (id: string) => authFetch<any>(`/organizations/${id}`),
+    create: (data: { name: string; code: string; type?: 'PARENT' | 'ENTITY'; parentId?: string }) =>
+      authFetch<any>('/organizations', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    update: (id: string, data: { name?: string; isActive?: boolean; settings?: any }) =>
+      authFetch<any>(`/organizations/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      }),
+    updateSettings: (id: string, settings: Record<string, any>) =>
+      authFetch<any>(`/organizations/${id}/settings`, {
+        method: 'PUT',
+        body: JSON.stringify(settings)
+      }),
+    deactivate: (id: string) =>
+      authFetch<any>(`/organizations/${id}/deactivate`, { method: 'PUT' }),
+  },
+
+  // Users (Admin Context)
+  users: {
+    list: (params?: { page?: number; limit?: number; search?: string }) => {
+      const query = new URLSearchParams();
+      if (params?.page) query.set('page', params.page.toString());
+      if (params?.limit) query.set('limit', params.limit.toString());
+      if (params?.search) query.set('search', params.search);
+      const queryStr = query.toString();
+      return authFetch<{
+        data: any[];
+        meta: { total: number; lastPage: number; currentPage: number; perPage: number; prev: number | null; next: number | null };
+      }>(`/users${queryStr ? `?${queryStr}` : ''}`);
+    },
+    invite: (data: { email: string; roleId: string; organizationIds?: string[]; name?: string }) =>
+      authFetch('/users/invite', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    update: (id: string, data: { name?: string; email?: string; roleId?: string; isActive?: boolean; organizationIds?: string[] }) =>
+      authFetch<any>(`/users/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }),
+  },
+
+  // Roles
+  roles: {
+    list: (params?: { page?: number; limit?: number; search?: string }) => {
+      const query = new URLSearchParams();
+      if (params?.page) query.set('page', params.page.toString());
+      if (params?.limit) query.set('limit', params.limit.toString());
+      if (params?.search) query.set('search', params.search);
+      const queryStr = query.toString();
+      return authFetch<{
+        data: any[];
+        meta: { total: number; lastPage: number; currentPage: number; perPage: number; prev: number | null; next: number | null };
+      }>(`/roles${queryStr ? `?${queryStr}` : ''}`);
+    },
+    get: (id: string) => authFetch<any>(`/roles/${id}`),
+    create: (data: { name: string; code: string; description?: string; permissionIds: string[] }) =>
+      authFetch<any>('/roles', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    update: (id: string, data: { name?: string; description?: string; permissionIds?: string[] }) =>
+      authFetch<any>(`/roles/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }),
+  },
+
+  // Feature Flags (System Settings)
+  featureFlags: {
+    list: () => authFetch<any[]>('/feature-flags'),
+    toggle: (code: string, isEnabled: boolean, config?: any) =>
+      authFetch<any>(`/feature-flags/${code}`, {
+        method: 'PUT',
+        body: JSON.stringify({ isEnabled, config })
+      }),
+    getAvailable: () => authFetch<any[]>('/feature-flags/available'),
+  },
+
+  // Admin Analytics
+  analyticsAdmin: {
+    getAdminStats: () => authFetch<any>('/analytics/admin/stats'),
   },
 };
 

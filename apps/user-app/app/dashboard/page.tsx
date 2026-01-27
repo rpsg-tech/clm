@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, Badge, Skeleton, Button } from '@repo/ui';
 import { useAuth, usePermission } from '@/lib/auth-context';
 import { api } from '@/lib/api-client';
+import { useDashboardData } from '@/lib/hooks/use-dashboard';
 import {
     FileText,
     Clock,
@@ -56,94 +57,33 @@ export default function DashboardPage() {
     const canViewLegalApprovals = usePermission('approval:legal:view');
     const canViewFinanceApprovals = usePermission('approval:finance:view');
 
-    // State
-    const [stats, setStats] = useState<DashboardStats>({
+    // State management via React Query
+    const { data: dashboardData, isLoading } = useDashboardData(currentOrg?.id);
+
+    const stats = dashboardData?.stats || {
         totalContracts: 0,
         activeContracts: 0,
         draftContracts: 0,
         pendingApprovals: 0
-    });
-    const [recentContracts, setRecentContracts] = useState<RecentContract[]>([]);
-    const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    };
 
+    const recentContracts = (dashboardData?.recentContracts || []) as RecentContract[];
+    const pendingApprovals = (dashboardData?.pendingApprovals || []).map((approval: any) => ({
+        id: approval.id,
+        contractTitle: approval.contract?.title || 'Unknown Contract',
+        submittedBy: approval.contract?.createdByUser?.name || 'Unknown',
+        submittedAt: approval.createdAt,
+        approvalType: approval.type,
+    }));
+
+    // Time & Date
     const timeOfDay = (() => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Good morning';
         if (hour < 18) return 'Good afternoon';
         return 'Good evening';
     })();
-
     const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
-    useEffect(() => {
-        const fetchDashboardData = async () => {
-            if (!currentOrg) return;
-
-            setIsLoading(true);
-            try {
-                const promises = [];
-
-                // Fetch contract summary
-                if (canViewContracts) {
-                    promises.push(
-                        api.analytics.contractsSummary().catch(() => ({ total: 0, byStatus: {} }))
-                    );
-                    promises.push(
-                        api.contracts.list({ limit: 5 }).catch(() => ({ contracts: [], total: 0 }))
-                    );
-                } else {
-                    promises.push(Promise.resolve({ total: 0, byStatus: {} }));
-                    promises.push(Promise.resolve({ contracts: [], total: 0 }));
-                }
-
-                // Fetch approvals if user has permission
-                if (canViewLegalApprovals) {
-                    promises.push(
-                        api.approvals.pending('LEGAL').catch(() => [])
-                    );
-                } else if (canViewFinanceApprovals) {
-                    promises.push(
-                        api.approvals.pending('FINANCE').catch(() => [])
-                    );
-                } else {
-                    promises.push(Promise.resolve([]));
-                }
-
-                const [summaryData, contractsData, approvalsData] = await Promise.all(promises);
-
-                // Process stats
-                const summary = summaryData as any;
-                setStats({
-                    totalContracts: summary.total || 0,
-                    activeContracts: summary.active || 0,
-                    draftContracts: summary.draft || 0,
-                    pendingApprovals: Array.isArray(approvalsData) ? approvalsData.length : 0,
-                });
-
-                // Process recent contracts
-                const contracts = (contractsData as any).contracts || [];
-                setRecentContracts(contracts.slice(0, 5));
-
-                // Process pending approvals
-                const approvals = Array.isArray(approvalsData) ? approvalsData : [];
-                setPendingApprovals(approvals.slice(0, 5).map((approval: any) => ({
-                    id: approval.id,
-                    contractTitle: approval.contract?.title || 'Unknown Contract',
-                    submittedBy: approval.contract?.createdByUser?.name || 'Unknown',
-                    submittedAt: approval.createdAt,
-                    approvalType: approval.type,
-                })));
-
-            } catch (error) {
-                console.error('Failed to fetch dashboard data:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchDashboardData();
-    }, [currentOrg, canViewContracts, canViewLegalApprovals, canViewFinanceApprovals]);
 
     const getStatusColor = (status: string) => {
         const statusMap: Record<string, string> = {
@@ -196,6 +136,8 @@ export default function DashboardPage() {
                     </Button>
                 )}
             </div>
+
+
 
             {/* Stats Grid - Compact */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -276,6 +218,32 @@ export default function DashboardPage() {
                             </Button>
                         )}
                     </div>
+
+                    {/* Expiring Contracts Widget (Common for all roles) */}
+                    {(dashboardData?.expiringContracts?.length || 0) > 0 && (
+                        <Card className="bg-orange-50/50 border border-orange-100 shadow-sm rounded-2xl overflow-hidden mb-6">
+                            <div className="p-4 border-b border-orange-100 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-orange-600" />
+                                    <h3 className="text-sm font-bold text-orange-900 tracking-wide">Expiring Soon (30 Days)</h3>
+                                </div>
+                                <Badge className="bg-orange-100 text-orange-700 border-orange-200">{dashboardData?.expiringContracts?.length}</Badge>
+                            </div>
+                            <div className="divide-y divide-orange-100/50">
+                                {dashboardData?.expiringContracts?.map((contract: any) => (
+                                    <div key={contract.id} className="p-4 flex items-center justify-between hover:bg-orange-50 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/contracts/${contract.id}`)}>
+                                        <div>
+                                            <p className="font-bold text-slate-900 text-sm mb-0.5">{contract.title}</p>
+                                            <p className="text-[10px] text-slate-500">Expires {new Date(contract.endDate).toLocaleDateString()}</p>
+                                        </div>
+                                        <Button size="sm" variant="outline" className="h-7 text-[10px] bg-white border-orange-200 text-orange-700 hover:bg-orange-100 hover:text-orange-800">
+                                            Renew
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                    )}
 
                     <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl overflow-hidden">
                         <div className="overflow-x-auto">
@@ -428,6 +396,40 @@ export default function DashboardPage() {
                             )}
                         </div>
                     )}
+
+                    {/* Activity Feed Placeholder */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2 px-1">
+                            <Zap className="w-3.5 h-3.5 text-slate-400" />
+                            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                Live Feed
+                            </h3>
+                        </div>
+                        <Card className="border border-slate-100 bg-white rounded-2xl p-4">
+                            <div className="space-y-4">
+                                {dashboardData?.auditLogs?.length === 0 ? (
+                                    <div className="text-center py-4">
+                                        <p className="text-[10px] text-slate-400 font-medium">No recent activity</p>
+                                    </div>
+                                ) : (
+                                    (dashboardData?.auditLogs || []).map((log: any) => (
+                                        <div key={log.id} className="flex gap-3">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
+                                            <div>
+                                                <p className="text-xs text-slate-600 leading-relaxed">
+                                                    <span className="font-bold text-slate-900">{log.user?.name || 'System'}</span> {log.action.toLowerCase().replace(/_/g, ' ')} {log.module.toLowerCase()}
+                                                </p>
+                                                <p className="text-[10px] text-slate-400 mt-0.5">
+                                                    {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </Card>
+                    </div>
+
                 </div>
             </div>
         </div>

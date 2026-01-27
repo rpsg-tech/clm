@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent, Spinner } from '@repo/ui';
+import Image from 'next/image';
+import { Button, Input, Checkbox, Spinner } from '@repo/ui';
 import { useAuth } from '@/lib/auth-context';
+import { Shield, Lock, FileText, CheckCircle2 } from 'lucide-react';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -12,6 +14,7 @@ export default function LoginPage() {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [keepSignedIn, setKeepSignedIn] = useState(true);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -21,8 +24,14 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            await login(email, password);
-            router.push('/select-org');
+            const authState = await login(email, password);
+
+            // Check for Admin Access and Redirect
+            if (authState.permissions && authState.permissions.includes('admin:access')) {
+                router.push('/dashboard/organizations');
+            } else {
+                router.push('/select-org');
+            }
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Login failed. Please check your credentials.';
             setError(message);
@@ -32,113 +41,167 @@ export default function LoginPage() {
     };
 
     return (
-        <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-50 via-white to-primary-50 px-4">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />
-                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" />
-            </div>
-
-            <div className="w-full max-w-md relative z-10">
-                {/* Logo */}
-                <div className="text-center mb-8">
-                    <Link href="/" className="inline-block">
-                        <h1 className="text-4xl font-bold">
-                            <span className="bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent">
-                                CLM
-                            </span>
-                            <span className="text-neutral-600"> Enterprise</span>
-                        </h1>
-                    </Link>
-                    <p className="mt-2 text-neutral-500">Contract Lifecycle Management</p>
+        <div className="min-h-screen flex bg-white">
+            {/* LEFT SIDE: Brand & Art */}
+            <div className="hidden lg:flex w-1/2 relative bg-slate-900 overflow-hidden flex-col justify-between p-12 text-white">
+                {/* Background Image */}
+                <div className="absolute inset-0 z-0">
+                    <Image
+                        src="/login-bg.png"
+                        alt="Enterprise Background"
+                        fill
+                        className="object-cover opacity-60 mix-blend-overlay"
+                        priority
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-slate-900/10" />
                 </div>
 
-                {/* Login Card */}
-                <Card className="backdrop-blur-sm bg-white/90 shadow-xl border-neutral-200/50">
-                    <CardHeader className="text-center pb-2">
-                        <CardTitle className="text-2xl">Welcome back</CardTitle>
-                        <CardDescription>Sign in to your account to continue</CardDescription>
-                    </CardHeader>
+                {/* Top Brand */}
+                <div className="relative z-10 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center shadow-lg shadow-orange-600/20">
+                        <FileText className="w-6 h-6 text-white" />
+                    </div>
+                    <span className="text-2xl font-bold tracking-tight">CLM Enterprise</span>
+                </div>
 
-                    <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {/* Error Message */}
-                            {error && (
-                                <div className="p-3 rounded-lg bg-error-light text-error text-sm border border-error/20 animate-slide-up">
-                                    {error}
-                                </div>
-                            )}
+                {/* Middle Quote */}
+                <div className="relative z-10 max-w-lg">
+                    <h2 className="text-4xl font-bold leading-tight mb-4">
+                        Accelerate deals, <br />
+                        <span className="text-orange-500">mitigate risk.</span>
+                    </h2>
+                    <p className="text-lg text-slate-300 font-medium leading-relaxed">
+                        "The most secure way to manage enterprise contracts across your entire organization. Limitless scalability, zero compromise."
+                    </p>
+                </div>
 
-                            {/* Email */}
-                            <Input
-                                type="email"
-                                label="Email Address"
-                                placeholder="you@company.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                autoComplete="email"
-                                autoFocus
-                            />
+                {/* Bottom Trust Indicators */}
+                <div className="relative z-10 flex items-center gap-8 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-emerald-500" />
+                        <span>SOC2 Type II</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-emerald-500" />
+                        <span>ISO 27001</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <span>GDPR Ready</span>
+                    </div>
+                </div>
+            </div>
 
-                            {/* Password */}
-                            <Input
-                                type="password"
-                                label="Password"
-                                placeholder="••••••••"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                autoComplete="current-password"
-                            />
+            {/* RIGHT SIDE: Login Form */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-neutral-50/30">
+                <div className="w-full max-w-[440px] space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
 
-                            {/* Forgot Password */}
-                            <div className="flex justify-end">
-                                <Link
-                                    href="/forgot-password"
-                                    className="text-sm text-primary-600 hover:text-primary-700 hover:underline"
-                                >
-                                    Forgot password?
-                                </Link>
+                    {/* Header */}
+                    <div className="text-center lg:text-left">
+                        <div className="flex lg:hidden items-center justify-center gap-2 mb-8">
+                            <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center">
+                                <FileText className="w-5 h-5 text-white" />
+                            </div>
+                            <span className="text-xl font-bold text-slate-900">CLM Enterprise</span>
+                        </div>
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Welcome back</h1>
+                        <p className="mt-2 text-slate-500">Enter your credentials to access the workspace.</p>
+                    </div>
+
+                    {/* Form */}
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {error && (
+                            <div className="p-4 rounded-xl bg-rose-50 border border-rose-100 flex items-start gap-3 text-rose-600 animate-shake">
+                                <Shield className="w-5 h-5 shrink-0" />
+                                <p className="text-sm font-medium">{error}</p>
+                            </div>
+                        )}
+
+                        <div className="space-y-5">
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-bold text-slate-700">Work Email</label>
+                                <Input
+                                    type="email"
+                                    placeholder="name@company.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    autoFocus
+                                    className="h-12 bg-white"
+                                />
                             </div>
 
-                            {/* Submit Button */}
-                            <Button
-                                type="submit"
-                                className="w-full"
-                                size="lg"
-                                disabled={isLoading}
-                            >
-                                {isLoading ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <Spinner size="sm" className="text-white" />
-                                        Signing in...
-                                    </span>
-                                ) : (
-                                    'Sign In'
-                                )}
-                            </Button>
-                        </form>
-
-                        {/* Demo Credentials */}
-                        <div className="mt-6 p-4 rounded-lg bg-neutral-50 border border-neutral-200">
-                            <p className="text-xs font-medium text-neutral-500 mb-2">Demo Credentials:</p>
-                            <div className="space-y-1 text-xs text-neutral-600">
-                                <p><span className="font-mono bg-neutral-100 px-1 rounded">admin@clm.com</span></p>
-                                <p><span className="font-mono bg-neutral-100 px-1 rounded">legal@clm.com</span></p>
-                                <p><span className="font-mono bg-neutral-100 px-1 rounded">finance@clm.com</span></p>
-                                <p><span className="font-mono bg-neutral-100 px-1 rounded">user@clm.com</span></p>
-                                <p className="text-neutral-400 mt-1">Password: <span className="font-mono">Password123!</span></p>
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm font-bold text-slate-700">Password</label>
+                                    <Link
+                                        href="/forgot-password"
+                                        className="text-sm font-bold text-orange-600 hover:text-orange-700 hover:underline"
+                                    >
+                                        Forgot?
+                                    </Link>
+                                </div>
+                                <Input
+                                    type="password"
+                                    placeholder="••••••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="h-12 bg-white"
+                                />
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
 
-                {/* Footer */}
-                <p className="text-center text-sm text-neutral-500 mt-6">
-                    © 2026 CLM Enterprise. All rights reserved.
-                </p>
+                        <div className="flex items-center gap-3">
+                            <Checkbox
+                                id="keep-signed-in"
+                                checked={keepSignedIn}
+                                onCheckedChange={(c: boolean | 'indeterminate') => setKeepSignedIn(!!c)}
+                            />
+                            <label htmlFor="keep-signed-in" className="text-sm font-medium text-slate-600 cursor-pointer select-none">
+                                Keep me signed in on this device
+                            </label>
+                        </div>
+
+                        <Button
+                            type="submit"
+                            size="lg"
+                            className="w-full h-12 text-base bg-slate-900 hover:bg-slate-800 text-white font-bold tracking-wide shadow-xl shadow-slate-900/10 transition-all hover:scale-[1.01]"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <div className="flex items-center gap-2">
+                                    <Spinner size="sm" className="text-white border-white/30 border-t-white" />
+                                    <span>Authenticating...</span>
+                                </div>
+                            ) : (
+                                "Sign In to Workspace"
+                            )}
+                        </Button>
+                    </form>
+
+                    {/* Demo Credentials Hint */}
+                    <div className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Demo Accounts</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button onClick={() => { setEmail('admin@clm.com'); setPassword('Password123!'); }} className="text-left p-2 rounded-lg hover:bg-slate-50 transition-colors text-xs space-y-0.5 group">
+                                <div className="font-bold text-slate-700 group-hover:text-orange-600">Admin</div>
+                                <div className="text-slate-400 font-mono">admin@clm.com</div>
+                            </button>
+                            <button onClick={() => { setEmail('user@clm.com'); setPassword('Password123!'); }} className="text-left p-2 rounded-lg hover:bg-slate-50 transition-colors text-xs space-y-0.5 group">
+                                <div className="font-bold text-slate-700 group-hover:text-blue-600">User</div>
+                                <div className="text-slate-400 font-mono">user@clm.com</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="pt-8 text-center border-t border-neutral-200">
+                        <p className="text-sm text-slate-500">
+                            Don't have an account? <a href="#" className="font-bold text-slate-900 hover:underline">Contact Sales</a>
+                        </p>
+                    </div>
+                </div>
             </div>
-        </main>
+        </div>
     );
 }

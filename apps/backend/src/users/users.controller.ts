@@ -1,6 +1,7 @@
 
-import { Controller, Get, Post, Put, Patch, Body, Param, UseGuards, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Body, Param, UseGuards, Query, ForbiddenException } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgContextGuard } from '../auth/guards/org-context.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -14,17 +15,25 @@ export class UsersController {
     constructor(private readonly usersService: UsersService) { }
 
     @Get()
-    @Permissions('admin:user:manage')
-    async listUsers(@CurrentUser() user: AuthenticatedUser) {
+    @Permissions('user:view')
+    async listUsers(
+        @CurrentUser() user: AuthenticatedUser,
+        @Query() query: PaginationDto,
+    ) {
+        let result;
+
         // If user has organization context, we can filter by that
         if (user.orgId) {
-            const users = await this.usersService.findAllByOrganization(user.orgId);
-            return this.transformUsers(users);
+            result = await this.usersService.findAllByOrganization(user.orgId, query);
+        } else {
+            // If no org context, we assume Global Admin view (Super Admin)
+            result = await this.usersService.findAll(query);
         }
 
-        // If no org context, we assume Global Admin view (Super Admin)
-        const users = await this.usersService.findAll();
-        return this.transformUsers(users);
+        return {
+            data: this.transformUsers(result.data),
+            meta: result.meta,
+        };
     }
 
     private transformUsers(users: any[]) {
@@ -45,7 +54,7 @@ export class UsersController {
     }
 
     @Post('invite')
-    @Permissions('admin:user:manage')
+    @Permissions('user:manage')
     async inviteUser(
         @CurrentUser() user: AuthenticatedUser,
         @Body() body: { email: string; roleId: string; organizationIds?: string[]; name?: string },
@@ -70,7 +79,7 @@ export class UsersController {
     }
 
     @Patch(':id')
-    @Permissions('admin:user:manage')
+    @Permissions('user:manage')
     async updateUser(
         @CurrentUser() user: AuthenticatedUser,
         @Param('id') userId: string,
@@ -82,8 +91,6 @@ export class UsersController {
             organizationIds?: string[];
         },
     ) {
-        // Global admins can manage users without being in an org context
-
         // Update user basic info if provided
         if (body.name || body.email) {
             await this.usersService.update(userId, {
@@ -110,9 +117,9 @@ export class UsersController {
             }
 
             // Remove from unselected organizations (only if admin manages those orgs)
+            // Ideally we check if 'user' has permission for these orgs too
             const orgsToRemove = currentOrgIds.filter(id => !body.organizationIds!.includes(id));
             for (const orgId of orgsToRemove) {
-                // Only deactivate if it's not the admin's current org or we have permission
                 await this.usersService.updateUserInOrg(userId, orgId, {
                     isActive: false,
                 });

@@ -9,9 +9,10 @@ interface FinalReviewViewProps {
     templateName?: string;
     onSubmit: () => void;
     loading: boolean;
+    className?: string; // Allow custom styling override
 }
 
-export function FinalReviewView({ content, details, templateName, onSubmit, loading }: FinalReviewViewProps) {
+export function FinalReviewView({ content, details, templateName, onSubmit, loading, className = "" }: FinalReviewViewProps) {
     const [isDownloading, setIsDownloading] = useState(false);
 
     const handleDownload = async () => {
@@ -27,27 +28,60 @@ export function FinalReviewView({ content, details, templateName, onSubmit, load
 
         const opt = {
             margin: [10, 10, 10, 10] as [number, number, number, number],
-            filename: `${details.title || 'contract'}.pdf`,
+            filename: `${details?.title || 'contract'}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
+            pagebreak: { mode: ['css', 'legacy'] },
             html2canvas: {
                 scale: 2,
                 useCORS: true,
                 onclone: (clonedDoc: Document) => {
-                    // Remove shadows and complex gradients that might use oklab/oklch
                     const allElements = clonedDoc.querySelectorAll('*');
                     allElements.forEach((el) => {
-                        const style = (el as HTMLElement).style;
-                        if (style) {
-                            style.boxShadow = 'none';
-                            style.textShadow = 'none'; // Just in case
+                        const htmlEl = el as HTMLElement;
+                        const style = getComputedStyle(htmlEl);
+
+                        // 1. Remove shadows and borders from pages to make them look seamless in PDF
+                        if (htmlEl.classList.contains('shadow-sm') || htmlEl.classList.contains('md:shadow-xl')) {
+                            htmlEl.style.boxShadow = 'none';
+                            htmlEl.style.border = 'none';
+                            htmlEl.style.marginBottom = '0'; // Remove gap between pages
+                        }
+
+                        // Remove the main wrapper gap
+                        if (htmlEl.id === 'contract-preview') {
+                            htmlEl.style.gap = '0';
+                        }
+
+                        // 2. Aggressive oklch replacement
+                        // html2canvas fails on oklch(), so we must fallback to hex.
+
+                        // Background
+                        const bg = style.backgroundColor;
+                        if (bg && bg.includes('oklch')) {
+                            htmlEl.style.backgroundColor = '#ffffff'; // Default to white for document
+                        }
+
+                        // Color
+                        const color = style.color;
+                        if (color && color.includes('oklch')) {
+                            htmlEl.style.color = '#0f172a'; // Default to neutral-900
+                        }
+
+                        // Border
+                        const border = style.borderColor;
+                        if (border && border.includes('oklch')) {
+                            htmlEl.style.borderColor = '#e2e8f0'; // Default to neutral-200
                         }
                     });
 
-                    // Specifically fix the gradient header which might use interpolation
+                    // Specifically fix the gradient header
                     const gradientHeader = clonedDoc.querySelector('.bg-gradient-to-r');
                     if (gradientHeader) {
-                        (gradientHeader as HTMLElement).classList.remove('bg-gradient-to-r', 'from-primary-500', 'via-primary-400', 'to-primary-500');
-                        (gradientHeader as HTMLElement).style.backgroundColor = '#f97316'; // Fallback to orange-500 hex
+                        const headerEl = gradientHeader as HTMLElement;
+                        headerEl.classList.remove('bg-gradient-to-r', 'from-primary-500', 'via-primary-400', 'to-primary-500');
+                        headerEl.style.background = 'none';
+                        headerEl.style.backgroundColor = '#f97316'; // orange-500
+                        headerEl.style.backgroundImage = 'none';
                     }
                 }
             },
@@ -64,8 +98,52 @@ export function FinalReviewView({ content, details, templateName, onSubmit, load
         }
     };
 
+    // Variable placement logic
+    const processVariables = (htmlContent: string, data: any) => {
+        if (!htmlContent) return "";
+        console.log("Processing Variables. Data:", data);
+
+        const replacer = (key: string) => {
+            console.log("Replacing Key:", key, "Value:", data[key]);
+            if (!key) return "";
+            switch (key) {
+                case 'counterpartyName': return data.counterpartyName || '<span class="text-red-500">[Client Name]</span>';
+                case 'counterpartyEmail': return data.counterpartyEmail || '<span class="text-red-500">[Client Email]</span>';
+                case 'contractTitle': // Fallthrough
+                case 'title': return data.title || '[Contract Title]';
+                case 'amount': return data.amount ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(data.amount)) : '<span class="text-red-500">[Amount]</span>';
+                case 'startDate': return data.startDate ? new Date(data.startDate).toLocaleDateString() : '<span class="text-red-500">[Start Date]</span>';
+                case 'endDate': return data.endDate ? new Date(data.endDate).toLocaleDateString() : '<span class="text-red-500">[End Date]</span>';
+                default: return "";
+            }
+        };
+
+        let processed = htmlContent;
+
+        // 1. Match legacy format: <span data-variable="key">Label</span>
+        processed = processed.replace(/<span[^>]*data-variable="([^"]+)"[^>]*>.*?<\/span>/g, (match, key) => {
+            return replacer(key) || match;
+        });
+
+        // 2. Match TipTap node format: Any span with data-type="variable"
+        // We capture the attributes string to extract ID safely regardless of order
+        processed = processed.replace(/<span([^>]*data-type="variable"[^>]*)>.*?<\/span>/g, (match, attrs) => {
+            const idMatch = attrs.match(/id="([^"]+)"/);
+            const key = idMatch ? idMatch[1] : null;
+            if (key) {
+                console.log("Found TipTap Variable:", key);
+                return replacer(key) || match;
+            }
+            return match;
+        });
+
+        return processed;
+    };
+
+    const processedContent = processVariables(content, details);
+
     return (
-        <div className="flex flex-col h-full bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm animate-in fade-in zoom-in-95 duration-300">
+        <div className={`flex flex-col h-full bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm animate-in fade-in zoom-in-95 duration-300 ${className}`}>
             {/* Header */}
             <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between bg-white z-10">
                 <div className="flex items-center gap-4">
@@ -112,23 +190,54 @@ export function FinalReviewView({ content, details, templateName, onSubmit, load
                         </div>
                     </div>
 
-                    {/* The Page Itself */}
-                    <div id="contract-preview" className="bg-white shadow-xl shadow-neutral-200/50 border border-neutral-100 min-h-[1000px] w-full mx-auto relative group print:shadow-none print:border-none">
-                        {/* Paper Texture/Header Effect */}
-                        <div className="h-2 bg-gradient-to-r from-primary-500 via-primary-400 to-primary-500 opacity-90" />
-
-                        <div className="p-12 md:p-16">
+                    {processedContent.split(/<div\s+style="[^"]*page-break-before:\s*always[^"]*"[^>]*>[\s\S]*?<\/div>/gi)
+                        .filter(content => {
+                            if (!content) return false;
+                            const textOnly = content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+                            const hasStructure = /<(img|table|hr|iframe|video)/i.test(content);
+                            return textOnly.length > 0 || hasStructure;
+                        })
+                        .map((pageContent, index) => (
                             <div
-                                className="prose prose-sm md:prose-base max-w-none text-neutral-800 font-serif leading-relaxed"
-                                dangerouslySetInnerHTML={{ __html: content || "<p class='text-neutral-400 italic text-center py-20'>Content generation pending...</p>" }}
-                            />
-                        </div>
+                                key={index}
+                                className={`bg-white shadow-sm md:shadow-xl border border-neutral-200/50 print:border-none print:shadow-none mb-8 last:mb-0 relative group min-h-[1000px] ${index > 0 ? 'page-break-before-always' : ''}`}
+                                style={index > 0 ? { pageBreakBefore: 'always' } : {}}
+                            >
+                                {/* Paper Texture/Header Effect - Only on first page */}
+                                {index === 0 && (
+                                    <div className="h-2 bg-gradient-to-r from-primary-500 via-primary-400 to-primary-500 opacity-90" />
+                                )}
 
-                        {/* Pagination/Footer hint */}
-                        <div className="absolute bottom-4 right-8 text-[10px] text-neutral-300 font-mono select-none">
-                            PAGE 1 OF 1
-                        </div>
-                    </div>
+                                <div className="p-12 md:p-16">
+                                    <style jsx global>{`
+                                            /* Table Borders for Preview */
+                                            .prose table {
+                                                width: 100%;
+                                                border-collapse: collapse;
+                                                margin-top: 1em;
+                                                margin-bottom: 1em;
+                                            }
+                                            .prose td, .prose th {
+                                                border: 1px solid #cbd5e1;
+                                                padding: 8px 12px;
+                                            }
+                                            .prose th {
+                                                background-color: #f8fafc;
+                                                font-weight: 600;
+                                            }
+                                        `}</style>
+                                    <div
+                                        className="prose prose-sm md:prose-base max-w-none text-neutral-800 font-serif leading-relaxed"
+                                        dangerouslySetInnerHTML={{ __html: pageContent || "<p class='text-neutral-400 italic text-center py-20'>Content generation pending...</p>" }}
+                                    />
+                                </div>
+
+                                {/* Pagination/Footer hint */}
+                                <div className="absolute bottom-4 right-8 text-[10px] text-neutral-300 font-mono select-none">
+                                    PAGE {index + 1}
+                                </div>
+                            </div>
+                        ))}
                 </div>
             </div>
 

@@ -13,9 +13,8 @@ export class ExpiryScheduler {
         private emailService: EmailService,
     ) { }
 
-    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
     async handleContractExpiry() {
-        this.logger.log('Running contract expiry check...');
+        this.logger.log('Running contract expiry check via API trigger...');
 
         const today = new Date();
         const thirtyDaysFromNow = new Date();

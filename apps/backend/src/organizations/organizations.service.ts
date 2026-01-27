@@ -73,19 +73,55 @@ export class OrganizationsService {
     /**
      * Get all organizations (with optional filtering)
      */
-    async findAll(params?: {
+    /**
+     * Get all organizations (paginated with search)
+     */
+    async findAll(params: {
+        page?: number;
+        limit?: number;
+        search?: string;
         isActive?: boolean;
         type?: OrgType;
         parentId?: string | null;
-    }): Promise<Organization[]> {
-        return this.prisma.organization.findMany({
-            where: {
-                isActive: params?.isActive,
-                type: params?.type,
-                parentId: params?.parentId,
+    }) {
+        const page = params.page || 1;
+        const limit = params.limit || 10;
+        const skip = (page - 1) * limit;
+
+        const where: Prisma.OrganizationWhereInput = {
+            isActive: params.isActive,
+            type: params.type,
+            parentId: params.parentId,
+            ...(params.search && {
+                OR: [
+                    { name: { contains: params.search, mode: 'insensitive' } },
+                    { code: { contains: params.search, mode: 'insensitive' } },
+                ],
+            }),
+        };
+
+        const [total, data] = await Promise.all([
+            this.prisma.organization.count({ where }),
+            this.prisma.organization.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { name: 'asc' },
+                include: { parent: true }
+            }),
+        ]);
+
+        return {
+            data,
+            meta: {
+                total,
+                lastPage: Math.ceil(total / limit),
+                currentPage: page,
+                perPage: limit,
+                prev: page > 1 ? page - 1 : null,
+                next: page < Math.ceil(total / limit) ? page + 1 : null,
             },
-            orderBy: { name: 'asc' },
-        });
+        };
     }
 
     /**

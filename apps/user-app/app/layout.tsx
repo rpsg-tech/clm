@@ -5,12 +5,34 @@ import { AuthProvider } from '@/lib/auth-context';
 import { ToastProvider } from '@/lib/toast-context';
 import { NotificationsProvider } from '@/lib/notifications-context';
 import { CsrfProvider } from '@/components/providers/csrf-provider';
+import Providers from './providers';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-    title: 'CLM Enterprise - Contract Management',
-    description: 'Enterprise Contract Lifecycle Management Platform',
+    title: {
+        template: '%s | CLM Enterprise',
+        default: 'CLM Enterprise - Contract Lifecycle Management',
+    },
+    description: 'Secure, scalable, and intelligent contract lifecycle management for the modern enterprise.',
+    openGraph: {
+        type: 'website',
+        locale: 'en_US',
+        url: 'https://clm-enterprise.com',
+        siteName: 'CLM Enterprise',
+        images: [
+            {
+                url: '/og-image.png',
+                width: 1200,
+                height: 630,
+                alt: 'CLM Enterprise Platform',
+            },
+        ],
+    },
+    twitter: {
+        card: 'summary_large_image',
+        site: '@clmenterprise',
+    },
 };
 
 export default function RootLayout({
@@ -25,7 +47,9 @@ export default function RootLayout({
                     <AuthProvider>
                         <NotificationsProvider>
                             <ToastProvider>
-                                {children}
+                                <Providers>
+                                    {children}
+                                </Providers>
                             </ToastProvider>
                         </NotificationsProvider>
                     </AuthProvider>

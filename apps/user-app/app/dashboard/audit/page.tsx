@@ -76,7 +76,7 @@ export default function AuditLogPage() {
     const [targetTypeFilter, setTargetTypeFilter] = useState(urlTargetType || '');
 
     // Check if user has permission to view audit logs
-    const canViewAudit = hasPermission('audit:view');
+    const canViewAudit = hasPermission('system:audit');
 
     useEffect(() => {
         const fetchLogs = async () => {
@@ -271,8 +271,8 @@ export default function AuditLogPage() {
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <Badge variant={actionColors[log.action] || 'secondary'} className="text-[10px] h-5 px-2">
                                                             {/* Enhanced Action Label with Metadata */}
-                                                            {(log.action === 'CONTRACT_APPROVED' || log.action === 'CONTRACT_REJECTED') && log.metadata?.type
-                                                                ? `${String(log.metadata.type)} ${log.action === 'CONTRACT_APPROVED' ? 'Approved' : 'Rejected'}`
+                                                            {(log.action === 'CONTRACT_APPROVED' || log.action === 'CONTRACT_REJECTED') && (log as any).metadata?.type
+                                                                ? `${String((log as any).metadata.type)} ${log.action === 'CONTRACT_APPROVED' ? 'Approved' : 'Rejected'}`
                                                                 : formatAction(log.action)}
                                                         </Badge>
                                                         <span className="text-xs text-neutral-400 font-medium uppercase tracking-wide">
@@ -284,9 +284,9 @@ export default function AuditLogPage() {
                                                         <span className="text-neutral-500"> ({log.user.email})</span>
                                                     </p>
                                                     {/* Display extra context if available */}
-                                                    {(log.metadata?.comment || log.metadata?.reason) && (
+                                                    {((log as any).metadata?.comment || (log as any).metadata?.reason) && (
                                                         <p className="text-xs text-neutral-500 mt-1 italic">
-                                                            "{String(log.metadata.comment || log.metadata.reason)}"
+                                                            "{String((log as any).metadata.comment || (log as any).metadata.reason)}"
                                                         </p>
                                                     )}
                                                 </div>

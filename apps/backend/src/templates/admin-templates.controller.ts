@@ -4,7 +4,7 @@
  * Full CRUD for template governance by admins.
  */
 
-import { Controller, Get, Post, Put, Patch, Param, Body, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Param, Body, UseGuards, Query, ForbiddenException } from '@nestjs/common';
 import { TemplatesService } from './templates.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgContextGuard } from '../auth/guards/org-context.guard';
@@ -27,7 +27,7 @@ export class AdminTemplatesController {
      * List all templates (admin view - shows all, not just org-enabled)
      */
     @Get()
-    @Permissions('admin:template:govern')
+    @Permissions('template:view')
     async findAll(@Query('category') category?: TemplateCategory) {
         return this.prisma.template.findMany({
             where: {
@@ -46,7 +46,7 @@ export class AdminTemplatesController {
      * Get single template with full details
      */
     @Get(':id')
-    @Permissions('admin:template:govern')
+    @Permissions('template:view')
     async findOne(@Param('id') id: string) {
         return this.prisma.template.findUnique({
             where: { id },
@@ -63,7 +63,7 @@ export class AdminTemplatesController {
      * Create a new template
      */
     @Post()
-    @Permissions('admin:template:govern')
+    @Permissions('template:create')
     async create(
         @CurrentUser() user: AuthenticatedUser,
         @Body() body: {
@@ -75,6 +75,11 @@ export class AdminTemplatesController {
             isGlobal?: boolean;
         }
     ) {
+        // Enforce Global Permission
+        if (body.isGlobal && !user.permissions.includes('template:global')) {
+            throw new ForbiddenException('You do not have permission to create Global templates.');
+        }
+
         return this.templatesService.create(user.id, body);
     }
 
@@ -82,8 +87,9 @@ export class AdminTemplatesController {
      * Update template
      */
     @Put(':id')
-    @Permissions('admin:template:govern')
+    @Permissions('template:edit')
     async update(
+        @CurrentUser() user: AuthenticatedUser,
         @Param('id') id: string,
         @Body() body: {
             name?: string;
@@ -93,6 +99,32 @@ export class AdminTemplatesController {
             isActive?: boolean;
         }
     ) {
+        // Enforce Global Permission checks
+        if (body.isGlobal !== undefined) {
+            if (body.isGlobal && !user.permissions.includes('template:global')) {
+                throw new ForbiddenException('You do not have permission to manage Global templates.');
+            }
+
+            // Also preventing UN-setting global if they don't have permission? 
+            // Logic: If they can't manage global, they shouldn't change status at all.
+            // But usually it's about CREATING global.
+            // Let's stick to strict check: if touching isGlobal, need permission.
+            if (!user.permissions.includes('template:global')) {
+                // Check if existing is Global?
+                const existing = await this.prisma.template.findUnique({ where: { id } });
+                if (existing?.isGlobal) {
+                    throw new ForbiddenException('You cannot edit Global templates.');
+                }
+            }
+        } else {
+            // Even if not changing isGlobal, if the template IS global, need permission?
+            // Yes, typically Org Admins shouldn't edit Global templates.
+            const existing = await this.prisma.template.findUnique({ where: { id } });
+            if (existing?.isGlobal && !user.permissions.includes('template:global')) {
+                throw new ForbiddenException('You cannot edit Global templates.');
+            }
+        }
+
         return this.templatesService.update(id, body);
     }
 
@@ -100,7 +132,7 @@ export class AdminTemplatesController {
      * Enable template for an organization
      */
     @Patch(':id/enable/:orgId')
-    @Permissions('admin:template:govern')
+    @Permissions('template:edit')
     async enableForOrg(
         @Param('id') templateId: string,
         @Param('orgId') organizationId: string
@@ -112,7 +144,7 @@ export class AdminTemplatesController {
      * Disable template for an organization
      */
     @Patch(':id/disable/:orgId')
-    @Permissions('admin:template:govern')
+    @Permissions('template:edit')
     async disableForOrg(
         @Param('id') templateId: string,
         @Param('orgId') organizationId: string

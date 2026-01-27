@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-const cookieParser = require('cookie-parser');
+import cookieParser from 'cookie-parser';
 import { AuthController } from '../src/auth/auth.controller';
 import { AuthService } from '../src/auth/auth.service';
 import { AuditService } from '../src/audit/audit.service';
@@ -70,8 +70,8 @@ describe('AuthController (Integration)', () => {
                 .post('/auth/login')
                 .send({ email: 'test@example.com', password: 'password' })
                 .expect(200)
-                .expect((res) => {
-                    const cookies = res.headers['set-cookie'];
+                .expect((res: request.Response) => {
+                    const cookies = res.headers['set-cookie'] as unknown as string[];
                     expect(cookies).toBeDefined();
 
                     // Verify Access Token Cookie

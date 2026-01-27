@@ -10,6 +10,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgContextGuard } from '../auth/guards/org-context.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard, OrgContextGuard, PermissionsGuard)
@@ -20,10 +22,11 @@ export class AiController {
      * Analyze contract content
      */
     @Post('analyze')
-    @Permissions('contract:view')
+    @Permissions('ai:analyze')
     async analyzeContract(
-        @Body() body: { content: string; title?: string }
-    ): Promise<ContractAnalysis> {
+        @CurrentUser() user: AuthenticatedUser,
+        @Body() body: { content: string; title?: string },
+    ) {
         if (!body.content || body.content.trim().length < 50) {
             throw new BadRequestException('Contract content must be at least 50 characters');
         }
@@ -34,10 +37,11 @@ export class AiController {
      * Get clause suggestions
      */
     @Post('suggest-clause')
-    @Permissions('contract:create', 'contract:edit')
+    @Permissions('ai:chat')
     async suggestClause(
-        @Body() body: { context: string; clauseType: string }
-    ): Promise<ClauseSuggestion[]> {
+        @CurrentUser() user: AuthenticatedUser,
+        @Body() body: { clauseType: string; context?: string },
+    ) {
         if (!body.clauseType) {
             throw new BadRequestException('Clause type is required');
         }
