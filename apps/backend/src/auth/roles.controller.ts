@@ -1,5 +1,7 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards, Query, ForbiddenException, NotFoundException, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PaginationDto } from '../common/dto/pagination.dto';
+import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { OrgContextGuard } from './guards/org-context.guard';
 import { PermissionsGuard } from './guards/permissions.guard';
@@ -17,25 +19,57 @@ export class RolesController {
      */
     @Get()
     @Permissions('role:view', 'admin:user:manage')
-    async listRoles() {
-        const roles = await this.prisma.role.findMany({
-            orderBy: { name: 'asc' },
-            include: {
-                permissions: {
-                    include: { permission: true }
-                }
-            }
-        });
+    async listRoles(
+        @Query() query: PaginationDto
+    ) {
+        const page = query.page || 1;
+        const limit = query.limit || 10;
+        const skip = (page - 1) * limit;
 
-        return roles.map(role => ({
-            id: role.id,
-            name: role.name,
-            code: role.code,
-            description: role.description,
-            isSystem: role.isSystem,
-            permissionCount: role.permissions.length,
-            permissions: role.permissions.map(rp => rp.permission.code)
-        }));
+        const where: Prisma.RoleWhereInput = {
+            ...(query.search && {
+                OR: [
+                    { name: { contains: query.search, mode: 'insensitive' } },
+                    { code: { contains: query.search, mode: 'insensitive' } },
+                    { description: { contains: query.search, mode: 'insensitive' } },
+                ],
+            }),
+        };
+
+        const [total, roles] = await Promise.all([
+            this.prisma.role.count({ where }),
+            this.prisma.role.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { name: 'asc' },
+                include: {
+                    permissions: {
+                        include: { permission: true }
+                    }
+                }
+            })
+        ]);
+
+        return {
+            data: roles.map(role => ({
+                id: role.id,
+                name: role.name,
+                code: role.code,
+                description: role.description,
+                isSystem: role.isSystem,
+                permissionCount: role.permissions.length,
+                permissions: role.permissions.map(rp => rp.permission.code)
+            })),
+            meta: {
+                total,
+                lastPage: Math.ceil(total / limit),
+                currentPage: page,
+                perPage: limit,
+                prev: page > 1 ? page - 1 : null,
+                next: page < Math.ceil(total / limit) ? page + 1 : null,
+            }
+        };
     }
 
     /**
@@ -76,8 +110,9 @@ export class RolesController {
      * Create a new custom role
      */
     @Post()
-    @Permissions('role:create')
-    async createRole(
+    @Permissions('role:manage')
+    async create(
+        @CurrentUser() user: AuthenticatedUser,
         @Body() body: { name: string; code: string; description?: string; permissionIds: string[] }
     ) {
         const { name, code, description, permissionIds } = body;
@@ -115,12 +150,10 @@ export class RolesController {
         };
     }
 
-    /**
-     * Update role permissions (only for non-system roles)
-     */
     @Patch(':id')
-    @Permissions('role:edit')
-    async updateRole(
+    @Permissions('role:manage')
+    async update(
+        @CurrentUser() user: AuthenticatedUser,
         @Param('id') id: string,
         @Body() body: { name?: string; description?: string; permissionIds?: string[] }
     ) {
@@ -137,9 +170,9 @@ export class RolesController {
         const { name, description, permissionIds } = body;
 
         // Update role and permissions in transaction
-        const updated = await this.prisma.$transaction(async (tx) => {
+        const updatedRole = await this.prisma.$transaction(async (tx) => {
             // Update role basic info
-            const updatedRole = await tx.role.update({
+            const updated = await tx.role.update({
                 where: { id },
                 data: {
                     ...(name && { name }),
@@ -158,7 +191,7 @@ export class RolesController {
                 });
             }
 
-            return updatedRole;
+            return updated;
         });
 
         // Fetch updated role with permissions

@@ -6,6 +6,7 @@ import { Card, Button, Badge, Skeleton } from '@repo/ui';
 import { useAuth, usePermission } from '@/lib/auth-context';
 import { api } from '@/lib/api-client';
 import { StageFilter } from '@/components/stage-filter';
+import { Pagination } from '@/components/ui/pagination';
 import { FileText, Search, Filter, Plus, FileSignature, Calendar, ArrowUpRight, Briefcase, Eye } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
@@ -46,32 +47,52 @@ export default function ContractsListPage() {
     const [contracts, setContracts] = useState<Contract[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [page, setPage] = useState(1);
+    const [meta, setMeta] = useState<any>(null);
     const [statusFilter, setStatusFilter] = useState<string>('');
 
+    // Debounce search
     useEffect(() => {
-        const fetchContracts = async () => {
-            if (!isAuthenticated || !currentOrg) return;
+        const timer = setTimeout(() => {
+            setPage(1);
+            fetchContracts();
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery, statusFilter]);
 
-            setIsLoading(true);
-            try {
-                const response = await api.contracts.list({ status: statusFilter || undefined });
-                setContracts(response.contracts as Contract[]);
-            } catch (error) {
-                console.error('Failed to fetch contracts:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
+    useEffect(() => {
         fetchContracts();
-    }, [statusFilter, isAuthenticated, currentOrg]);
+    }, [page, isAuthenticated, currentOrg]);
 
-    const filteredContracts = contracts.filter(
-        (c) =>
-            c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            c.reference.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            c.counterpartyName?.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
+    const fetchContracts = async () => {
+        if (!isAuthenticated || !currentOrg) return;
+
+        setIsLoading(true);
+        try {
+            const response = await api.contracts.list({
+                status: statusFilter || undefined,
+                page,
+                limit: 10,
+                search: searchQuery
+            });
+            // @ts-ignore - API client type mismatch fix
+            if (response.data) {
+                // @ts-ignore
+                setContracts(response.data as Contract[]);
+                // @ts-ignore
+                setMeta(response.meta);
+            } else {
+                // Fallback if structure is flat (should not happen with new backend)
+                setContracts(response as unknown as Contract[]);
+            }
+        } catch (error) {
+            console.error('Failed to fetch contracts:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const filteredContracts = contracts;
 
     const getStageLabel = (status: string) => {
         const map: Record<string, string> = {
@@ -180,7 +201,7 @@ export default function ContractsListPage() {
                         )}
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
+                    <div className="hidden lg:block overflow-x-auto">
                         <table className="w-full">
                             <thead className="bg-slate-50/50 border-b border-slate-100">
                                 <tr>
@@ -271,7 +292,61 @@ export default function ContractsListPage() {
                         </table>
                     </div>
                 )}
-            </Card >
+                {/* Mobile Card View */}
+                {!isLoading && filteredContracts.length > 0 && (
+                    <div className="lg:hidden space-y-4 p-4 bg-slate-50/50">
+                        {filteredContracts.map((contract) => (
+                            <div
+                                key={contract.id}
+                                onClick={() => router.push(`/dashboard/contracts/${contract.id}`)}
+                                className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3 active:scale-[0.98] transition-all"
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center text-orange-600 shrink-0">
+                                            <FileText className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-900 text-sm line-clamp-1">{contract.title}</h3>
+                                            <p className="text-[10px] text-slate-500 font-mono">{contract.reference || contract.id.slice(0, 8)}</p>
+                                        </div>
+                                    </div>
+                                    <Badge className={`shrink-0 px-2 py-0.5 text-[9px] uppercase tracking-wide border shadow-sm ${getStageColor(contract.status)}`}>
+                                        {getStageLabel(contract.status)}
+                                    </Badge>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-50">
+                                    <div>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Counterparty</p>
+                                        <p className="text-xs font-bold text-slate-700 truncate">{contract.counterpartyName || '—'}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Value</p>
+                                        <p className="text-xs font-mono font-bold text-slate-900">
+                                            {contract.amount ? `₹${contract.amount.toLocaleString('en-IN')}` : '-'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                                    <span>{contract.startDate ? new Date(contract.startDate).toLocaleDateString('en-GB') : 'No Date'}</span>
+                                    <div className="flex items-center gap-1 text-orange-600 font-bold">
+                                        View Details <ArrowUpRight className="w-3 h-3" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </Card>
+
+            {meta && (
+                <Pagination
+                    meta={meta}
+                    onPageChange={setPage}
+                    isLoading={isLoading}
+                />
+            )}
         </div >
     );
 }

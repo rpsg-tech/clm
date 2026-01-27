@@ -84,7 +84,7 @@ function ContractDetailContent() {
     const { success, error: toastError } = useToast();
     const canEdit = usePermission('contract:edit');
     const canSubmit = usePermission('contract:submit');
-    const canSend = usePermission('contract:send_counterparty');
+    const canSend = usePermission('contract:send');
 
     const [contract, setContract] = useState<Contract | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -145,8 +145,8 @@ function ContractDetailContent() {
         if (!contract) return;
         setActionLoading(true);
         try {
-            const filename = `signed_${contract.reference}.pdf`;
-            await api.contracts.uploadSigned(contract.id, filename);
+            const file = new File(['%PDF-1.4%...'], `signed_${contract.reference}.pdf`, { type: 'application/pdf' });
+            await api.contracts.uploadSigned(contract.id, file);
             success('Active', 'Contract signed and activated');
             const data = await api.contracts.get(contract.id);
             setContract(data as Contract);
@@ -226,7 +226,7 @@ function ContractDetailContent() {
                             </Badge>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
                             {contract.status === 'DRAFT' && canEdit && (
                                 <Link href={`/dashboard/contracts/${contract.id}/edit`}>
                                     <Button variant="outline" className="shadow-sm bg-white hover:bg-neutral-50 border-neutral-300 text-neutral-700 font-medium">
@@ -270,6 +270,47 @@ function ContractDetailContent() {
                 </div>
             </div>
 
+
+            {/* Lifecycle Progress Stepper */}
+            <div className="max-w-[1600px] mx-auto mb-8">
+                <div className="bg-white border border-neutral-200 rounded-xl p-6 shadow-sm overflow-x-auto">
+                    <div className="flex items-center justify-between relative min-w-[600px] lg:min-w-0">
+                        {/* Connecting Line background */}
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-neutral-100 -z-0"></div>
+
+                        {statusFlow.map((step, index) => {
+                            const isCompleted = index <= currentStepIndex;
+                            const isCurrent = index === currentStepIndex;
+
+                            return (
+                                <div key={step.status} className="relative z-10 flex flex-col items-center bg-white px-2">
+                                    <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${isCurrent
+                                        ? 'border-orange-600 bg-orange-50 text-orange-600 ring-4 ring-orange-100 scale-110 shadow-lg'
+                                        : isCompleted
+                                            ? 'border-orange-600 bg-orange-600 text-white shadow-md'
+                                            : 'border-neutral-200 bg-white text-neutral-300'
+                                        }`}>
+                                        {isCompleted && !isCurrent ? (
+                                            <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5" />
+                                        ) : (
+                                            <span className="text-xs lg:text-sm font-bold">{index + 1}</span>
+                                        )}
+                                    </div>
+                                    <span className={`mt-3 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-center max-w-[80px] leading-tight ${isCurrent
+                                        ? 'text-orange-700'
+                                        : isCompleted
+                                            ? 'text-orange-600'
+                                            : 'text-neutral-400'
+                                        }`}>
+                                        {step.label}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
             <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Left Column: Document Canvas */}
                 <div className="lg:col-span-8 space-y-6">
@@ -294,11 +335,52 @@ function ContractDetailContent() {
                                         const html2pdf = (await import('html2pdf.js')).default;
                                         const element = document.getElementById('contract-content-view');
                                         if (!element) return;
-                                        // options...
+
+                                        const opt = {
+                                            margin: [10, 10, 10, 10],
+                                            filename: `${contract.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
+                                            image: { type: 'jpeg', quality: 0.98 },
+                                            html2canvas: {
+                                                scale: 2,
+                                                useCORS: true,
+                                                onclone: (clonedDoc: Document) => {
+                                                    const allElements = clonedDoc.querySelectorAll('*');
+                                                    allElements.forEach((el) => {
+                                                        const htmlEl = el as HTMLElement;
+                                                        const style = getComputedStyle(htmlEl);
+
+                                                        // 1. Remove shadows
+                                                        if (htmlEl.style) {
+                                                            htmlEl.style.boxShadow = 'none';
+                                                            htmlEl.style.textShadow = 'none';
+                                                        }
+
+                                                        // 2. Aggressive oklch replacement
+                                                        const bg = style.backgroundColor;
+                                                        if (bg && bg.includes('oklch')) {
+                                                            htmlEl.style.backgroundColor = '#ffffff';
+                                                        }
+                                                        const color = style.color;
+                                                        if (color && color.includes('oklch')) {
+                                                            htmlEl.style.color = '#0f172a';
+                                                        }
+                                                        const border = style.borderColor;
+                                                        if (border && border.includes('oklch')) {
+                                                            htmlEl.style.borderColor = '#e2e8f0';
+                                                        }
+                                                    });
+                                                }
+                                            },
+                                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                                        };
+
                                         // @ts-ignore
-                                        await html2pdf().from(element).save();
+                                        await html2pdf().set(opt).from(element).save();
                                         success('Downloaded', 'PDF downloaded successfully');
-                                    } catch (err) { } finally { setActionLoading(false); }
+                                    } catch (err) {
+                                        console.error('Download failed', err);
+                                        toastError('Error', 'Failed to generate PDF');
+                                    } finally { setActionLoading(false); }
                                 }}
                                 className="text-neutral-500 hover:text-neutral-900"
                             >

@@ -5,6 +5,7 @@
 import { Module } from '@nestjs/common';
 import { ContractsService } from './contracts.service';
 import { ContractsController } from './contracts.controller';
+import { ExpiryController } from './expiry.controller';
 
 import { CommonModule } from '../common/common.module';
 
@@ -14,7 +15,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
     imports: [CommonModule, NotificationsModule],
-    controllers: [ContractsController],
+    controllers: [ContractsController, ExpiryController],
     providers: [ContractsService, ExpiryScheduler],
     exports: [ContractsService],
 })

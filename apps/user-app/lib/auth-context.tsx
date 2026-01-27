@@ -37,7 +37,7 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<AuthState>;
     logout: () => void;
     switchOrg: (organizationId: string) => Promise<void>;
     hasPermission: (permission: string) => boolean;
@@ -85,14 +85,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Refresh context
         const data = await api.auth.me();
 
-        setState({
+        const newState = {
             user: data.user,
             currentOrg: data.currentOrg,
             permissions: data.permissions || [],
             role: data.role,
             isLoading: false,
             isAuthenticated: true,
-        });
+        };
+
+        setState(newState);
+        return newState; // Return data for immediate use
     }, []);
 
     const logout = useCallback(async () => {

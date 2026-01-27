@@ -22,7 +22,7 @@ export class AnalyticsController {
      * Get contract summary statistics
      */
     @Get('contracts/summary')
-    @Permissions('contract:view')
+    @Permissions('analytics:view')
     async getContractSummary(@CurrentUser() user: AuthenticatedUser) {
         const orgId = user.orgId;
 
@@ -61,7 +61,7 @@ export class AnalyticsController {
      * Get contracts by status for chart
      */
     @Get('contracts/by-status')
-    @Permissions('contract:view')
+    @Permissions('analytics:view')
     async getContractsByStatus(@CurrentUser() user: AuthenticatedUser) {
         const result = await this.prisma.contract.groupBy({
             by: ['status'],
@@ -80,7 +80,7 @@ export class AnalyticsController {
      * Get monthly contract creation trend
      */
     @Get('contracts/trend')
-    @Permissions('contract:view')
+    @Permissions('analytics:view')
     async getContractTrend(@CurrentUser() user: AuthenticatedUser) {
         const sixMonthsAgo = new Date();
         sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -121,7 +121,7 @@ export class AnalyticsController {
      * Get approval metrics
      */
     @Get('approvals/metrics')
-    @Permissions('approval:legal:view', 'approval:finance:view')
+    @Permissions('analytics:view')
     async getApprovalMetrics(@CurrentUser() user: AuthenticatedUser) {
         const [pending, completed] = await Promise.all([
             // Pending approvals
@@ -153,7 +153,7 @@ export class AnalyticsController {
      * Get recent activity
      */
     @Get('activity')
-    @Permissions('contract:view')
+    @Permissions('analytics:view')
     async getRecentActivity(
         @CurrentUser() user: AuthenticatedUser,
         @Query('limit') limit = '10',
@@ -186,21 +186,21 @@ export class AnalyticsController {
     // Ideally this should be protected by a SuperAdminGuard
     async getAdminStats() {
         // Run parallel queries for system-wide stats
-        const [totalUsers, totalOrgs, totalContracts, activeContracts] = await Promise.all([
+        const [totalUsers, totalOrgs, totalContracts, totalTemplates, totalPermissions] = await Promise.all([
             this.prisma.user.count(),
             this.prisma.organization.count(),
             this.prisma.contract.count(),
-            this.prisma.contract.count({
-                where: { status: 'ACTIVE' }
-            })
+            this.prisma.template.count(),
+            this.prisma.permission.count(),
         ]);
 
         return {
             totalUsers,
             totalOrgs,
             totalContracts,
-            activeContracts,
-            systemHealth: '100%', // Mock for now
+            totalTemplates,
+            totalPermissions,
+            systemHealth: '100%',
             lastUpdated: new Date()
         };
     }

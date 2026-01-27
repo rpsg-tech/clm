@@ -23,6 +23,7 @@ import { Permissions } from '../auth/decorators/permissions.decorator';
 import { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { UpdateContractDto } from './dto/update-contract.dto';
+import { GetContractsDto } from './dto/get-contracts.dto';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 
@@ -64,15 +65,9 @@ export class ContractsController {
     @Permissions('contract:view')
     async findAll(
         @CurrentUser() user: AuthenticatedUser,
-        @Query('status') status?: string,
-        @Query('page') page?: number,
-        @Query('limit') limit?: number,
+        @Query() query: GetContractsDto,
     ) {
-        return this.contractsService.findByOrganization(user.orgId!, {
-            status: status as any,
-            skip: page && limit ? (page - 1) * limit : undefined,
-            take: limit,
-        });
+        return this.contractsService.findByOrganization(user.orgId!, query);
     }
 
     @Get(':id')
@@ -139,7 +134,7 @@ export class ContractsController {
     }
 
     @Post(':id/send')
-    @Permissions('contract:send_counterparty')
+    @Permissions('contract:send')
     async sendToCounterparty(
         @CurrentUser() user: AuthenticatedUser,
         @Param('id') id: string,
@@ -164,14 +159,35 @@ export class ContractsController {
         return contract;
     }
 
-    @Post(':id/upload-signed')
-    @Permissions('contract:upload_signed')
-    async uploadSignedContract(
+    @Post(':id/upload-url')
+    @Permissions('contract:upload')
+    async getUploadUrl(
         @CurrentUser() user: AuthenticatedUser,
         @Param('id') id: string,
         @Body('filename') filename: string,
+        @Body('contentType') contentType: string,
     ) {
-        const contract = await this.contractsService.uploadSignedContract(id, user.orgId!, filename || 'signed_contract.pdf');
+        return this.contractsService.getSignedContractUploadUrl(
+            id,
+            user.orgId!,
+            filename,
+            contentType
+        );
+    }
+
+    @Post(':id/upload-confirm')
+    @Permissions('contract:upload')
+    async confirmUpload(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+        @Body('key') key: string,
+        @Body('filename') filename: string,
+    ) {
+        const contract = await this.contractsService.confirmSignedContractUpload(
+            id,
+            user.orgId!,
+            key
+        );
 
         // Audit log
         await this.auditService.log({
@@ -184,6 +200,7 @@ export class ContractsController {
             targetId: id,
             metadata: {
                 filename,
+                s3Key: key,
                 signedAt: contract.signedAt,
             } as Prisma.InputJsonValue,
         });
@@ -192,7 +209,7 @@ export class ContractsController {
     }
 
     @Get(':id/versions')
-    @Permissions('contract:view')
+    @Permissions('contract:history')
     async getVersions(
         @CurrentUser() user: AuthenticatedUser,
         @Param('id') id: string,
@@ -201,7 +218,7 @@ export class ContractsController {
     }
 
     @Get(':id/versions/:versionId/changelog')
-    @Permissions('contract:changelog:view')
+    @Permissions('contract:history')
     async getVersionChangelog(
         @CurrentUser() user: AuthenticatedUser,
         @Param('id') id: string,
@@ -226,7 +243,7 @@ export class ContractsController {
     }
 
     @Get(':id/compare')
-    @Permissions('contract:version:compare')
+    @Permissions('contract:history')
     async compareVersions(
         @CurrentUser() user: AuthenticatedUser,
         @Param('id') id: string,

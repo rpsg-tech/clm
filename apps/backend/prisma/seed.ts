@@ -17,50 +17,80 @@ async function main() {
     console.log('Creating permissions...');
 
     const permissionsData = [
-        // Contracts
-        { name: 'View Contracts', code: 'contract:view', module: 'contracts' },
-        { name: 'Create Contract', code: 'contract:create', module: 'contracts' },
-        { name: 'Edit Contract', code: 'contract:edit', module: 'contracts' },
-        { name: 'Delete Contract', code: 'contract:delete', module: 'contracts' },
-        { name: 'Submit Contract', code: 'contract:submit', module: 'contracts' },
-        { name: 'Send to Counterparty', code: 'contract:send_counterparty', module: 'contracts' },
-        { name: 'Upload Signed Contract', code: 'contract:upload_signed', module: 'contracts' },
+        // ============ CORE MODULES ============
 
-        // Approvals
-        { name: 'View Legal Approvals', code: 'approval:legal:view', module: 'approvals' },
-        { name: 'Act on Legal Approvals', code: 'approval:legal:act', module: 'approvals' },
-        { name: 'Escalate Legal Approvals', code: 'approval:legal:escalate', module: 'approvals' },
-        { name: 'View Finance Approvals', code: 'approval:finance:view', module: 'approvals' },
-        { name: 'Act on Finance Approvals', code: 'approval:finance:act', module: 'approvals' },
+        // Contracts
+        { name: 'View Contracts', code: 'contract:view', module: 'Contracts', description: 'View list and details of all contracts.' },
+        { name: 'Create Contracts', code: 'contract:create', module: 'Contracts', description: 'Create new contracts from templates.' },
+        { name: 'Edit Contracts', code: 'contract:edit', module: 'Contracts', description: 'Modify contract details and draft content.' },
+        { name: 'Delete Contracts', code: 'contract:delete', module: 'Contracts', description: 'Permanently remove contracts.' },
+        { name: 'Submit for Approval', code: 'contract:submit', module: 'Contracts', description: 'Submit drafted contracts for internal review.' },
+        { name: 'Send to Counterparty', code: 'contract:send', module: 'Contracts', description: 'Email contracts to external parties for signing.' },
+        { name: 'Upload Signed Copy', code: 'contract:upload', module: 'Contracts', description: 'Upload final signed documents.' },
+        { name: 'Download Contract', code: 'contract:download', module: 'Contracts', description: 'Download contract documents as PDF/Word.' },
+        { name: 'View History & Versions', code: 'contract:history', module: 'Contracts', description: 'View audit trail and previous versions.' },
 
         // Templates
-        { name: 'View Templates', code: 'template:view', module: 'templates' },
-        { name: 'Create Template', code: 'template:create', module: 'templates' },
-        { name: 'Edit Template', code: 'template:edit', module: 'templates' },
+        { name: 'View Templates', code: 'template:view', module: 'Templates', description: 'Browse available contract templates.' },
+        { name: 'Create Templates', code: 'template:create', module: 'Templates', description: 'Design new contract templates with variables.' },
+        { name: 'Edit Templates', code: 'template:edit', module: 'Templates', description: 'Modify existing templates.' },
+        { name: 'Delete Templates', code: 'template:delete', module: 'Templates', description: 'Remove templates from the library.' },
+        { name: 'Publish Templates', code: 'template:publish', module: 'Templates', description: 'Make templates available for general use.' },
+
+        // Approvals (Workflows)
+        { name: 'Legal Review: View', code: 'approval:legal:view', module: 'Approvals', description: 'View contracts pending legal review.' },
+        { name: 'Legal Review: Act', code: 'approval:legal:act', module: 'Approvals', description: 'Approve or reject contracts as Legal.' },
+        { name: 'Finance Review: View', code: 'approval:finance:view', module: 'Approvals', description: 'View contracts pending finance review.' },
+        { name: 'Finance Review: Act', code: 'approval:finance:act', module: 'Approvals', description: 'Approve or reject contracts as Finance.' },
+
+        // ============ INTELLIGENCE ============
 
         // AI
-        { name: 'Use AI Analysis', code: 'ai:analyze', module: 'ai' },
-        { name: 'Use AI Chat', code: 'ai:chat', module: 'ai' },
+        { name: 'AI Analysis', code: 'ai:analyze', module: 'Intelligence', description: 'Run AI risk analysis on contracts.' },
+        { name: 'AI Assistant', code: 'ai:chat', module: 'Intelligence', description: 'Use AI chatbot for contract queries.' },
+        { name: 'View Analytics', code: 'analytics:view', module: 'Intelligence', description: 'Access dashboard charts and metrics.' },
 
-        // Audit & Changelogs
-        { name: 'View Audit Logs', code: 'audit:view', module: 'audit' },
-        { name: 'View Version Changelog', code: 'contract:changelog:view', module: 'contracts' },
-        { name: 'Compare Contract Versions', code: 'contract:version:compare', module: 'contracts' },
+        // ============ ADMINISTRATION ============
 
-        // Admin
-        { name: 'Manage Organizations', code: 'admin:org:manage', module: 'admin' },
-        { name: 'Manage Users', code: 'admin:user:manage', module: 'admin' },
-        { name: 'Manage Roles', code: 'admin:role:manage', module: 'admin' },
-        { name: 'Govern Templates', code: 'admin:template:govern', module: 'admin' },
-        { name: 'Toggle Features', code: 'admin:feature:toggle', module: 'admin' },
-        { name: 'View Admin Audit Logs', code: 'admin:audit:view', module: 'admin' },
+        // Identity (Users & Roles)
+        { name: 'View Users', code: 'user:view', module: 'Identity Management', description: 'View list of organization users.' },
+        { name: 'Manage Users', code: 'user:manage', module: 'Identity Management', description: 'Invite, edit, or deactivate users.' },
+        { name: 'View Roles', code: 'role:view', module: 'Identity Management', description: 'View defined roles and permissions.' },
+        { name: 'Manage Roles', code: 'role:manage', module: 'Identity Management', description: 'Create and edit custom roles.' },
+
+        // Organization
+        { name: 'View Organization', code: 'org:view', module: 'Organization', description: 'View organization details.' },
+        { name: 'Create Organization', code: 'org:create', module: 'Organization', description: 'Create new organization.' },
+        { name: 'Edit Organization', code: 'org:edit', module: 'Organization', description: 'Edit organization details.' },
+        { name: 'Delete Organization', code: 'org:delete', module: 'Organization', description: 'Deactivate or remove organization.' },
+        { name: 'Manage Organization', code: 'org:manage', module: 'Organization', description: 'Edit server settings and profile.' },
+
+        // System
+        { name: 'View Audit Logs', code: 'system:audit', module: 'System', description: 'Access global system activity logs.' },
+        { name: 'Manage System Settings', code: 'system:settings', module: 'System', description: 'Configure feature flags and security.' },
     ];
 
+    // Extract codes for the "perfect" list
+    const validCodes = permissionsData.map(p => p.code);
+
+    // 1. Delete obsolete permissions (cleanup)
+    const deleted = await prisma.permission.deleteMany({
+        where: {
+            code: { notIn: validCodes }
+        }
+    });
+    console.log(`🗑️  Cleaned up ${deleted.count} obsolete permissions`);
+
+    // 2. Upsert valid permissions
     const permissions = await Promise.all(
         permissionsData.map((p) =>
             prisma.permission.upsert({
                 where: { code: p.code },
-                update: {},
+                update: {
+                    name: p.name,
+                    module: p.module,
+                    description: p.description
+                },
                 create: p,
             }),
         ),
@@ -71,18 +101,37 @@ async function main() {
     // ============ ROLES ============
     console.log('Creating roles...');
 
-    const businessUserPerms = ['contract:view', 'contract:create', 'contract:edit', 'contract:submit', 'template:view', 'ai:analyze', 'ai:chat'];
-    const legalManagerPerms = [...businessUserPerms, 'approval:legal:view', 'approval:legal:act', 'contract:send_counterparty', 'audit:view', 'contract:changelog:view', 'contract:version:compare'];
-    const legalHeadPerms = [...legalManagerPerms, 'approval:legal:escalate'];
-    const financeManagerPerms = [...businessUserPerms, 'approval:finance:view', 'approval:finance:act', 'audit:view', 'contract:changelog:view', 'contract:version:compare'];
-    const entityAdminPerms = ['admin:user:manage', 'admin:role:manage', 'admin:template:govern', 'admin:audit:view', 'audit:view', 'contract:changelog:view'];
-    const superAdminPerms = permissionsData.map((p) => p.code);
+    // 1. Business User (NO Admin Access)
+    const businessUserPerms = [
+        'contract:view', 'contract:create', 'contract:edit', 'contract:submit', 'contract:history',
+        'template:view',
+        'ai:analyze', 'ai:chat'
+    ];
+
+    // 2. Legal Manager
+    const legalManagerPerms = [
+        'contract:view', 'contract:edit', 'contract:send', 'contract:upload', 'contract:history', 'contract:download',
+        'approval:legal:view', 'approval:legal:act',
+        'system:audit',
+        'template:view', 'template:create', 'template:edit',
+        'analytics:view'
+    ];
+
+    // 3. Organization Admin
+    const entityAdminPerms = [
+        'org:view', 'org:manage',
+        'user:view', 'user:manage',
+        'role:view', 'role:manage',
+        'template:view', 'template:create', 'template:edit', 'template:publish',
+        'system:audit', 'analytics:view', 'system:settings'
+    ];
+
+    // 4. Super Admin (God Mode)
+    const superAdminPerms = permissionsData.map((p) => p.code); // All Permissions
 
     const rolesData = [
         { name: 'Business User', code: 'BUSINESS_USER', permissions: businessUserPerms, isSystem: true },
         { name: 'Legal Manager', code: 'LEGAL_MANAGER', permissions: legalManagerPerms, isSystem: true },
-        { name: 'Legal Head', code: 'LEGAL_HEAD', permissions: legalHeadPerms, isSystem: true },
-        { name: 'Finance Manager', code: 'FINANCE_MANAGER', permissions: financeManagerPerms, isSystem: true },
         { name: 'Entity Admin', code: 'ENTITY_ADMIN', permissions: entityAdminPerms, isSystem: true },
         { name: 'Super Admin', code: 'SUPER_ADMIN', permissions: superAdminPerms, isSystem: true },
     ];
@@ -166,38 +215,43 @@ async function main() {
     ];
 
     const cescOrg = await prisma.organization.findUnique({ where: { code: 'CESC' } });
+    const rpsgOrg = await prisma.organization.findUnique({ where: { code: 'RPSG' } });
 
     for (const userData of usersData) {
         const user = await prisma.user.upsert({
             where: { email: userData.email },
-            update: {
-                // Ensure existing users also get the new password if re-seeded
-                // But typically we might want to preserve existing passwords.
-                // For demo/dev environment reset, updating hash is fine.
-            },
+            update: {},
             create: {
                 email: userData.email,
                 name: userData.name,
                 passwordHash,
-                mustChangePassword: true, // Force password change on first login
+                mustChangePassword: true,
             },
         });
 
-        // Assign role to user in CESC org
+        // Determine target org based on user role
+        // Super Admin -> RPSG (Parent)
+        // Others -> CESC (Subsidiary)
+        let targetOrg = cescOrg;
+        if (userData.role === 'SUPER_ADMIN') {
+            targetOrg = rpsgOrg;
+        }
+
         const role = await prisma.role.findUnique({ where: { code: userData.role } });
-        if (role && cescOrg) {
+
+        if (role && targetOrg) {
             await prisma.userOrganizationRole.upsert({
                 where: {
                     userId_organizationId_roleId: {
                         userId: user.id,
-                        organizationId: cescOrg.id,
+                        organizationId: targetOrg.id,
                         roleId: role.id,
                     },
                 },
                 update: {},
                 create: {
                     userId: user.id,
-                    organizationId: cescOrg.id,
+                    organizationId: targetOrg.id,
                     roleId: role.id,
                 },
             });

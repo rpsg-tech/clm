@@ -32,6 +32,7 @@ import { AiModule } from './ai/ai.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { SearchModule } from './search/search.module';
 import { RedisModule } from './redis/redis.module';
+import { StorageModule } from './common/storage/storage.module';
 import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
@@ -59,7 +60,7 @@ import { NotificationsModule } from './notifications/notifications.module';
             {
                 name: 'strict',
                 ttl: 60000,
-                limit: 20, // 20 requests per minute for sensitive endpoints
+                limit: 60, // 60 requests per minute for sensitive endpoints
             },
         ]),
 
@@ -80,9 +81,10 @@ import { NotificationsModule } from './notifications/notifications.module';
         HealthModule,
         AiModule,
         AnalyticsModule,
-        AnalyticsModule,
         SearchModule,
+
         NotificationsModule,
+        StorageModule,
     ],
     providers: [
         // Apply rate limiting globally

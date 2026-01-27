@@ -27,7 +27,9 @@ export function WizardStepper({ currentStep, steps }: WizardStepperProps) {
                                                 : 'bg-neutral-100 text-neutral-400 border border-neutral-200'
                                             }`}
                                     >
-                                        {isCompleted ? <Check size={16} strokeWidth={2.5} /> : index + 1}
+
+                                        {/* User requested to see 1-6 progress numbers explicitly */}
+                                        {index + 1}
                                     </div>
 
                                     {/* Label */}

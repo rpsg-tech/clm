@@ -110,6 +110,13 @@ export class EmailService {
             },
         });
 
+        // Verify connection configuration
+        if (!this.isDevelopment) {
+            this.transporter.verify()
+                .then(() => this.logger.log('✅ SMTP connection established successfully'))
+                .catch((err) => this.logger.error(`❌ SMTP connection failed: ${err.message}`));
+        }
+
         this.logger.log(`Email service initialized (mode: ${this.isDevelopment ? 'development' : 'production'})`);
     }
 

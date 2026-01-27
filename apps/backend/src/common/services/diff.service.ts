@@ -32,77 +32,85 @@ export class DiffService {
     /**
      * Calculate changes between two versions
      */
-    calculateChanges(
+    /**
+     * Calculate changes between two versions (Non-blocking)
+     */
+    async calculateChanges(
         previousData: Record<string, any> | null,
         currentData: Record<string, any>,
         userEmail: string,
-    ): ChangeLog {
-        if (!previousData) {
-            return {
-                summary: 'Initial version created',
-                changeCount: 0,
-                changes: [],
-                createdBy: userEmail,
-            };
-        }
-
-        const changes: (FieldChange | ContentDiff)[] = [];
-        const fieldChanges: FieldChange[] = [];
-
-        // Define fields to track
-        const trackedFields = {
-            title: 'Contract Title',
-            counterpartyName: 'Counterparty Name',
-            counterpartyEmail: 'Counterparty Email',
-            startDate: 'Start Date',
-            endDate: 'End Date',
-            value: 'Contract Value',
-        };
-
-        // Check field changes
-        for (const [field, label] of Object.entries(trackedFields)) {
-            const oldValue = previousData[field];
-            const newValue = currentData[field];
-
-            if (oldValue !== newValue) {
-                let changeType: 'added' | 'modified' | 'removed' = 'modified';
-
-                if (oldValue === null || oldValue === undefined) {
-                    changeType = 'added';
-                } else if (newValue === null || newValue === undefined) {
-                    changeType = 'removed';
+    ): Promise<ChangeLog> {
+        return new Promise((resolve) => {
+            setImmediate(() => {
+                if (!previousData) {
+                    resolve({
+                        summary: 'Initial version created',
+                        changeCount: 0,
+                        changes: [],
+                        createdBy: userEmail,
+                    });
+                    return;
                 }
 
-                fieldChanges.push({
-                    field,
-                    label,
-                    oldValue: this.formatValue(oldValue),
-                    newValue: this.formatValue(newValue),
-                    changeType,
+                const changes: (FieldChange | ContentDiff)[] = [];
+                const fieldChanges: FieldChange[] = [];
+
+                // Define fields to track
+                const trackedFields = {
+                    title: 'Contract Title',
+                    counterpartyName: 'Counterparty Name',
+                    counterpartyEmail: 'Counterparty Email',
+                    startDate: 'Start Date',
+                    endDate: 'End Date',
+                    value: 'Contract Value',
+                };
+
+                // Check field changes
+                for (const [field, label] of Object.entries(trackedFields)) {
+                    const oldValue = previousData[field];
+                    const newValue = currentData[field];
+
+                    if (oldValue !== newValue) {
+                        let changeType: 'added' | 'modified' | 'removed' = 'modified';
+
+                        if (oldValue === null || oldValue === undefined) {
+                            changeType = 'added';
+                        } else if (newValue === null || newValue === undefined) {
+                            changeType = 'removed';
+                        }
+
+                        fieldChanges.push({
+                            field,
+                            label,
+                            oldValue: this.formatValue(oldValue),
+                            newValue: this.formatValue(newValue),
+                            changeType,
+                        });
+                    }
+                }
+
+                changes.push(...fieldChanges);
+
+                // Check content changes
+                const oldContent = previousData.annexureData || previousData.content || '';
+                const newContent = currentData.annexureData || currentData.content || '';
+
+                if (oldContent !== newContent) {
+                    const contentDiff = this.calculateContentDiff(oldContent, newContent);
+                    changes.push(contentDiff);
+                }
+
+                // Generate summary
+                const summary = this.generateSummary(fieldChanges, changes);
+
+                resolve({
+                    summary,
+                    changeCount: changes.length,
+                    changes,
+                    createdBy: userEmail,
                 });
-            }
-        }
-
-        changes.push(...fieldChanges);
-
-        // Check content changes
-        const oldContent = previousData.annexureData || previousData.content || '';
-        const newContent = currentData.annexureData || currentData.content || '';
-
-        if (oldContent !== newContent) {
-            const contentDiff = this.calculateContentDiff(oldContent, newContent);
-            changes.push(contentDiff);
-        }
-
-        // Generate summary
-        const summary = this.generateSummary(fieldChanges, changes);
-
-        return {
-            summary,
-            changeCount: changes.length,
-            changes,
-            createdBy: userEmail,
-        };
+            });
+        });
     }
 
     /**

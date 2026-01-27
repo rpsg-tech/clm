@@ -62,6 +62,9 @@ async function bootstrap() {
     // Helmet security headers
     app.use(helmet());
 
+    // Cookie Parser
+    app.use(require('cookie-parser')());
+
     // CORS Configuration with validation
     const corsOrigins = configService.get('CORS_ORIGINS', '').split(',').map((o: string) => o.trim());
 

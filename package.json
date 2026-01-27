@@ -6,9 +6,8 @@
     "scripts": {
         "build": "turbo run build",
         "dev": "turbo run dev",
-        "dev:backend": "turbo run dev --filter=backend",
         "dev:user": "turbo run dev --filter=user-app",
-        "dev:admin": "turbo run dev --filter=admin-app",
+        "dev:backend": "turbo run dev --filter=backend",
         "lint": "turbo run lint",
         "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
         "check-types": "turbo run check-types",

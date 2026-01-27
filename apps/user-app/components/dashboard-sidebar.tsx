@@ -15,8 +15,11 @@ import {
     History,
     Settings,
     Plus,
-    Users
+    Users,
+    Building,
+    Shield
 } from 'lucide-react';
+import { cn } from '@repo/ui';
 
 const navigation = [
     {
@@ -53,11 +56,42 @@ const navigation = [
         name: 'Audit Log',
         href: '/dashboard/audit',
         icon: History,
-        permission: 'admin:audit:view',
+        permission: 'system:audit',
     },
+    // Admin Modules
+    {
+        name: 'Organizations',
+        href: '/dashboard/organizations',
+        icon: Building,
+        permission: 'org:view',
+    },
+    {
+        name: 'Users',
+        href: '/dashboard/users',
+        icon: Users,
+        permission: 'user:view',
+    },
+    {
+        name: 'Roles',
+        href: '/dashboard/roles',
+        icon: Shield,
+        permission: 'role:view',
+    },
+    {
+        name: 'Permissions',
+        href: '/dashboard/permissions',
+        icon: Shield,
+        permission: 'role:view', // Same permission as view roles for now
+    },
+
 ];
 
-export function DashboardSidebar() {
+
+interface DashboardSidebarProps {
+    className?: string;
+}
+
+export function DashboardSidebar({ className }: DashboardSidebarProps) {
     const pathname = usePathname();
     const { permissions } = useAuth();
     const canCreateContract = usePermission('contract:create');
@@ -67,7 +101,7 @@ export function DashboardSidebar() {
     );
 
     return (
-        <aside className="w-[280px] min-h-[calc(100vh-64px)] bg-neutral-50/50 border-r border-neutral-200 p-4 flex flex-col sticky top-[64px] h-[calc(100vh-64px)]">
+        <aside className={cn("w-[280px] min-h-[calc(100vh-64px)] bg-neutral-50/50 border-r border-neutral-200 p-4 flex flex-col sticky top-[64px] h-[calc(100vh-64px)]", className)}>
             <div className="flex-1 space-y-1">
                 <p className="px-4 text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 mt-2">
                     Menu

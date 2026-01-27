@@ -271,11 +271,11 @@ export default function ComparePage() {
                             </CardTitle>
                             <div className="flex items-center gap-4 text-sm font-mono">
                                 <span className="flex items-center gap-1 text-success">
-                                    <span className="text-xl font-bold">+{comparison.contentDiff.diffStats.additions}</span>
+                                    <span className="text-xl font-bold">+{comparison.contentDiff?.diffStats?.additions || 0}</span>
                                     <span className="hidden sm:inline">additions</span>
                                 </span>
                                 <span className="flex items-center gap-1 text-error">
-                                    <span className="text-xl font-bold">-{comparison.contentDiff.diffStats.deletions}</span>
+                                    <span className="text-xl font-bold">-{comparison.contentDiff?.diffStats?.deletions || 0}</span>
                                     <span className="hidden sm:inline">deletions</span>
                                 </span>
                             </div>
@@ -283,7 +283,7 @@ export default function ComparePage() {
                         <CardContent className="p-0">
                             <div
                                 className="prose max-w-none p-8 font-mono text-sm leading-relaxed"
-                                dangerouslySetInnerHTML={{ __html: comparison.contentDiff.htmlDiff }}
+                                dangerouslySetInnerHTML={{ __html: comparison.contentDiff?.htmlDiff || '<p class="text-neutral-500 italic">No content changes detected.</p>' }}
                             />
                         </CardContent>
                     </Card>

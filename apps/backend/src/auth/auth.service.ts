@@ -116,11 +116,34 @@ export class AuthService {
             data: { lastLoginAt: new Date() },
         });
 
-        // Determine default organization (first one)
-        const defaultOrg = userOrgs.length > 0 ? userOrgs[0] : null;
+        // Determine default organization
+        // Prioritize SUPER_ADMIN and ENTITY_ADMIN roles to ensure admin access on login
+        this.logger.log(`Found ${userOrgs.length} orgs for user ${user.email}`);
+        userOrgs.forEach(uo => this.logger.log(`- Org: ${uo.organization.name}, Role: ${uo.role.code}`));
+
+        const sortedOrgs = userOrgs.sort((a, b) => {
+            const getScore = (roleCode: string) => {
+                if (roleCode === 'SUPER_ADMIN') return 3;
+                if (roleCode === 'ENTITY_ADMIN') return 2;
+                if (roleCode === 'LEGAL_MANAGER') return 1;
+                return 0;
+            };
+            return getScore(b.role.code) - getScore(a.role.code);
+        });
+
+        const defaultOrg = sortedOrgs[0] || null;
+        this.logger.log(`Selected Default Org: ${defaultOrg?.organization.name} (${defaultOrg?.role.code})`);
+
         const defaultPermissions = defaultOrg
             ? defaultOrg.role.permissions.map(rp => rp.permission.code)
             : [];
+
+        this.logger.log(`Permissions count: ${defaultPermissions.length}`);
+        if (defaultPermissions.includes('admin:access')) {
+            this.logger.log('User has admin:access');
+        } else {
+            this.logger.log('User MISSING admin:access');
+        }
 
         // Generate tokens with unique JTI and Default Context
         const jti = nanoid();

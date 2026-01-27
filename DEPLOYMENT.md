@@ -45,7 +45,7 @@ EMAIL_FROM=noreply@clm.com
 
 ### Frontend Apps
 
-Create `.env.production` in both `apps/user-app` and `apps/admin-app`:
+Create `.env.production` in `apps/user-app`:
 
 ```env
 NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api/v1
@@ -79,10 +79,7 @@ cd apps/user-app
 npm run build
 npm run start
 
-# Admin App
-cd apps/admin-app
-npm run build
-npm run start
+
 ```
 
 ---
@@ -128,15 +125,6 @@ services:
       - NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api/v1
     ports:
       - "3000:3000"
-
-  admin-app:
-    build:
-      context: .
-      dockerfile: apps/admin-app/Dockerfile
-    environment:
-      - NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api/v1
-    ports:
-      - "3002:3002"
 
   postgres:
     image: postgres:15-alpine

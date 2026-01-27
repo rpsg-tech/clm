@@ -9,9 +9,10 @@ interface FinalReviewViewProps {
     templateName?: string;
     onSubmit: () => void;
     loading: boolean;
+    className?: string; // Allow custom styling override
 }
 
-export function FinalReviewView({ content, details, templateName, onSubmit, loading }: FinalReviewViewProps) {
+export function FinalReviewView({ content, details, templateName, onSubmit, loading, className = "" }: FinalReviewViewProps) {
     const [isDownloading, setIsDownloading] = useState(false);
 
     const handleDownload = async () => {
@@ -33,21 +34,47 @@ export function FinalReviewView({ content, details, templateName, onSubmit, load
                 scale: 2,
                 useCORS: true,
                 onclone: (clonedDoc: Document) => {
-                    // Remove shadows and complex gradients that might use oklab/oklch
                     const allElements = clonedDoc.querySelectorAll('*');
                     allElements.forEach((el) => {
-                        const style = (el as HTMLElement).style;
-                        if (style) {
-                            style.boxShadow = 'none';
-                            style.textShadow = 'none'; // Just in case
+                        const htmlEl = el as HTMLElement;
+                        const style = getComputedStyle(htmlEl);
+
+                        // 1. Remove shadows
+                        if (htmlEl.style) {
+                            htmlEl.style.boxShadow = 'none';
+                            htmlEl.style.textShadow = 'none';
+                        }
+
+                        // 2. Aggressive oklch replacement
+                        // html2canvas fails on oklch(), so we must fallback to hex.
+
+                        // Background
+                        const bg = style.backgroundColor;
+                        if (bg && bg.includes('oklch')) {
+                            htmlEl.style.backgroundColor = '#ffffff'; // Default to white for document
+                        }
+
+                        // Color
+                        const color = style.color;
+                        if (color && color.includes('oklch')) {
+                            htmlEl.style.color = '#0f172a'; // Default to neutral-900
+                        }
+
+                        // Border
+                        const border = style.borderColor;
+                        if (border && border.includes('oklch')) {
+                            htmlEl.style.borderColor = '#e2e8f0'; // Default to neutral-200
                         }
                     });
 
-                    // Specifically fix the gradient header which might use interpolation
+                    // Specifically fix the gradient header
                     const gradientHeader = clonedDoc.querySelector('.bg-gradient-to-r');
                     if (gradientHeader) {
-                        (gradientHeader as HTMLElement).classList.remove('bg-gradient-to-r', 'from-primary-500', 'via-primary-400', 'to-primary-500');
-                        (gradientHeader as HTMLElement).style.backgroundColor = '#f97316'; // Fallback to orange-500 hex
+                        const headerEl = gradientHeader as HTMLElement;
+                        headerEl.classList.remove('bg-gradient-to-r', 'from-primary-500', 'via-primary-400', 'to-primary-500');
+                        headerEl.style.background = 'none';
+                        headerEl.style.backgroundColor = '#f97316'; // orange-500
+                        headerEl.style.backgroundImage = 'none';
                     }
                 }
             },
@@ -65,7 +92,7 @@ export function FinalReviewView({ content, details, templateName, onSubmit, load
     };
 
     return (
-        <div className="flex flex-col h-full bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm animate-in fade-in zoom-in-95 duration-300">
+        <div className={`flex flex-col h-full bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm animate-in fade-in zoom-in-95 duration-300 ${className}`}>
             {/* Header */}
             <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between bg-white z-10">
                 <div className="flex items-center gap-4">

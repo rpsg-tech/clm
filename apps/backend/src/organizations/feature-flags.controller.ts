@@ -32,7 +32,7 @@ export class FeatureFlagsController {
      * Get all feature flags for current organization
      */
     @Get()
-    @Permissions('admin:org:manage')
+    @Permissions('org:manage')
     async getFlags(@CurrentUser() user: AuthenticatedUser) {
         if (!user.orgId) {
             throw new ForbiddenException('Organization context required');
@@ -60,7 +60,7 @@ export class FeatureFlagsController {
      * Toggle a feature flag for current organization
      */
     @Put(':code')
-    @Permissions('admin:org:manage')
+    @Permissions('org:manage')
     async toggleFlag(
         @CurrentUser() user: AuthenticatedUser,
         @Param('code') featureCode: string,
@@ -99,7 +99,7 @@ export class FeatureFlagsController {
      * Get available features (for UI dropdown/listing)
      */
     @Get('available')
-    @Permissions('admin:org:manage')
+    @Permissions('org:manage')
     async getAvailableFeatures() {
         return SYSTEM_FEATURES;
     }

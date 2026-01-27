@@ -4,7 +4,7 @@
  * Handles contract lifecycle operations with organization scoping.
  */
 
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Contract, ContractStatus, Prisma } from '@prisma/client';
 import { sanitizeContractContent } from '../common/utils/sanitize.util';
@@ -13,6 +13,7 @@ import { nanoid } from 'nanoid';
 import { DiffService } from '../common/services/diff.service';
 
 import { NotificationsService } from '../notifications/notifications.service';
+import { StorageService } from '../common/storage/storage.service';
 
 @Injectable()
 export class ContractsService {
@@ -22,6 +23,7 @@ export class ContractsService {
         private prisma: PrismaService,
         private emailService: EmailService,
         private notificationsService: NotificationsService,
+        private storageService: StorageService,
     ) { }
 
     // ... (existing methods until sendToCounterparty)
@@ -54,7 +56,7 @@ export class ContractsService {
                 contract.title,
                 contract.reference,
                 'RPSG Group',
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/contracts/${id}`,
+                `${process.env.FRONTEND_URL}/contracts/${id}`,
             );
         }
 
@@ -62,15 +64,31 @@ export class ContractsService {
     }
 
     /**
-     * Upload signed contract (simulated)
+     * Step 1: Get Presigned URL for uploading signed contract
      */
-    async uploadSignedContract(id: string, organizationId: string, filename: string) {
+    async getSignedContractUploadUrl(id: string, organizationId: string, filename: string, contentType: string) {
         const contract = await this.findById(id, organizationId);
 
-        // Can only upload if status is SENT_TO_COUNTERPARTY
         if (contract.status !== ContractStatus.SENT_TO_COUNTERPARTY) {
             throw new ForbiddenException('Contract must be in SENT_TO_COUNTERPARTY status');
         }
+
+        const bucketPath = `organizations/${organizationId}/contracts/${id}/signed`;
+        return this.storageService.getUploadUrl(bucketPath, filename, contentType);
+    }
+
+    /**
+     * Step 2: Confirm upload and activate contract
+     */
+    async confirmSignedContractUpload(id: string, organizationId: string, key: string) {
+        const contract = await this.findById(id, organizationId);
+
+        if (contract.status !== ContractStatus.SENT_TO_COUNTERPARTY) {
+            throw new ForbiddenException('Contract must be in SENT_TO_COUNTERPARTY status');
+        }
+
+        // Verify file exists (optional, but good practice)
+        // await this.storageService.headObject(key); 
 
         // Update status to ACTIVE
         const updated = await this.prisma.contract.update({
@@ -78,6 +96,12 @@ export class ContractsService {
             data: {
                 status: ContractStatus.ACTIVE,
                 signedAt: new Date(),
+                // Store the S3 key reference if schema supported it. 
+                // For now, we assume implicit path or add metadata to fieldData
+                fieldData: {
+                    ...(contract.fieldData as Prisma.JsonObject),
+                    signedContractKey: key,
+                } as Prisma.InputJsonValue,
             },
         });
 
@@ -91,7 +115,7 @@ export class ContractsService {
                     contractTitle: contract.title,
                     contractReference: contract.reference,
                     signedDate: new Date().toLocaleDateString(),
-                    contractUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/contracts/${id}`,
+                    contractUrl: `${process.env.FRONTEND_URL}/dashboard/contracts/${id}`,
                 },
             });
         }
@@ -165,8 +189,26 @@ export class ContractsService {
                 },
             });
 
+            // Validate dates
+            if (data.startDate) {
+                const startDate = new Date(data.startDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                if (startDate < today) {
+                    throw new BadRequestException('Start date cannot be in the past');
+                }
+
+                if (data.endDate) {
+                    const endDate = new Date(data.endDate);
+                    if (endDate <= startDate) {
+                        throw new BadRequestException('End date must be after start date');
+                    }
+                }
+            }
+
             // Create initial version with changelog
-            const changeLog = this.diffService.calculateChanges(null, data, user?.email || 'system');
+            const changeLog = await this.diffService.calculateChanges(null, data, user?.email || 'system');
 
             await tx.contractVersion.create({
                 data: {
@@ -185,41 +227,63 @@ export class ContractsService {
     /**
      * Find contracts by organization
      */
+    /**
+     * Find contracts by organization
+     */
     async findByOrganization(
         organizationId: string,
         params?: {
+            page?: number;
+            limit?: number;
+            search?: string;
             status?: ContractStatus;
             createdByUserId?: string;
-            skip?: number;
-            take?: number;
+            expiringDays?: number;
         },
     ) {
-        const [contracts, total] = await Promise.all([
+        const page = params?.page || 1;
+        const limit = params?.limit || 10;
+        const skip = (page - 1) * limit;
+
+        const where: Prisma.ContractWhereInput = {
+            organizationId,
+            status: params?.status,
+            createdByUserId: params?.createdByUserId,
+            ...(params?.search && {
+                OR: [
+                    { title: { contains: params.search, mode: 'insensitive' } },
+                    { reference: { contains: params.search, mode: 'insensitive' } },
+                    { counterpartyName: { contains: params.search, mode: 'insensitive' } },
+                ],
+            }),
+        };
+
+        const [data, total] = await Promise.all([
             this.prisma.contract.findMany({
-                where: {
-                    organizationId,
-                    status: params?.status,
-                    createdByUserId: params?.createdByUserId,
-                },
+                where,
                 include: {
                     template: { select: { name: true, category: true } },
                     createdByUser: { select: { name: true, email: true } },
                     approvals: true,
                 },
                 orderBy: { createdAt: 'desc' },
-                skip: params?.skip,
-                take: params?.take,
+                skip,
+                take: limit,
             }),
-            this.prisma.contract.count({
-                where: {
-                    organizationId,
-                    status: params?.status,
-                    createdByUserId: params?.createdByUserId,
-                },
-            }),
+            this.prisma.contract.count({ where }),
         ]);
 
-        return { contracts, total };
+        return {
+            data,
+            meta: {
+                total,
+                lastPage: Math.ceil(total / limit),
+                currentPage: page,
+                perPage: limit,
+                prev: page > 1 ? page - 1 : null,
+                next: page < Math.ceil(total / limit) ? page + 1 : null,
+            },
+        };
     }
 
     /**
@@ -328,6 +392,26 @@ export class ContractsService {
                 },
             });
 
+            // Validate dates for update
+            if (data.startDate) {
+                const startDate = new Date(data.startDate);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                // For updates, we might need to be more careful if strictly enforcing "no past dates"
+                // But generally, moving a start date to the past is weird for a new/draft contract.
+                if (startDate < today) {
+                    throw new BadRequestException('Start date cannot be in the past');
+                }
+
+                if (data.endDate) {
+                    const endDate = new Date(data.endDate);
+                    if (endDate <= startDate) {
+                        throw new BadRequestException('End date must be after start date');
+                    }
+                }
+            }
+
             // Create new version with changelog if content changed
             if (sanitizedContent) {
                 const previousData = {
@@ -343,7 +427,7 @@ export class ContractsService {
                     annexureData: sanitizedContent,
                 };
 
-                const changeLog = this.diffService.calculateChanges(
+                const changeLog = await this.diffService.calculateChanges(
                     previousData,
                     newData,
                     user?.email || 'system',
@@ -399,7 +483,7 @@ export class ContractsService {
                 contract.reference,
                 'LEGAL',
                 contract.createdByUser?.name || 'System',
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/approvals/legal`,
+                `${process.env.FRONTEND_URL}/dashboard/approvals/legal`,
             );
 
             await this.emailService.sendApprovalRequest(
@@ -408,7 +492,7 @@ export class ContractsService {
                 contract.reference,
                 'FINANCE',
                 contract.createdByUser?.name || 'System',
-                `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/approvals/finance`,
+                `${process.env.FRONTEND_URL}/dashboard/approvals/finance`,
             );
 
             // Notify Legal Approvers

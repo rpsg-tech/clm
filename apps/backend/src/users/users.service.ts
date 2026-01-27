@@ -18,44 +18,104 @@ export class UsersService {
     ) { }
 
     /**
-     * Find users by organization
+     * Find users by organization (Paginated)
      */
-    async findAllByOrganization(organizationId: string) {
-        return this.prisma.user.findMany({
-            where: {
-                organizationRoles: {
-                    some: { organizationId, isActive: true },
-                },
+    async findAllByOrganization(organizationId: string, params: { page?: number; limit?: number; search?: string }) {
+        const page = params.page || 1;
+        const limit = params.limit || 10;
+        const skip = (page - 1) * limit;
+
+        const where: Prisma.UserWhereInput = {
+            organizationRoles: {
+                some: { organizationId, isActive: true },
             },
-            include: {
-                organizationRoles: {
-                    where: { isActive: true }, // Get ALL orgs, not just current one
-                    include: {
-                        role: true,
-                        organization: true  // Include organization details
+            ...(params.search && {
+                OR: [
+                    { name: { contains: params.search, mode: 'insensitive' } },
+                    { email: { contains: params.search, mode: 'insensitive' } },
+                ],
+            }),
+        };
+
+        const [total, data] = await Promise.all([
+            this.prisma.user.count({ where }),
+            this.prisma.user.findMany({
+                where,
+                skip,
+                take: limit,
+                include: {
+                    organizationRoles: {
+                        where: { isActive: true },
+                        include: {
+                            role: true,
+                            organization: true
+                        },
                     },
                 },
+                orderBy: { name: 'asc' },
+            }),
+        ]);
+
+        return {
+            data,
+            meta: {
+                total,
+                lastPage: Math.ceil(total / limit),
+                currentPage: page,
+                perPage: limit,
+                prev: page > 1 ? page - 1 : null,
+                next: page < Math.ceil(total / limit) ? page + 1 : null,
             },
-            orderBy: { name: 'asc' },
-        });
+        };
     }
 
     /**
-     * Find ALL users (Global Admin)
+     * Find ALL users (Global Admin) - Paginated
      */
-    async findAll() {
-        return this.prisma.user.findMany({
-            include: {
-                organizationRoles: {
-                    where: { isActive: true },
-                    include: {
-                        role: true,
-                        organization: true
+    async findAll(params: { page?: number; limit?: number; search?: string }) {
+        const page = params.page || 1;
+        const limit = params.limit || 10;
+        const skip = (page - 1) * limit;
+
+        const where: Prisma.UserWhereInput = {
+            ...(params.search && {
+                OR: [
+                    { name: { contains: params.search, mode: 'insensitive' } },
+                    { email: { contains: params.search, mode: 'insensitive' } },
+                ],
+            }),
+        };
+
+        const [total, data] = await Promise.all([
+            this.prisma.user.count({ where }),
+            this.prisma.user.findMany({
+                where,
+                skip,
+                take: limit,
+                include: {
+                    organizationRoles: {
+                        where: { isActive: true },
+                        include: {
+                            role: true,
+                            organization: true
+                        },
                     },
                 },
+                orderBy: { name: 'asc' },
+            }),
+        ]);
+
+        return {
+            data,
+            meta: {
+                total,
+                lastPage: Math.ceil(total / limit),
+                currentPage: page,
+                perPage: limit,
+                prev: page > 1 ? page - 1 : null,
+                next: page < Math.ceil(total / limit) ? page + 1 : null,
             },
-            orderBy: { name: 'asc' },
-        });
+        };
     }
 
     /**

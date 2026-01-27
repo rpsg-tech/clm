@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { AlertCircle, RefreshCcw } from 'lucide-react';
+import { Button } from '@repo/ui';
+import { AlertTriangle, RefreshCcw, Home } from 'lucide-react';
 
 export default function Error({
     error,
@@ -11,28 +12,50 @@ export default function Error({
     reset: () => void;
 }) {
     useEffect(() => {
-        // Find a way to log this error to an error reporting service
-        console.error(error);
+        // Log the error to an error reporting service
+        console.error('Runtime Error:', error);
     }, [error]);
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
-            <div className="w-24 h-24 bg-red-50 rounded-3xl flex items-center justify-center mb-6 shadow-sm border border-red-100">
-                <AlertCircle className="w-12 h-12 text-red-500" />
+        <div className="min-h-screen bg-white flex items-center justify-center p-4">
+            <div className="max-w-md w-full text-center space-y-8 animate-in fade-in zoom-in-95 duration-300">
+
+                <div className="w-20 h-20 bg-rose-50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-rose-100">
+                    <AlertTriangle className="w-10 h-10 text-rose-500" />
+                </div>
+
+                <div className="space-y-3">
+                    <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Something went wrong</h2>
+                    <p className="text-slate-500">
+                        We encountered an unexpected error while processing your request. Our engineering team has been notified.
+                    </p>
+                    {error.digest && (
+                        <p className="text-xs font-mono text-slate-400 bg-slate-50 p-2 rounded border border-slate-100 inline-block mt-2">
+                            Reference ID: {error.digest}
+                        </p>
+                    )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                    <Button
+                        onClick={() => reset()}
+                        className="bg-slate-900 text-white hover:bg-slate-800 gap-2 min-w-[140px]"
+                        size="lg"
+                    >
+                        <RefreshCcw className="w-4 h-4" />
+                        Try Again
+                    </Button>
+                    <Button
+                        onClick={() => window.location.href = '/dashboard'}
+                        variant="outline"
+                        className="gap-2 min-w-[140px]"
+                        size="lg"
+                    >
+                        <Home className="w-4 h-4" />
+                        Dashboard
+                    </Button>
+                </div>
             </div>
-
-            <h1 className="text-3xl font-bold text-neutral-900 tracking-tight mb-2">Something went wrong</h1>
-            <p className="text-neutral-500 max-w-md mb-8">
-                We encountered an unexpected error while processing your request. Please try again.
-            </p>
-
-            <button
-                onClick={reset}
-                className="inline-flex items-center justify-center rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-neutral-200 bg-white shadow-sm hover:bg-neutral-100 h-9 px-4 py-2 pl-4 pr-5 text-neutral-900"
-            >
-                <RefreshCcw className="w-4 h-4 mr-2" />
-                Try Again
-            </button>
         </div>
     );
 }
