@@ -51,18 +51,22 @@ import { NotificationsModule } from './notifications/notifications.module';
         RedisModule,
 
         // Rate Limiting
-        ThrottlerModule.forRoot([
-            {
-                name: 'default',
-                ttl: 60000, // 1 minute
-                limit: 1000, // 1000 requests per minute
-            },
-            {
-                name: 'strict',
-                ttl: 60000,
-                limit: 60, // 60 requests per minute for sensitive endpoints
-            },
-        ]),
+        // Rate Limiting
+        ThrottlerModule.forRoot({
+            throttlers: [
+                {
+                    name: 'default',
+                    ttl: 60000, // 1 minute
+                    limit: 1000, // 1000 requests per minute
+                },
+                {
+                    name: 'strict',
+                    ttl: 60000,
+                    limit: 60, // 60 requests per minute for sensitive endpoints
+                },
+            ],
+            errorMessage: 'Too many requests, please try again later.',
+        }),
 
         // Core
         PrismaModule,
