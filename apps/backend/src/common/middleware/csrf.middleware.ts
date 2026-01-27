@@ -12,13 +12,13 @@
  * - OWASP CSRF Prevention Cheat Sheet
  * - Double-Submit Cookie Pattern
  * - SameSite cookie attribute for additional protection
- * 
+ *
  * @see https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
  */
 
-import { Injectable, NestMiddleware, ForbiddenException } from '@nestjs/common';
+import { Injectable, NestMiddleware, ForbiddenException, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { nanoid } from 'nanoid';
+import { randomBytes } from 'crypto';
 
 const CSRF_COOKIE_NAME = 'XSRF-TOKEN';
 const CSRF_HEADER_NAME = 'x-csrf-token';
@@ -26,6 +26,8 @@ const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 
 @Injectable()
 export class CsrfMiddleware implements NestMiddleware {
+    private readonly logger = new Logger(CsrfMiddleware.name);
+
     use(req: Request, res: Response, next: NextFunction) {
         // Skip CSRF for safe methods (idempotent, no state change)
         if (SAFE_METHODS.includes(req.method)) {
@@ -57,7 +59,7 @@ export class CsrfMiddleware implements NestMiddleware {
         }
 
         // Token should be valid format (basic check)
-        if (!this.isValidToken(headerToken)) {
+        if (!this.validateTokenFormat(headerToken)) {
             throw new ForbiddenException('Invalid CSRF token format.');
         }
 
@@ -68,11 +70,14 @@ export class CsrfMiddleware implements NestMiddleware {
     /**
      * Ensure CSRF cookie is set on the response
      */
+    /**
+     * Ensure CSRF cookie is set on the response
+     */
     private ensureCsrfCookie(req: Request, res: Response): void {
         const existingToken = req.cookies[CSRF_COOKIE_NAME];
 
-        if (!existingToken || !this.isValidToken(existingToken)) {
-            const newToken = this.generateCsrfToken();
+        if (!existingToken || !this.validateTokenFormat(existingToken)) {
+            const newToken = this.generateToken();
 
             res.cookie(CSRF_COOKIE_NAME, newToken, {
                 httpOnly: false, // Must be readable by JavaScript
@@ -87,15 +92,15 @@ export class CsrfMiddleware implements NestMiddleware {
     /**
      * Generate cryptographically random CSRF token
      */
-    private generateCsrfToken(): string {
-        return nanoid(32);
+    private generateToken(): string {
+        return randomBytes(16).toString('hex'); // 16 bytes = 32 hex characters
     }
 
     /**
      * Validate token format
      */
-    private isValidToken(token: string): boolean {
-        // nanoid tokens are alphanumeric, length 32
-        return /^[A-Za-z0-9_-]{32}$/.test(token);
+    private validateTokenFormat(token: string): boolean {
+        // Hex tokens are alphanumeric, length 32
+        return /^[a-f0-9]{32}$/i.test(token);
     }
 }

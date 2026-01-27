@@ -3,7 +3,7 @@ import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common
 import { ConfigService } from '@nestjs/config';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { nanoid } from 'nanoid';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class StorageService {
@@ -44,7 +44,7 @@ export class StorageService {
     ): Promise<{ uploadUrl: string; key: string; publicUrl: string }> {
         try {
             // Sanitize and unique filename
-            const uniqueId = nanoid(10);
+            const uniqueId = randomBytes(5).toString('hex'); // 10 chars
             const sanitizedName = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
             const key = `${folder}/${uniqueId}-${sanitizedName}`;
 
