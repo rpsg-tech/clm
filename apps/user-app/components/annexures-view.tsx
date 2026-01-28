@@ -2,10 +2,7 @@
 
 import { useState, useRef } from "react";
 import {
-    Paperclip, Upload, X, File as FileIcon,
-    Bold, Italic, Link as LinkIcon, Image as ImageIcon,
-    List, Table as TableIcon, AlignLeft, AlignCenter, AlignRight,
-    Loader2, Plus, Trash2, ChevronDown, ChevronUp
+    List, Plus, Trash2, ChevronDown, ChevronUp
 } from "lucide-react";
 import { ContractEditorView } from "@/components/contract-editor-view";
 
@@ -26,184 +23,126 @@ interface AnnexuresViewProps {
 }
 
 export function AnnexuresView({ annexures, onAnnexureChange, onUpdate, onAdd, onRemove, onTitleChange }: AnnexuresViewProps) {
-    const [files, setFiles] = useState<File[]>([]);
-    const [activeAnnexureId, setActiveAnnexureId] = useState<string>("annex-a");
-    const [isDragging, setIsDragging] = useState(false);
+    // Unused file upload state removed
 
-    // Find active annexure from props
-    const activeAnnexure = annexures.find(a => a.id === activeAnnexureId) || annexures[0];
+    const [activeAnnexureId, setActiveAnnexureId] = useState<string>(annexures[0]?.id || "");
 
-    // Local handler to update parent state
-    const handleContentChange = (newContent: string) => {
-        onAnnexureChange(activeAnnexureId, newContent);
-    };
-
-    const handleAnnexureClick = (annexure: AnnexureItem) => {
-        setActiveAnnexureId(annexure.id);
-        // Content sync is handled by parent state now
-    };
-
-    // File Upload Handlers (preserved)
-    const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
-    const handleDragLeave = () => { setIsDragging(false); };
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(false);
-        if (e.dataTransfer.files?.length > 0) {
-            const newFiles = [...files, ...Array.from(e.dataTransfer.files)];
-            setFiles(newFiles);
-            onUpdate(newFiles);
-        }
-    };
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files?.length) {
-            const newFiles = [...files, ...Array.from(e.target.files)];
-            setFiles(newFiles);
-            onUpdate(newFiles);
-        }
-    };
-    const removeFile = (index: number) => {
-        const newFiles = files.filter((_, i) => i !== index);
-        setFiles(newFiles);
-        onUpdate(newFiles);
-    };
-
-    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set([annexures[0]?.id]));
-
-    // Auto-expand new items
-    const prevCount = useRef(annexures.length);
-    if (annexures.length > prevCount.current) {
-        const newId = annexures[annexures.length - 1].id;
-        if (!expandedIds.has(newId)) {
-            const newSet = new Set(expandedIds);
-            newSet.add(newId);
-            setExpandedIds(newSet);
-        }
-        prevCount.current = annexures.length;
+    // Sync active ID if annexures change and active is gone
+    if (activeAnnexureId && !annexures.find(a => a.id === activeAnnexureId) && annexures.length > 0) {
+        setActiveAnnexureId(annexures[0].id);
     }
 
-    const toggleExpand = (id: string) => {
-        const newSet = new Set(expandedIds);
-        if (newSet.has(id)) {
-            newSet.delete(id);
-        } else {
-            newSet.add(id);
-        }
-        setExpandedIds(newSet);
-    };
+    const activeAnnexure = annexures.find(a => a.id === activeAnnexureId);
 
     return (
-        <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
-            {/* Annexure List */}
-            <div className="space-y-8">
-                {annexures.map((annexure, index) => {
-                    const isExpanded = expandedIds.has(annexure.id);
-                    return (
-                        <div key={annexure.id} className="border border-slate-200 rounded-xl overflow-hidden group hover:border-orange-200 transition-colors bg-white shadow-sm">
-                            {/* Header / Title Edit */}
-                            <div
-                                className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
-                                onClick={() => toggleExpand(annexure.id)}
-                            >
-                                <div className="flex items-center gap-4 flex-1">
-                                    <div className="flex items-center gap-3">
-                                        <button className="text-slate-400 hover:text-slate-600 transition-colors">
-                                            {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                                        </button>
-                                        <span className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-500 shadow-sm">
-                                            {index + 1}
-                                        </span>
-                                    </div>
-                                    <div className="flex-1" onClick={(e) => e.stopPropagation()}>
-                                        <input
-                                            type="text"
-                                            value={annexure.title}
-                                            onChange={(e) => onTitleChange(annexure.id, e.target.value)}
-                                            className="bg-transparent border-none p-0 text-base font-bold text-slate-900 focus:ring-0 placeholder-slate-400 w-full"
-                                            placeholder="Annexure Title (e.g. Scope of Work)"
-                                        />
+        <div className="h-full flex flex-col animate-in fade-in zoom-in-95 duration-300 border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+            <div className="flex-1 overflow-hidden grid grid-cols-12 divide-x divide-slate-100">
+                {/* Sidebar: List of Annexures */}
+                <div className="col-span-3 bg-slate-50 flex flex-col min-w-0">
+                    <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white sticky top-0 z-10">
+                        <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            Annexures <span className="text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded text-xs">{annexures.length}</span>
+                        </h3>
+                        <button
+                            onClick={onAdd}
+                            className="p-1.5 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-lg transition-colors"
+                            title="Add New Annexure"
+                        >
+                            <Plus size={16} />
+                        </button>
+                    </div>
 
-                                    </div>
+                    <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                        {annexures.map((annexure, index) => (
+                            <div
+                                key={annexure.id}
+                                onClick={() => setActiveAnnexureId(annexure.id)}
+                                className={`
+                                    group flex items-start gap-3 p-3 rounded-xl cursor-pointer border transition-all duration-200
+                                    ${activeAnnexureId === annexure.id
+                                        ? 'bg-white border-orange-200 shadow-sm ring-1 ring-orange-100'
+                                        : 'bg-transparent border-transparent hover:bg-white hover:border-slate-200 hover:shadow-sm'}
+                                `}
+                            >
+                                <span className={`
+                                    flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold border transition-colors
+                                    ${activeAnnexureId === annexure.id
+                                        ? 'bg-orange-50 border-orange-100 text-orange-700'
+                                        : 'bg-white border-slate-200 text-slate-400 group-hover:border-slate-300'}
+                                `}>
+                                    {index + 1}
+                                </span>
+
+                                <div className="flex-1 min-w-0">
+                                    <h4 className={`text-sm font-semibold truncate ${activeAnnexureId === annexure.id ? 'text-slate-900' : 'text-slate-600'}`}>
+                                        {annexure.title || "Untitled Annexure"}
+                                    </h4>
+                                    <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                                        ID: {annexure.id.slice(-6)}
+                                    </p>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    {annexures.length > 1 && (
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); onRemove(annexure.id); }}
-                                            className="text-slate-400 hover:text-rose-500 p-2 hover:bg-rose-50 rounded-lg transition-colors"
-                                            title="Remove Annexure"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    )}
-                                </div>
+
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onRemove(annexure.id);
+                                    }}
+                                    className={`
+                                        opacity-0 group-hover:opacity-100 p-1.5 rounded-lg transition-all
+                                        ${activeAnnexureId === annexure.id ? 'text-slate-400 hover:text-rose-500 hover:bg-rose-50' : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50'}
+                                    `}
+                                    disabled={annexures.length <= 1}
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+                        ))}
+
+                        <button
+                            onClick={onAdd}
+                            className="w-full py-3 border border-dashed border-slate-200 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50/50 transition-all mt-4"
+                        >
+                            <Plus size={14} /> Add Another
+                        </button>
+                    </div>
+                </div>
+
+                {/* Main: Editor Area */}
+                <div className="col-span-9 flex flex-col bg-white min-w-0 min-h-0">
+                    {activeAnnexure ? (
+                        <>
+                            <div className="px-8 py-6 border-b border-slate-100 bg-white">
+                                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Annexure Title</label>
+                                <input
+                                    type="text"
+                                    value={activeAnnexure.title}
+                                    onChange={(e) => onTitleChange(activeAnnexure.id, e.target.value)}
+                                    className="text-2xl font-bold text-slate-900 placeholder-slate-300 border-none p-0 w-full focus:ring-0 bg-transparent"
+                                    placeholder="Enter Title..."
+                                />
                             </div>
 
-                            {/* Editor Area - Collapsible */}
-                            {isExpanded && (
-                                <div className="p-0 animate-in slide-in-from-top-2 duration-200">
-                                    <ContractEditorView
-                                        content={annexure.content}
-                                        onChange={(val: string) => onAnnexureChange(annexure.id, val)}
-                                        className="border-none shadow-none rounded-none min-h-[400px]"
-                                        toolbarSimple={true}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
-
-                {/* Add Button */}
-                <button
-                    onClick={onAdd}
-                    className="w-full py-6 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center gap-3 text-slate-500 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50/50 transition-all group font-medium text-base"
-                >
-                    <Plus size={20} className="group-hover:scale-110 transition-transform" />
-                    Add New Annexure
-                </button>
-            </div>
-
-            {/* Global Attachments */}
-            <div className="pt-6 border-t border-slate-100">
-                <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                    <Paperclip size={16} className="text-orange-600" />
-                    Additional Attachments
-                </h3>
-
-                <div className="space-y-4">
-                    {/* File List */}
-                    {files.length > 0 && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {files.map((file, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm group hover:border-orange-200 transition-colors">
-                                    <div className="flex items-center gap-3 overflow-hidden">
-                                        <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-slate-100 text-slate-400">
-                                            <FileIcon size={14} />
-                                        </div>
-                                        <span className="truncate text-slate-700 font-medium">{file.name}</span>
-                                    </div>
-                                    <button onClick={(e) => { e.stopPropagation(); removeFile(idx); }} className="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-lg transition-colors">
-                                        <X size={14} />
-                                    </button>
-                                </div>
-                            ))}
+                            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                                <ContractEditorView
+                                    content={activeAnnexure.content}
+                                    onChange={(val: string) => onAnnexureChange(activeAnnexure.id, val)}
+                                    className="border-none shadow-none rounded-none h-full"
+                                    toolbarSimple={true}
+                                />
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center text-slate-300 p-8 text-center">
+                            <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-4">
+                                <List size={32} />
+                            </div>
+                            <h3 className="text-lg font-bold text-slate-900">No Annexure Selected</h3>
+                            <p className="text-sm text-slate-500 max-w-xs mt-2">Select an annexure from the sidebar or create a new one to start editing.</p>
+                            <button onClick={onAdd} className="mt-6 px-4 py-2 bg-slate-900 text-white text-xs font-bold uppercase rounded-lg hover:bg-orange-600 transition-colors">
+                                Create New Annexure
+                            </button>
                         </div>
                     )}
-
-                    <label
-                        htmlFor="hidden-file-upload"
-                        className="w-full border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-slate-400 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all cursor-pointer group"
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                    >
-                        <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-3 group-hover:bg-orange-100 group-hover:text-orange-600 transition-colors">
-                            <Upload size={20} />
-                        </div>
-                        <span className="text-sm font-bold">Click to upload or drag and drop</span>
-                        <span className="text-xs text-slate-400 mt-1">PDF, DOCX, IMG up to 10MB</span>
-                    </label>
-                    <input type="file" id="hidden-file-upload" className="hidden" multiple onChange={handleFileSelect} />
                 </div>
             </div>
         </div>

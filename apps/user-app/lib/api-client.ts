@@ -272,12 +272,12 @@ export const api = {
     get: (id: string) => authFetch(`/templates/${id}`),
 
     // Admin Methods
-    create: (data: { name: string; code: string; category: string; description?: string; baseContent: string; isGlobal?: boolean }) =>
+    create: (data: { name: string; code: string; category: string; description?: string; baseContent: string; isGlobal?: boolean; annexures?: any[] }) =>
       authFetch<any>('/admin/templates', {
         method: 'POST',
         body: JSON.stringify(data)
       }),
-    update: (id: string, data: { name?: string; description?: string; baseContent?: string; isGlobal?: boolean; isActive?: boolean }) =>
+    update: (id: string, data: { name?: string; description?: string; baseContent?: string; isGlobal?: boolean; isActive?: boolean; annexures?: any[] }) =>
       authFetch<any>(`/admin/templates/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data)

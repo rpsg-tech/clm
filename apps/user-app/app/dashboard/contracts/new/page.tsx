@@ -14,6 +14,7 @@ import { api } from "@/lib/api-client";
 import Link from "next/link";
 import { Template } from "@repo/types";
 import { Button, Card, Badge, Spinner } from '@repo/ui';
+import { useToast } from "@/lib/toast-context";
 
 // --- Contract Details Form Component (Step 3) ---
 interface ContractDetailsFormProps {
@@ -123,7 +124,6 @@ function ContractDetailsForm({ data, onChange, templateName, onError }: Contract
             </div>
 
             <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl p-8 space-y-8">
-                {/* Basic Info Group */}
                 {/* Basic Info Group */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
@@ -247,6 +247,7 @@ const INITIAL_ANNEXURES: AnnexureItem[] = [
 export default function NewContractPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const { success: showSuccess, error: showError } = useToast();
     const [currentStep, setCurrentStep] = useState(0);
     const [loading, setLoading] = useState(false);
     const [stepError, setStepError] = useState(false);
@@ -297,10 +298,20 @@ export default function NewContractPage() {
         }
     }, [templates, searchParams, selectedTemplate]);
 
-    // Initialize editor content when template is selected
+    // Initialize editor content and annexures when template is selected
     useEffect(() => {
-        if (selectedTemplate && !editorContent) {
-            setEditorContent(selectedTemplate.baseContent || "");
+        if (selectedTemplate) {
+            if (!editorContent) {
+                setEditorContent(selectedTemplate.baseContent || "");
+            }
+            // Auto-populate annexures from template
+            if ((selectedTemplate as any).annexures?.length > 0) {
+                setAnnexures((selectedTemplate as any).annexures.map((a: any) => ({
+                    id: a.id || `annex-${Math.random().toString(36).substr(2, 9)}`,
+                    title: a.title || a.name,
+                    content: a.content || ""
+                })));
+            }
         }
     }, [selectedTemplate]);
 
@@ -359,9 +370,7 @@ export default function NewContractPage() {
             finalHtml += "<h2 style='text-align:center; text-transform: uppercase; margin-bottom: 2rem; margin-top: 2rem;'>ANNEXURES</h2>";
 
             annexures.forEach((annexure, index) => {
-                // Start each specific annexure on a new page if it's not the first one (or even if it is, relative to main header?)
-                // Generally, "ANNEXURES" header is on a page, then maybe the first annexure starts.
-                // Let's keep them flowing after the header, but break BETWEEN annexures.
+                // Keep them flowing after the header, but break BETWEEN annexures.
 
                 if (index > 0) {
                     finalHtml += '<div style="page-break-before: always; break-before: page; height: 1px; display: block;"></div>';
@@ -407,13 +416,15 @@ export default function NewContractPage() {
 
             const newContract = await api.contracts.create(payload as any);
 
+            showSuccess("Contract Created", "Redirecting to contract view...");
+
             // @ts-ignore
             router.push(`/dashboard/contracts/${newContract.id || newContract.reference}`);
 
         } catch (error: any) {
             console.error("Failed to create contract:", error);
             const message = error.response?.data?.message || error.message || "Unknown error";
-            alert(`Failed to create contract: ${Array.isArray(message) ? message.join(', ') : message}`);
+            showError("Failed to create contract", Array.isArray(message) ? message.join(', ') : message);
         } finally {
             setLoading(false);
         }
@@ -437,6 +448,7 @@ export default function NewContractPage() {
                                     onChange={setEditorContent}
                                     onContinue={goNext}
                                     className="border-0 shadow-none rounded-none"
+                                    readOnly={true}
                                 />
                                 {/* Toggle Button when closed */}
                                 {!showAiPanel && (

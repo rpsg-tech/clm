@@ -6,6 +6,7 @@ const nextConfig = {
     transpilePackages: ['@repo/ui', '@repo/types'],
     experimental: {
         optimizePackageImports: ['@repo/ui'],
+        serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium'],
     },
     async rewrites() {
         return [

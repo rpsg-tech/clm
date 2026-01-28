@@ -105,11 +105,7 @@ export default function TemplatesPage() {
     const filteredTemplates = templates; // Server side filtered
 
     const handleEditClick = (template: Template) => {
-        setSelectedTemplate(template);
-        setName(template.name);
-        setDescription(template.description || '');
-        setIsActive(template.isActive);
-        setShowEditModal(true);
+        router.push(`/dashboard/templates/${template.id}/edit`);
     };
 
     const handleUpdate = async (e: React.FormEvent) => {
@@ -174,10 +170,12 @@ export default function TemplatesPage() {
                     </div>
 
                     {canManageTemplates && (
-                        <Button className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl px-5 h-10 shadow-lg shadow-orange-600/20 border-none transition-all font-bold tracking-tight text-xs flex items-center gap-2 shrink-0">
-                            <Plus className="w-4 h-4" />
-                            New Template
-                        </Button>
+                        <Link href="/dashboard/templates/create">
+                            <Button className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl px-5 h-10 shadow-lg shadow-orange-600/20 border-none transition-all font-bold tracking-tight text-xs flex items-center gap-2 shrink-0">
+                                <Plus className="w-4 h-4" />
+                                New Template
+                            </Button>
+                        </Link>
                     )}
                 </div>
             </div>
@@ -352,6 +350,22 @@ export default function TemplatesPage() {
                                             <ArrowRight className="w-4 h-4 ml-1" />
                                         </div>
                                     </div>
+
+                                    {canManageTemplates && (
+                                        <div className="absolute top-4 right-4 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Button
+                                                size="icon"
+                                                variant="secondary"
+                                                className="h-8 w-8 shadow-sm bg-white/90 hover:bg-white text-slate-500 hover:text-primary"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEditClick(template);
+                                                }}
+                                            >
+                                                <Edit3 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -359,7 +373,6 @@ export default function TemplatesPage() {
                 </div>
             )}
 
-            {/* Edit Modal (Admin Only) */}
             {meta && (
                 <div className="mt-8">
                     <Pagination
@@ -367,49 +380,6 @@ export default function TemplatesPage() {
                         onPageChange={setPage}
                         isLoading={isLoading}
                     />
-                </div>
-            )}
-
-            {/* Edit Modal (Admin Only) */}
-            {showEditModal && selectedTemplate && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
-                    <Card className="w-full max-w-lg bg-white border-transparent shadow-2xl rounded-2xl overflow-hidden p-0">
-                        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                            <h3 className="text-lg font-bold text-slate-900">Edit Template</h3>
-                            <p className="text-slate-500 text-sm">Update configuration for {selectedTemplate.name}.</p>
-                        </div>
-                        <form onSubmit={handleUpdate} className="p-6 space-y-6">
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Name</label>
-                                    <input required className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all font-medium text-sm" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Description</label>
-                                    <textarea className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all font-medium text-sm h-32 resize-none" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description..." />
-                                </div>
-                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-900 uppercase tracking-wide">Status</p>
-                                        <p className="text-[10px] text-slate-500 font-medium">Deactivate to prevent usage.</p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsActive(!isActive)}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 ${isActive ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                                    >
-                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-all duration-300 ${isActive ? 'translate-x-[22px]' : 'translate-x-[2px]'}`} />
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="flex justify-end gap-3 pt-2">
-                                <Button type="button" variant="ghost" onClick={() => { setShowEditModal(false); }} className="text-slate-500 hover:text-slate-900 font-bold text-xs">Cancel</Button>
-                                <Button type="submit" disabled={submitLoading || !name} className="bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-6 h-10 shadow-lg text-xs font-bold tracking-wide">
-                                    {submitLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
-                                </Button>
-                            </div>
-                        </form>
-                    </Card>
                 </div>
             )}
         </div>

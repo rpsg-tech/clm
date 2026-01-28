@@ -9,9 +9,10 @@ interface ContractEditorViewProps {
     onContinue?: () => void;
     className?: string;
     toolbarSimple?: boolean;
+    readOnly?: boolean;
 }
 
-export function ContractEditorView({ content, onChange, onContinue, className = "", toolbarSimple = false }: ContractEditorViewProps) {
+export function ContractEditorView({ content, onChange, onContinue, className = "", toolbarSimple = false, readOnly = false }: ContractEditorViewProps) {
     // Preserve newlines handled by parent or RichTextEditor logic now
 
 
@@ -20,27 +21,29 @@ export function ContractEditorView({ content, onChange, onContinue, className = 
             {/* Header - Hide if simple mode */}
             {!toolbarSimple && (
                 <div className="px-6 py-5 border-b border-gray-100 flex items-center gap-4 bg-white">
-                    <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${readOnly ? 'bg-slate-100 text-slate-500' : 'bg-orange-50 text-orange-600'}`}>
                         <FileText size={20} />
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h2 className="text-xl font-bold text-gray-900">Contract Editor</h2>
-                            <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">#</span>
+                            <h2 className="text-xl font-bold text-gray-900">{readOnly ? 'Main Agreement' : 'Contract Editor'}</h2>
+                            {readOnly && <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">READ ONLY</span>}
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-sm font-semibold text-gray-900">New Contract</span>
-                            <p className="text-sm text-gray-500">Review and edit your contract. Fill in the blank sections marked with brackets.</p>
+                            <span className="text-sm font-semibold text-gray-900">{readOnly ? 'Standard Terms' : 'New Contract'}</span>
+                            <p className="text-sm text-gray-500">{readOnly ? 'This content is fixed based on the selected template.' : 'Review and edit your contract.'}</p>
                         </div>
                     </div>
                 </div>
             )}
 
             {/* Main Editor */}
-            <div className={`flex-1 overflow-hidden flex flex-col ${toolbarSimple ? 'bg-white p-4' : 'bg-gray-50/30 p-6'}`}>
+            <div className={`flex-1 overflow-hidden flex flex-col min-h-0 ${toolbarSimple ? 'bg-white p-4' : 'bg-gray-50/30 p-6'}`}>
                 <TipTapEditor
                     content={content}
                     onChange={onChange}
+                    editable={!readOnly}
+                    className="h-full"
                 />
             </div>
 

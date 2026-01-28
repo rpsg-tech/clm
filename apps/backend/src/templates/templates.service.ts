@@ -102,10 +102,11 @@ export class TemplatesService {
     }
 
     /**
-     * Create a new template (admin only)
+     * Create a new template with annexures (admin only)
      */
     async create(
         userId: string,
+        organizationId: string, // Add organizationId
         data: {
             name: string;
             code: string;
@@ -113,28 +114,102 @@ export class TemplatesService {
             description?: string;
             baseContent: string;
             isGlobal?: boolean;
+            annexures?: {
+                name: string;
+                title: string;
+                content: string;
+                fieldsConfig?: any[];
+            }[];
         },
     ): Promise<Template> {
-        return this.prisma.template.create({
-            data: {
-                name: data.name,
-                code: data.code.toUpperCase(),
-                category: data.category,
-                description: data.description,
-                baseContent: data.baseContent,
-                isGlobal: data.isGlobal ?? false,
-                createdByUserId: userId,
-            },
+        return this.prisma.$transaction(async (tx) => {
+            // 1. Create the Template
+            const template = await tx.template.create({
+                data: {
+                    name: data.name,
+                    code: data.code.toUpperCase(),
+                    category: data.category,
+                    description: data.description,
+                    baseContent: data.baseContent,
+                    isGlobal: data.isGlobal ?? false,
+                    createdByUserId: userId,
+                },
+            });
+
+            // 2. Create Annexures if any
+            if (data.annexures && data.annexures.length > 0) {
+                await tx.annexure.createMany({
+                    data: data.annexures.map((annexure, index) => ({
+                        templateId: template.id,
+                        name: annexure.name,
+                        title: annexure.title,
+                        content: annexure.content,
+                        fieldsConfig: annexure.fieldsConfig || [],
+                        order: index + 1, // Auto-increment order
+                    })),
+                });
+            }
+
+            // 3. If NOT global, link to current Organization
+            if (!data.isGlobal) {
+                await tx.templateOrganization.create({
+                    data: {
+                        templateId: template.id,
+                        organizationId: organizationId,
+                        isEnabled: true,
+                    },
+                });
+            }
+
+            return template;
         });
     }
 
     /**
      * Update template
      */
-    async update(id: string, data: Prisma.TemplateUpdateInput): Promise<Template> {
-        return this.prisma.template.update({
-            where: { id },
-            data,
+    async update(
+        id: string,
+        data: Prisma.TemplateUpdateInput & {
+            annexures?: {
+                name: string;
+                title: string;
+                content: string;
+                fieldsConfig?: any[];
+            }[];
+        },
+    ): Promise<Template> {
+        return this.prisma.$transaction(async (tx) => {
+            // 1. Update Template Fields
+            const { annexures, ...templateData } = data;
+            const template = await tx.template.update({
+                where: { id },
+                data: templateData,
+            });
+
+            // 2. Update Annexures (Full Replacement Strategy)
+            if (annexures) {
+                // Delete existing
+                await tx.annexure.deleteMany({
+                    where: { templateId: id },
+                });
+
+                // Create new
+                if (annexures.length > 0) {
+                    await tx.annexure.createMany({
+                        data: annexures.map((annexure, index) => ({
+                            templateId: id,
+                            name: annexure.name,
+                            title: annexure.title,
+                            content: annexure.content,
+                            fieldsConfig: annexure.fieldsConfig || [],
+                            order: index + 1,
+                        })),
+                    });
+                }
+            }
+
+            return template;
         });
     }
 

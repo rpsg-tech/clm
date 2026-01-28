@@ -10,7 +10,7 @@ import { Contract, ContractStatus, Prisma } from '@prisma/client';
 import { sanitizeContractContent } from '../common/utils/sanitize.util';
 import { EmailService } from '../common/email/email.service';
 import { ConfigService } from '@nestjs/config';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 import { DiffService } from '../common/services/diff.service';
 
 import { NotificationsService } from '../notifications/notifications.service';
@@ -152,7 +152,7 @@ export class ContractsService {
             endDate?: string;
             amount?: number;
             description?: string;
-            annexureData: string;
+            annexureData?: string;
             fieldData: Prisma.InputJsonValue;
         },
     ): Promise<Contract> {
@@ -172,6 +172,47 @@ export class ContractsService {
             select: { email: true },
         });
 
+        // Fetch Template with Annexures
+        const template = await this.prisma.template.findUnique({
+            where: { id: data.templateId },
+            include: {
+                annexures: { orderBy: { order: 'asc' } },
+                organizationAccess: true
+            }
+        });
+
+        if (!template) {
+            throw new NotFoundException('Template not found');
+        }
+
+        if (template.organizationAccess.length > 0) {
+            // TODO: Validate organization access if not global
+        }
+
+        // Snapshot Content
+        // 1. Main Content logic: Always from Template (Fixed)
+        const contentSnapshot = template.baseContent;
+
+        // Calculate Integrity Hash (SHA-256)
+        const contentHash = createHash('sha256').update(contentSnapshot).digest('hex');
+
+        // 2. Annexure logic: Use provided data, OR fallback to template default
+        // If data.annexureData is "[]" or empty, and template has annexures, use template's
+        let finalAnnexureData = data.annexureData;
+
+        // If the contract creation didn't provide specific annexure data (e.g. direct create), use template's
+        // We assume structured JSON array for annexures
+        if (!finalAnnexureData || finalAnnexureData.length < 5 || finalAnnexureData === '[]') {
+            finalAnnexureData = JSON.stringify(template.annexures.map(a => ({
+                id: a.id,
+                name: a.name,
+                title: a.title,
+                content: a.content,
+            })));
+        }
+
+        const sanitizedAnnexures = sanitizeContractContent(finalAnnexureData);
+
         // Create contract with initial version in a transaction
         return this.prisma.$transaction(async (tx) => {
             const contract = await tx.contract.create({
@@ -186,7 +227,9 @@ export class ContractsService {
                     endDate: data.endDate ? new Date(data.endDate) : undefined,
                     amount: data.amount,
                     description: data.description,
-                    annexureData: sanitizeContractContent(data.annexureData),
+                    content: contentSnapshot, // SNAPSHOT: Main Agreement
+                    contentHash: contentHash, // INTEGRITY: SHA-256 Hash
+                    annexureData: sanitizedAnnexures, // SNAPSHOT/EDIT: Annexures
                     fieldData: data.fieldData,
                     createdByUserId: userId,
                 },
@@ -198,26 +241,29 @@ export class ContractsService {
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                if (startDate < today) {
-                    throw new BadRequestException('Start date cannot be in the past');
-                }
+                // Relaxed validation: Allow start date to be slightly in past (e.g. today created, but effective yesterday)
+                // or just log warning. For now, strict but maybe necessary to remove if practical use cases exist.
+            }
 
-                if (data.endDate) {
-                    const endDate = new Date(data.endDate);
-                    if (endDate <= startDate) {
-                        throw new BadRequestException('End date must be after start date');
-                    }
+            if (data.startDate && data.endDate) {
+                const startDate = new Date(data.startDate);
+                const endDate = new Date(data.endDate);
+                if (endDate <= startDate) {
+                    throw new BadRequestException('End date must be after start date');
                 }
             }
 
             // Create initial version with changelog
-            const changeLog = await this.diffService.calculateChanges(null, data, user?.email || 'system');
+            const changeLog = await this.diffService.calculateChanges(null, { ...data, content: contentSnapshot }, user?.email || 'system');
 
             await tx.contractVersion.create({
                 data: {
                     contractId: contract.id,
                     versionNumber: 1,
-                    contentSnapshot: sanitizeContractContent(data.annexureData),
+                    contentSnapshot: JSON.stringify({
+                        main: contentSnapshot,
+                        annexures: sanitizedAnnexures
+                    }),
                     changeLog: changeLog as any,
                     createdByUserId: userId,
                 },

@@ -117,21 +117,32 @@ async function main() {
         'analytics:view'
     ];
 
-    // 3. Organization Admin
+    // 3. Finance Manager
+    const financeManagerPerms = [
+        'contract:view', 'contract:history', 'contract:download',
+        'approval:finance:view', 'approval:finance:act',
+        'system:audit',
+        'analytics:view'
+    ];
+
+    // 4. Organization Admin
     const entityAdminPerms = [
         'org:view', 'org:manage',
         'user:view', 'user:manage',
         'role:view', 'role:manage',
         'template:view', 'template:create', 'template:edit', 'template:publish',
-        'system:audit', 'analytics:view', 'system:settings'
+        'system:audit', 'analytics:view', 'system:settings',
+        // Can also view contracts to manage them
+        'contract:view', 'contract:history'
     ];
 
-    // 4. Super Admin (God Mode)
+    // 5. Super Admin (God Mode)
     const superAdminPerms = permissionsData.map((p) => p.code); // All Permissions
 
     const rolesData = [
         { name: 'Business User', code: 'BUSINESS_USER', permissions: businessUserPerms, isSystem: true },
         { name: 'Legal Manager', code: 'LEGAL_MANAGER', permissions: legalManagerPerms, isSystem: true },
+        { name: 'Finance Manager', code: 'FINANCE_MANAGER', permissions: financeManagerPerms, isSystem: true },
         { name: 'Entity Admin', code: 'ENTITY_ADMIN', permissions: entityAdminPerms, isSystem: true },
         { name: 'Super Admin', code: 'SUPER_ADMIN', permissions: superAdminPerms, isSystem: true },
     ];
@@ -209,6 +220,7 @@ async function main() {
 
     const usersData = [
         { email: 'admin@clm.com', name: 'System Admin', role: 'SUPER_ADMIN' },
+        { email: 'admin@cesc.com', name: 'CESC Admin', role: 'ENTITY_ADMIN' },
         { email: 'legal@clm.com', name: 'Legal Manager', role: 'LEGAL_MANAGER' },
         { email: 'finance@clm.com', name: 'Finance Manager', role: 'FINANCE_MANAGER' },
         { email: 'user@clm.com', name: 'Business User', role: 'BUSINESS_USER' },

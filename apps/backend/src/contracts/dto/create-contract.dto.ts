@@ -40,10 +40,9 @@ export class CreateContractDto {
     @IsString()
     description?: string;
 
+    @IsOptional()
     @IsString()
-    @IsNotEmpty({ message: 'Annexure data is required' })
-    @MaxLength(5000000, { message: 'Annexure data cannot exceed 5MB' })
-    annexureData: string;
+    annexureData?: string;
 
     /**
      * Dynamic contract data based on the selected template.

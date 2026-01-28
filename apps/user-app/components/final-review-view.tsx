@@ -17,82 +17,69 @@ export function FinalReviewView({ content, details, templateName, onSubmit, load
 
     const handleDownload = async () => {
         setIsDownloading(true);
-        // Dynamically import html2pdf to avoid SSR issues
-        const html2pdf = (await import('html2pdf.js')).default;
-
-        const element = document.getElementById('contract-preview');
-        if (!element) {
-            setIsDownloading(false);
-            return;
-        }
-
-        const opt = {
-            margin: [10, 10, 10, 10] as [number, number, number, number],
-            filename: `${details?.title || 'contract'}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            pagebreak: { mode: ['css', 'legacy'] },
-            html2canvas: {
-                scale: 2,
-                useCORS: true,
-                onclone: (clonedDoc: Document) => {
-                    const allElements = clonedDoc.querySelectorAll('*');
-                    allElements.forEach((el) => {
-                        const htmlEl = el as HTMLElement;
-                        const style = getComputedStyle(htmlEl);
-
-                        // 1. Remove shadows and borders from pages to make them look seamless in PDF
-                        if (htmlEl.classList.contains('shadow-sm') || htmlEl.classList.contains('md:shadow-xl')) {
-                            htmlEl.style.boxShadow = 'none';
-                            htmlEl.style.border = 'none';
-                            htmlEl.style.marginBottom = '0'; // Remove gap between pages
-                        }
-
-                        // Remove the main wrapper gap
-                        if (htmlEl.id === 'contract-preview') {
-                            htmlEl.style.gap = '0';
-                        }
-
-                        // 2. Aggressive oklch replacement
-                        // html2canvas fails on oklch(), so we must fallback to hex.
-
-                        // Background
-                        const bg = style.backgroundColor;
-                        if (bg && bg.includes('oklch')) {
-                            htmlEl.style.backgroundColor = '#ffffff'; // Default to white for document
-                        }
-
-                        // Color
-                        const color = style.color;
-                        if (color && color.includes('oklch')) {
-                            htmlEl.style.color = '#0f172a'; // Default to neutral-900
-                        }
-
-                        // Border
-                        const border = style.borderColor;
-                        if (border && border.includes('oklch')) {
-                            htmlEl.style.borderColor = '#e2e8f0'; // Default to neutral-200
-                        }
-                    });
-
-                    // Specifically fix the gradient header
-                    const gradientHeader = clonedDoc.querySelector('.bg-gradient-to-r');
-                    if (gradientHeader) {
-                        const headerEl = gradientHeader as HTMLElement;
-                        headerEl.classList.remove('bg-gradient-to-r', 'from-primary-500', 'via-primary-400', 'to-primary-500');
-                        headerEl.style.background = 'none';
-                        headerEl.style.backgroundColor = '#f97316'; // orange-500
-                        headerEl.style.backgroundImage = 'none';
-                    }
-                }
-            },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
         try {
-            // @ts-ignore - html2pdf types are sometimes finicky with the dyamic import
-            await html2pdf().set(opt).from(element).save();
+            // 1. Prepare Content HTML
+            const processedHtml = processVariables(content, details);
+
+            // 2. Wrap in proper HTML structure for the PDF service
+            const fullHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>${details.title || 'Contract'}</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+                        @page { margin: 20mm 15mm; size: A4 portrait; }
+                        /* Stamp Paper Support (approx 5 inches) */
+                        @page :first { margin-top: 125mm; }
+                        
+                        body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; color: #000; margin: 0; padding: 0; }
+                        .contract-pdf-wrapper { text-align: justify; width: 100%; background: white; }
+                        
+                        h1, h2, h3, h4, h5, h6 { font-weight: bold; margin-top: 1.5em; margin-bottom: 0.8em; page-break-after: avoid; }
+                        h1 { font-size: 18pt; text-align: center; text-transform: uppercase; margin-bottom: 24px; }
+                        h2 { font-size: 16pt; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+                        
+                        p { margin-bottom: 1em; }
+                        table { width: 100%; border-collapse: collapse; margin: 1.5em 0; font-size: 11pt; }
+                        th, td { border: 1px solid #000; padding: 8px; text-align: left; vertical-align: top; page-break-inside: avoid; }
+                        th { background-color: #f3f3f3; font-weight: bold; }
+                        
+                        .page-break { page-break-before: always; }
+                    </style>
+                </head>
+                <body>
+                    <div class="contract-pdf-wrapper">
+                        ${processedHtml}
+                    </div>
+                </body>
+                </html>
+            `;
+
+            // 3. Call Serverless PDF Endpoint
+            const response = await fetch('/api/pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ html: fullHtml }),
+            });
+
+            if (!response.ok) throw new Error('Failed to generate PDF');
+
+            // 4. Trigger Download
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${(details.title || 'contract').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
         } catch (error) {
             console.error('PDF Download failed:', error);
+            // Optionally add toast here if context is available, for now console log is sufficient as per original
         } finally {
             setIsDownloading(false);
         }

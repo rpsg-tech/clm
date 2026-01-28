@@ -72,7 +72,7 @@ export function TipTapEditor({ content, onChange, editable = true, className = "
         },
         editorProps: {
             attributes: {
-                class: 'prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl focus:outline-none max-w-none min-h-[800px] p-8 lg:p-12',
+                class: 'prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl focus:outline-none max-w-none min-h-full p-8 lg:p-12',
             },
         },
     });
@@ -96,10 +96,10 @@ export function TipTapEditor({ content, onChange, editable = true, className = "
     }
 
     return (
-        <div className={`w-full flex flex-col bg-slate-50/50 rounded-2xl border border-slate-200 overflow-hidden ${className}`}>
+        <div className={`w-full flex flex-col bg-slate-50/50 rounded-2xl border border-slate-200 overflow-hidden min-h-0 ${className}`}>
             {/* Fixed Toolbar */}
             {editable && (
-                <div className="flex flex-col">
+                <div className="flex flex-col shrink-0">
                     <EditorToolbar editor={editor} />
                     {/* Variable Toolbar (Quick Insert) */}
                     <div className="flex gap-2 p-2 bg-slate-50 border-b border-slate-100 text-xs overflow-x-auto">
@@ -118,8 +118,8 @@ export function TipTapEditor({ content, onChange, editable = true, className = "
             )}
 
             {/* Editor Surface */}
-            <div className="flex-1 overflow-y-auto">
-                <EditorContent editor={editor} />
+            <div className="flex-1 overflow-y-auto w-full relative">
+                <EditorContent editor={editor} className="min-h-full" />
             </div>
 
             <div className="py-2 px-6 text-xs text-slate-400 font-mono flex justify-between items-center border-t border-slate-100 bg-white">

@@ -4,7 +4,7 @@
  * Full CRUD for template governance by admins.
  */
 
-import { Controller, Get, Post, Put, Patch, Param, Body, UseGuards, Query, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Param, Body, UseGuards, Query, ForbiddenException, ParseEnumPipe } from '@nestjs/common';
 import { TemplatesService } from './templates.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgContextGuard } from '../auth/guards/org-context.guard';
@@ -28,7 +28,10 @@ export class AdminTemplatesController {
      */
     @Get()
     @Permissions('template:view')
-    async findAll(@Query('category') category?: TemplateCategory) {
+    async findAll(
+        @Query('category', new ParseEnumPipe(TemplateCategory, { optional: true }))
+        category?: TemplateCategory
+    ) {
         return this.prisma.template.findMany({
             where: {
                 ...(category && { category }),
@@ -80,7 +83,7 @@ export class AdminTemplatesController {
             throw new ForbiddenException('You do not have permission to create Global templates.');
         }
 
-        return this.templatesService.create(user.id, body);
+        return this.templatesService.create(user.id, user.orgId!, body);
     }
 
     /**
@@ -97,6 +100,12 @@ export class AdminTemplatesController {
             baseContent?: string;
             isGlobal?: boolean;
             isActive?: boolean;
+            annexures?: {
+                name: string;
+                title: string;
+                content: string;
+                fieldsConfig?: any[];
+            }[];
         }
     ) {
         // Enforce Global Permission checks

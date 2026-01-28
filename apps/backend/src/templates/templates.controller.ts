@@ -2,9 +2,10 @@
  * Templates Controller
  */
 
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { TemplatesService } from './templates.service';
 import { GetTemplatesDto } from './dto/get-templates.dto';
+import { CreateTemplateDto } from './dto/create-template.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgContextGuard } from '../auth/guards/org-context.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
@@ -30,5 +31,14 @@ export class TemplatesController {
     @Permissions('template:view')
     async findOne(@Param('id') id: string) {
         return this.templatesService.findById(id);
+    }
+
+    @Post()
+    @Permissions('template:create')
+    async create(
+        @CurrentUser() user: AuthenticatedUser,
+        @Body() createTemplateDto: CreateTemplateDto,
+    ) {
+        return this.templatesService.create(user.id, user.orgId!, createTemplateDto);
     }
 }

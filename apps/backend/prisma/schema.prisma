@@ -216,6 +216,8 @@ model Contract {
   amount           Decimal?       @db.Decimal(15, 2)
   description      String?        @db.Text
   
+  content          String         @default("") // Fixed Main Agreement Content Snapshot
+  contentHash      String?        // SHA-256 Hash of content for integrity check
   annexureData     String
   fieldData        Json
   
