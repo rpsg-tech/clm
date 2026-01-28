@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api-client';
 import { Card, Button, Badge, Spinner } from '@repo/ui';
 import { Pagination } from '@/components/ui/pagination';
@@ -45,11 +45,21 @@ export default function UsersPage() {
     const [page, setPage] = useState(1);
     const [meta, setMeta] = useState<any>(null);
 
+    const isFirstRun = useRef(true);
+
     // Debounce search
     useEffect(() => {
         const timer = setTimeout(() => {
-            setPage(1);
-            loadData();
+            if (isFirstRun.current) {
+                isFirstRun.current = false;
+                return;
+            }
+
+            if (page === 1) {
+                loadData();
+            } else {
+                setPage(1);
+            }
         }, 500);
         return () => clearTimeout(timer);
     }, [searchQuery]);

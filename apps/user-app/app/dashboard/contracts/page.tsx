@@ -62,8 +62,11 @@ export default function ContractsListPage() {
         }
 
         const timer = setTimeout(() => {
-            setPage(1);
-            fetchContracts();
+            if (page === 1) {
+                fetchContracts();
+            } else {
+                setPage(1);
+            }
         }, 500);
         return () => clearTimeout(timer);
     }, [searchQuery, statusFilter]);

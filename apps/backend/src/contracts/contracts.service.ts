@@ -310,10 +310,20 @@ export class ContractsService {
         const [data, total] = await Promise.all([
             this.prisma.contract.findMany({
                 where,
-                include: {
+                select: {
+                    id: true,
+                    title: true,
+                    reference: true,
+                    status: true,
+                    counterpartyName: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    amount: true,
+                    startDate: true,
+                    endDate: true,
                     template: { select: { name: true, category: true } },
                     createdByUser: { select: { name: true, email: true } },
-                    approvals: true,
+                    approvals: { select: { status: true, type: true } }, // Minimal approval data
                 },
                 orderBy: { createdAt: 'desc' },
                 skip,

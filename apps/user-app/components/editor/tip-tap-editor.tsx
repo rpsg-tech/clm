@@ -91,6 +91,13 @@ export function TipTapEditor({ content, onChange, editable = true, className = "
         }
     }, [content, editor]);
 
+    // Sync editable state
+    useEffect(() => {
+        if (editor) {
+            editor.setEditable(editable);
+        }
+    }, [editable, editor]);
+
     if (!editor) {
         return null;
     }

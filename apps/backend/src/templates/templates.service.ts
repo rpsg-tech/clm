@@ -56,10 +56,25 @@ export class TemplatesService {
         const [data, total] = await Promise.all([
             this.prisma.template.findMany({
                 where,
-                include: {
+                select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                    category: true,
+                    description: true,
+                    baseContent: false, // Explicitly false if using omit, but with select we just omit it
+                    isGlobal: true,
+                    isActive: true,
+                    createdAt: true,
+                    updatedAt: true,
                     annexures: {
-                        orderBy: { order: 'asc' },
-                    },
+                        select: {
+                            id: true,
+                            name: true,
+                            order: true
+                        },
+                        orderBy: { order: 'asc' }
+                    }
                 },
                 orderBy: { name: 'asc' },
                 skip,

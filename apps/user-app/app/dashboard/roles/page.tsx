@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api-client';
 import { Card, Button, Badge } from '@repo/ui';
@@ -35,10 +35,20 @@ export default function RolesPage() {
     const [page, setPage] = useState(1);
     const [meta, setMeta] = useState<any>(null);
 
+    const isFirstRun = useRef(true);
+
     useEffect(() => {
         const timer = setTimeout(() => {
-            setPage(1);
-            loadRoles();
+            if (isFirstRun.current) {
+                isFirstRun.current = false;
+                return;
+            }
+
+            if (page === 1) {
+                loadRoles();
+            } else {
+                setPage(1);
+            }
         }, 500);
         return () => clearTimeout(timer);
     }, [searchQuery]);

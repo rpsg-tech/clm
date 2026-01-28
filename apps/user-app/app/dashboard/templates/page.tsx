@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, Badge, Skeleton, Button, Input } from '@repo/ui';
@@ -65,17 +65,30 @@ export default function TemplatesPage() {
     const [description, setDescription] = useState('');
     const [isActive, setIsActive] = useState(true);
 
+    const isFirstRun = useRef(true); // Prevent double-fetch on mount
+
     const canManageTemplates = hasPermission('template:create');
 
-    // Debounce search
+    // Debounce search & category changes
     useEffect(() => {
         const timer = setTimeout(() => {
-            setPage(1);
-            fetchTemplates();
+            // Skip the initial run to avoid double-fetch with the page effect
+            if (isFirstRun.current) {
+                isFirstRun.current = false;
+                return;
+            }
+
+            // Only fetch if page is already 1, otherwise setPage(1) will trigger the other effect
+            if (page === 1) {
+                fetchTemplates();
+            } else {
+                setPage(1); // This will trigger the page-dependency effect below
+            }
         }, 500);
         return () => clearTimeout(timer);
     }, [searchQuery, selectedCategory]);
 
+    // Fetch on page change (handles initial load + pagination + reset from search)
     useEffect(() => {
         fetchTemplates();
     }, [page]);
@@ -86,7 +99,7 @@ export default function TemplatesPage() {
             const response = await api.templates.list({
                 category: selectedCategory,
                 page,
-                limit: viewMode === 'GRID' ? 9 : 10, // Adjust limit based on view? 
+                limit: viewMode === 'GRID' ? 9 : 10,
                 search: searchQuery
             });
             setTemplates(response.data as Template[]);

@@ -299,20 +299,36 @@ export default function NewContractPage() {
     }, [templates, searchParams, selectedTemplate]);
 
     // Initialize editor content and annexures when template is selected
+    // Initialize editor content and annexures when template is selected
     useEffect(() => {
-        if (selectedTemplate) {
-            if (!editorContent) {
-                setEditorContent(selectedTemplate.baseContent || "");
+        const loadFullTemplate = async () => {
+            if (selectedTemplate) {
+                try {
+                    // Fetch full template details to get annexure content (list view is optimized/slim)
+                    const fullTemplate = await api.templates.get(selectedTemplate.id) as any;
+                    setEditorContent(fullTemplate.baseContent || "");
+
+                    // Auto-populate annexures from template
+                    if ((fullTemplate as any).annexures?.length > 0) {
+                        setAnnexures((fullTemplate as any).annexures.map((a: any) => ({
+                            id: a.id || `annex-${Math.random().toString(36).substr(2, 9)}`,
+                            title: a.title || a.name, // Handle legacy 'name' vs new 'title'
+                            content: a.content || ""
+                        })));
+                    } else {
+                        setAnnexures(INITIAL_ANNEXURES);
+                    }
+                } catch (error) {
+                    console.error("Failed to load full template details:", error);
+                    showError("Template Error", "Failed to load template details.");
+                    // Fallback to what we have or initial
+                    setEditorContent(selectedTemplate.baseContent || "");
+                    setAnnexures(INITIAL_ANNEXURES);
+                }
             }
-            // Auto-populate annexures from template
-            if ((selectedTemplate as any).annexures?.length > 0) {
-                setAnnexures((selectedTemplate as any).annexures.map((a: any) => ({
-                    id: a.id || `annex-${Math.random().toString(36).substr(2, 9)}`,
-                    title: a.title || a.name,
-                    content: a.content || ""
-                })));
-            }
-        }
+        };
+
+        loadFullTemplate();
     }, [selectedTemplate]);
 
     // Helpers
@@ -358,7 +374,20 @@ export default function NewContractPage() {
         setAnnexures(prev => prev.filter(a => a.id !== id));
     };
 
-    // Compile the final document content
+    // Helper for saving: only the annexures
+    const getOnlyAnnexuresHtml = () => {
+        if (annexures.length === 0) return "";
+        let finalHtml = "";
+        annexures.forEach((annexure, index) => {
+            finalHtml += `<div class="annexure-section">`;
+            finalHtml += `<h3>${annexure.title}</h3>`;
+            finalHtml += `<div>${annexure.content.replace(/\n/g, "<br/>")}</div>`;
+            finalHtml += `</div>`;
+        });
+        return finalHtml;
+    };
+
+    // Compile the final document content for PREVIEW
     const getFinalDocumentContent = () => {
         let finalHtml = editorContent;
 
@@ -396,7 +425,7 @@ export default function NewContractPage() {
 
         setLoading(true);
         try {
-            const finalContent = getFinalDocumentContent();
+            const finalAnnexureData = getOnlyAnnexuresHtml();
 
             const payload = {
                 title: contractDetails.title || `${selectedTemplate.name} - ${new Date().toLocaleDateString()}`,
@@ -411,7 +440,7 @@ export default function NewContractPage() {
                     title: contractDetails.title,
                     ...contractDetails
                 },
-                annexureData: finalContent,
+                annexureData: finalAnnexureData,
             };
 
             const newContract = await api.contracts.create(payload as any);
@@ -442,7 +471,7 @@ export default function NewContractPage() {
                     <div className="flex h-[700px] border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative animate-in fade-in zoom-in-95 duration-500">
                         {/* Main Editor Surface */}
                         <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
-                            <div className="flex-1 overflow-hidden relative">
+                            <div className="flex-1 overflow-y-auto relative scroll-smooth">
                                 <ContractEditorView
                                     content={editorContent}
                                     onChange={setEditorContent}

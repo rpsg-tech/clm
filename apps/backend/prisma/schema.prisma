@@ -37,6 +37,7 @@ model Organization {
   @@index([parentId])
   @@index([code])
   @@index([isActive])
+  @@index([updatedAt])
 }
 
 enum OrgType {
@@ -88,6 +89,7 @@ model Role {
   userRoles   UserOrganizationRole[]
 
   @@index([code])
+  @@index([updatedAt])
 }
 
 model Permission {
@@ -158,6 +160,7 @@ model Template {
   @@index([code])
   @@index([category])
   @@index([isActive])
+  @@index([updatedAt])
 }
 
 enum TemplateCategory {
@@ -246,6 +249,7 @@ model Contract {
   @@index([reference])
   @@index([organizationId, status]) // Compound index for filtering
   @@index([organizationId, createdAt]) // Compound index for sorting
+  @@index([updatedAt])
 }
 
 enum ContractStatus {
@@ -416,6 +420,7 @@ model Notification {
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
+  @@index([userId, isRead]) // Compound for "Get Unread"
 }
 
 // ============ SAVED SEARCHES ============

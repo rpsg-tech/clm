@@ -88,40 +88,48 @@ export function FinalReviewView({ content, details, templateName, onSubmit, load
     // Variable placement logic
     const processVariables = (htmlContent: string, data: any) => {
         if (!htmlContent) return "";
-        console.log("Processing Variables. Data:", data);
 
         const replacer = (key: string) => {
-            console.log("Replacing Key:", key, "Value:", data[key]);
-            if (!key) return "";
-            switch (key) {
-                case 'counterpartyName': return data.counterpartyName || '<span class="text-red-500">[Client Name]</span>';
-                case 'counterpartyEmail': return data.counterpartyEmail || '<span class="text-red-500">[Client Email]</span>';
-                case 'contractTitle': // Fallthrough
-                case 'title': return data.title || '[Contract Title]';
-                case 'amount': return data.amount ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(data.amount)) : '<span class="text-red-500">[Amount]</span>';
-                case 'startDate': return data.startDate ? new Date(data.startDate).toLocaleDateString() : '<span class="text-red-500">[Start Date]</span>';
-                case 'endDate': return data.endDate ? new Date(data.endDate).toLocaleDateString() : '<span class="text-red-500">[End Date]</span>';
-                default: return "";
+            const normalizedKey = key.trim();
+            // Map common variances if needed
+            const lookupKey = normalizedKey === 'Client Name' ? 'counterpartyName' :
+                normalizedKey === 'Client Email' ? 'counterpartyEmail' :
+                    normalizedKey === 'Contract Title' ? 'title' : normalizedKey;
+
+            const val = data[lookupKey] || data[normalizedKey];
+
+            if (val) {
+                if (lookupKey === 'amount') return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(val));
+                if (lookupKey === 'startDate' || lookupKey === 'endDate') return new Date(val).toLocaleDateString();
+                return val;
             }
+
+            // Fallback for visual debugging
+            return `<span class="bg-yellow-100 text-yellow-800 px-1 rounded border border-yellow-200 font-mono text-xs">{{${normalizedKey}}}</span>`;
         };
 
         let processed = htmlContent;
 
         // 1. Match legacy format: <span data-variable="key">Label</span>
         processed = processed.replace(/<span[^>]*data-variable="([^"]+)"[^>]*>.*?<\/span>/g, (match, key) => {
-            return replacer(key) || match;
+            const val = replacer(key);
+            return val.includes('{{') ? match : val; // Only replace if value found
         });
 
         // 2. Match TipTap node format: Any span with data-type="variable"
-        // We capture the attributes string to extract ID safely regardless of order
         processed = processed.replace(/<span([^>]*data-type="variable"[^>]*)>.*?<\/span>/g, (match, attrs) => {
             const idMatch = attrs.match(/id="([^"]+)"/);
             const key = idMatch ? idMatch[1] : null;
             if (key) {
-                console.log("Found TipTap Variable:", key);
-                return replacer(key) || match;
+                const val = replacer(key);
+                return val.includes('{{') ? match : val;
             }
             return match;
+        });
+
+        // 3. Match Handlebars format: {{variableName}}
+        processed = processed.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+            return replacer(key);
         });
 
         return processed;
@@ -129,17 +137,20 @@ export function FinalReviewView({ content, details, templateName, onSubmit, load
 
     const processedContent = processVariables(content, details);
 
+    // Robust Page Splitter
+    const pages = processedContent.split(/<div\s+style="[^"]*page-break-before:\s*always[^"]*"[^>]*>.*?<\/div>/gi);
+
     return (
-        <div className={`flex flex-col h-full bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm animate-in fade-in zoom-in-95 duration-300 ${className}`}>
+        <div className={`flex flex-col h-full bg-slate-100/50 border border-slate-200 rounded-3xl overflow-hidden shadow-sm animate-in fade-in zoom-in-95 duration-300 ${className}`}>
             {/* Header */}
-            <div className="px-6 py-4 border-b border-neutral-100 flex items-center justify-between bg-white z-10">
+            <div className="px-6 py-4 border-b border-white/50 flex items-center justify-between bg-white/80 backdrop-blur-md z-10 sticky top-0">
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center text-primary-600 shadow-sm border border-primary-200/50">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center text-orange-600 shadow-sm border border-orange-200/50">
                         <FileCheck size={20} className="drop-shadow-sm" />
                     </div>
                     <div>
-                        <h2 className="text-lg font-bold text-neutral-900 tracking-tight">Final Document Preview</h2>
-                        <p className="text-xs text-neutral-500 font-medium">Ready for submission • {templateName || "Custom Contract"}</p>
+                        <h2 className="text-lg font-bold text-slate-900 tracking-tight">Final Document Preview</h2>
+                        <p className="text-xs text-slate-500 font-medium">Ready for submission • {templateName || "Custom Contract"}</p>
                     </div>
                 </div>
 
@@ -154,77 +165,78 @@ export function FinalReviewView({ content, details, templateName, onSubmit, load
                 <div className="w-full max-w-[800px] flex flex-col gap-8 pb-20">
 
                     {/* Metadata Banner */}
-                    <div className="bg-white rounded-xl border border-neutral-200/60 p-5 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <div className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm grid grid-cols-2 md:grid-cols-4 gap-6">
                         <div>
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 mb-1">Contract Title</p>
-                            <p className="text-sm font-semibold text-neutral-900 truncate" title={details.title}>{details.title || "Untitled"}</p>
+                            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Contract Title</p>
+                            <p className="text-sm font-semibold text-slate-900 truncate" title={details.title}>{details.title || "Untitled"}</p>
                         </div>
                         <div>
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 mb-1">Counterparty</p>
-                            <p className="text-sm font-semibold text-neutral-900 truncate">{details.counterpartyName || "-"}</p>
+                            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Counterparty</p>
+                            <p className="text-sm font-semibold text-slate-900 truncate">{details.counterpartyName || "-"}</p>
                         </div>
                         <div>
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 mb-1">Total Value</p>
-                            <p className="text-sm font-semibold text-neutral-900">{details.amount ? `₹${details.amount}` : "N/A"}</p>
+                            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Total Value</p>
+                            <p className="text-sm font-semibold text-slate-900">{details.amount ? `₹${details.amount}` : "N/A"}</p>
                         </div>
                         <div>
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-neutral-400 mb-1">Duration</p>
+                            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Duration</p>
                             <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-neutral-900">{details.startDate || "-"}</span>
-                                <span className="text-[10px] text-neutral-400">to</span>
-                                <span className="text-xs font-semibold text-neutral-900">{details.endDate || "-"}</span>
+                                <span className="text-xs font-semibold text-slate-900">{details.startDate || "-"}</span>
+                                <span className="text-[10px] text-slate-400">to</span>
+                                <span className="text-xs font-semibold text-slate-900">{details.endDate || "-"}</span>
                             </div>
                         </div>
                     </div>
 
-                    {processedContent.split(/<div\s+style="[^"]*page-break-before:\s*always[^"]*"[^>]*>[\s\S]*?<\/div>/gi)
-                        .filter(content => {
-                            if (!content) return false;
-                            const textOnly = content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
-                            const hasStructure = /<(img|table|hr|iframe|video)/i.test(content);
-                            return textOnly.length > 0 || hasStructure;
-                        })
-                        .map((pageContent, index) => (
-                            <div
-                                key={index}
-                                className={`bg-white shadow-sm md:shadow-xl border border-neutral-200/50 print:border-none print:shadow-none mb-8 last:mb-0 relative group min-h-[1000px] ${index > 0 ? 'page-break-before-always' : ''}`}
-                                style={index > 0 ? { pageBreakBefore: 'always' } : {}}
-                            >
-                                {/* Paper Texture/Header Effect - Only on first page */}
-                                {index === 0 && (
-                                    <div className="h-2 bg-gradient-to-r from-primary-500 via-primary-400 to-primary-500 opacity-90" />
-                                )}
+                    {pages.map((pageContent, index) => (
+                        <div
+                            key={index}
+                            className={`bg-white shadow-lg md:shadow-xl border border-slate-100 print:border-none print:shadow-none mb-8 last:mb-0 relative group min-h-[1000px] ${index > 0 ? 'page-break-before-always' : ''}`}
+                            style={index > 0 ? { pageBreakBefore: 'always' } : {}}
+                        >
+                            {/* Paper Texture/Header Effect - Only on first page */}
+                            {index === 0 && (
+                                <div className="h-2 bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500 opacity-90" />
+                            )}
 
-                                <div className="p-12 md:p-16">
-                                    <style jsx global>{`
-                                            /* Table Borders for Preview */
-                                            .prose table {
-                                                width: 100%;
-                                                border-collapse: collapse;
-                                                margin-top: 1em;
-                                                margin-bottom: 1em;
-                                            }
-                                            .prose td, .prose th {
-                                                border: 1px solid #cbd5e1;
-                                                padding: 8px 12px;
-                                            }
-                                            .prose th {
-                                                background-color: #f8fafc;
-                                                font-weight: 600;
-                                            }
-                                        `}</style>
-                                    <div
-                                        className="prose prose-sm md:prose-base max-w-none text-neutral-800 font-serif leading-relaxed"
-                                        dangerouslySetInnerHTML={{ __html: pageContent || "<p class='text-neutral-400 italic text-center py-20'>Content generation pending...</p>" }}
-                                    />
-                                </div>
-
-                                {/* Pagination/Footer hint */}
-                                <div className="absolute bottom-4 right-8 text-[10px] text-neutral-300 font-mono select-none">
-                                    PAGE {index + 1}
-                                </div>
+                            <div className="p-12 md:p-16">
+                                <style jsx global>{`
+                                        /* Table Borders for Preview */
+                                        .prose table {
+                                            width: 100%;
+                                            border-collapse: collapse;
+                                            margin-top: 1em;
+                                            margin-bottom: 1em;
+                                        }
+                                        .prose td, .prose th {
+                                            border: 1px solid #cbd5e1;
+                                            padding: 8px 12px;
+                                        }
+                                        .prose th {
+                                            background-color: #f8fafc;
+                                            font-weight: 600;
+                                        }
+                                        /* Annexure Header Styling */
+                                        .annexure-section h3 {
+                                            text-transform: uppercase;
+                                            letter-spacing: 0.05em;
+                                            border-bottom: 2px solid #eee;
+                                            padding-bottom: 10px;
+                                            margin-top: 2rem;
+                                        }
+                                    `}</style>
+                                <div
+                                    className="prose prose-sm md:prose-base max-w-none text-slate-800 font-serif leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: pageContent || "<p class='text-slate-400 italic text-center py-20'>Content generation pending...</p>" }}
+                                />
                             </div>
-                        ))}
+
+                            {/* Pagination/Footer hint */}
+                            <div className="absolute bottom-4 right-8 text-[10px] text-slate-200 font-mono select-none">
+                                PAGE {index + 1}
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
 
