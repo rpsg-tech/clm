@@ -57,6 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         const initAuth = async () => {
+            // Simple in-memory check to avoid double-fetching in React.Strict mode or rapid remounts
+            if (state.isAuthenticated && state.user) return;
+
             try {
                 // Verify session with backend
                 const data = await api.auth.me();
@@ -77,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
 
         initAuth();
-    }, []);
+    }, []); // Run only once on mount
 
     const login = useCallback(async (email: string, password: string) => {
         const response = await api.auth.login(email, password);
