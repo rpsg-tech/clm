@@ -64,45 +64,26 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     }
 
     async onModuleInit() {
-        const maxRetries = 5;
-        let retries = 0;
+        // In serverless environments (Vercel), we should avoid blocking application bootstrap
+        // with explicit connection attempts. Prisma connects lazily on the first query.
 
-        while (retries < maxRetries) {
-            try {
-                await this.$connect();
-                this.logger.log('✅ Database connected successfully');
-
-                // Log connection pool info
-                const dbUrl = this.configService.get('DATABASE_URL') || '';
-                if (dbUrl.includes('connection_limit=')) {
-                    const match = dbUrl.match(/connection_limit=(\d+)/);
-                    const limit = match ? match[1] : 'unknown';
-                    this.logger.log(`📊 Connection pool size: ${limit}`);
-                } else if (this.configService.get('NODE_ENV') === 'production') {
-                    this.logger.warn(
-                        '⚠️  No connection_limit found in DATABASE_URL. ' +
-                        'Add "?connection_limit=20" to prevent connection exhaustion.'
-                    );
-                }
-
-                return;
-            } catch (error) {
-                retries++;
-                this.logger.error(
-                    `Failed to connect to database (attempt ${retries}/${maxRetries}):`,
-                    error instanceof Error ? error.message : error,
-                );
-
-                if (retries < maxRetries) {
-                    // Exponential backoff: 1s, 2s, 4s, 8s, 10s (capped)
-                    const delay = Math.min(1000 * Math.pow(2, retries - 1), 10000);
-                    this.logger.log(`Retrying in ${delay}ms...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                } else {
-                    this.logger.error('❌ Failed to connect to database after max retries');
-                    throw error;
+        // However, for debugging, we can attempt a connection without blocking hard loops.
+        try {
+            // Check config presence
+            const dbUrl = this.configService.get('DATABASE_URL');
+            if (!dbUrl) {
+                this.logger.error('❌ DATABASE_URL is not defined in environment variables');
+            } else if (this.configService.get('NODE_ENV') === 'production') {
+                if (!dbUrl.includes('connection_limit')) {
+                    this.logger.warn('⚠️  No connection_limit found in DATABASE_URL. Add "?connection_limit=10" for Vercel.');
                 }
             }
+
+            // We rely on lazy connection logic for faster cold starts.
+            // Explicit await this.$connect() is removed to unblock boot time.
+            this.logger.log('✅ Prisma Service initialized (Lazy connection mode)');
+        } catch (error) {
+            this.logger.warn('⚠️ Prisma Config check failed', error);
         }
     }
 
