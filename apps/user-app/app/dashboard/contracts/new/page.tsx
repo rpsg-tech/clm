@@ -462,7 +462,7 @@ export default function NewContractPage() {
     // Render Logic
     const renderStepContent = () => {
         switch (currentStep) {
-            case 0: return <AIAssistantView onTemplateSelect={handleTemplateSelect} templates={templates} />;
+            case 0: return <AIAssistantView onTemplateSelect={handleTemplateSelect} templates={templates} onShowAll={goNext} />;
             case 1: return <TemplateSelectionView onSelect={handleTemplateSelect} selectedTemplateId={selectedTemplate?.id} templates={templates} />;
             case 2: return <ContractDetailsForm data={contractDetails} onChange={setContractDetails} templateName={selectedTemplate?.name} onError={setStepError} />;
 

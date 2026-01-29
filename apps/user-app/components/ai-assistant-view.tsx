@@ -1,21 +1,25 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles } from "lucide-react";
+import { Send, Bot, User, Sparkles, AlertCircle, Search, ArrowRight } from "lucide-react";
 import { Template } from "@repo/types";
+import { Button, Badge } from "@repo/ui";
 
 interface Message {
     role: "user" | "system";
     content: string;
-    suggestion?: Template;
+    suggestions?: Template[];
+    showExamples?: boolean;
+    showSeeAll?: boolean;
 }
 
-export function AIAssistantView({ onTemplateSelect, templates }: { onTemplateSelect: (template: Template) => void, templates: Template[] }) {
+export function AIAssistantView({ onTemplateSelect, templates, onShowAll }: { onTemplateSelect: (template: Template) => void, templates: Template[], onShowAll?: () => void }) {
     const [messages, setMessages] = useState<Message[]>([
         { role: "system", content: "Hi! I'm your AI Contract Assistant. Describe what kind of contract you need, and I'll find the best template for you." }
     ]);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
+    const [attempts, setAttempts] = useState(0);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
@@ -26,51 +30,104 @@ export function AIAssistantView({ onTemplateSelect, templates }: { onTemplateSel
         scrollToBottom();
     }, [messages, isTyping]);
 
-    const handleSend = async () => {
-        if (!input.trim()) return;
+    // Enhanced Matching Logic
+    const findMatches = (query: string): Template[] => {
+        const lowerQ = query.toLowerCase().trim();
+        if (!lowerQ) return [];
 
-        const userMsg = input;
+        // 1. Exact Name Match (High Priority)
+        const exactMatches = templates.filter(t => t.name.toLowerCase() === lowerQ);
+        if (exactMatches.length > 0) return exactMatches;
+
+        // 2. Contains Name Match (Medium Priority)
+        const nameMatches = templates.filter(t => t.name.toLowerCase().includes(lowerQ));
+        if (nameMatches.length > 0) return nameMatches;
+
+        // 3. Keyword / Category Mapping (Fuzzy / "LLM Cleaning" Simulation)
+        const keywords: Record<string, string> = {
+            "buy": "PURCHASE_ORDER",
+            "purchase": "PURCHASE_ORDER",
+            "order": "PURCHASE_ORDER",
+            "goods": "PURCHASE_ORDER",
+            "nda": "NDA",
+            "confidential": "NDA",
+            "disclosure": "NDA",
+            "secret": "NDA",
+            "hire": "SERVICE_AGREEMENT",
+            "freelance": "SERVICE_AGREEMENT",
+            "contractor": "SERVICE_AGREEMENT",
+            "service": "SERVICE_AGREEMENT",
+            "employee": "EMPLOYMENT_AGREEMENT",
+            "job": "EMPLOYMENT_AGREEMENT",
+            "work": "EMPLOYMENT_AGREEMENT",
+            "sell": "SALES_AGREEMENT",
+            "sale": "SALES_AGREEMENT",
+        };
+
+        const matchedCategories = Object.entries(keywords)
+            .filter(([key]) => lowerQ.includes(key))
+            .map(([, category]) => category);
+
+        if (matchedCategories.length > 0) {
+            // Find templates matching the inferred category
+            return templates.filter(t => matchedCategories.includes(t.category));
+        }
+
+        // 4. Description Search (Low Priority)
+        return templates.filter(t =>
+            t.description?.toLowerCase().includes(lowerQ) ||
+            t.code.toLowerCase().includes(lowerQ)
+        );
+    };
+
+    const handleSend = async (textOverride?: string) => {
+        const userText = textOverride || input;
+        if (!userText.trim()) return;
+
         setInput("");
-        setMessages(prev => [...prev, { role: "user", content: userMsg }]);
+        setMessages(prev => [...prev, { role: "user", content: userText }]);
         setIsTyping(true);
 
-        // Simulate AI "thinking"
+        // Simulate AI Latency
         setTimeout(() => {
             setIsTyping(false);
 
-            // Dynamic keyword matching
-            const lowerInput = userMsg.toLowerCase();
-            const foundTemplate = templates.find(t =>
-                t.name.toLowerCase().includes(lowerInput) ||
-                (t.description && t.description.toLowerCase().includes(lowerInput)) ||
-                (t.category && t.category.toLowerCase().includes(lowerInput)) ||
-                t.code.toLowerCase().includes(lowerInput)
-            );
+            const matches = findMatches(userText);
 
-            let responseContent = "I'm not sure which template fits best. You can browse all available templates in the next step.";
-
-            if (foundTemplate) {
-                responseContent = `Based on your request, I recommend the **${foundTemplate.name}**. It seems to match your needs perfectly.`;
-            } else if (lowerInput.includes("buy") || lowerInput.includes("purchase") || lowerInput.includes("order") || lowerInput.includes("goods")) {
-                const po = templates.find(t => t.category === "PURCHASE_ORDER");
-                if (po) {
-                    responseContent = "A **Purchase Order** seems appropriate for this transaction.";
-                    // matched via fallback logic logic, so we assign it to the variable used in state update
-                    // but we can't reassign const foundTemplate, so we just pass it directly
-                    setMessages(prev => [...prev, { role: "system", content: responseContent, suggestion: po }]);
-                    return;
-                }
-            } else if (lowerInput.includes("nda") || lowerInput.includes("confidential")) {
-                const nda = templates.find(t => t.category === "NDA");
-                if (nda) {
-                    responseContent = "I recommend our standard **Non-Disclosure Agreement (NDA)** to protect your confidential information.";
-                    setMessages(prev => [...prev, { role: "system", content: responseContent, suggestion: nda }]);
-                    return;
-                }
+            // SUCCESS: Matches Found
+            if (matches.length > 0) {
+                setAttempts(0); // Reset strikes
+                setMessages(prev => [...prev, {
+                    role: "system",
+                    content: matches.length === 1
+                        ? `I found the perfect match based on "${userText}".`
+                        : `I found ${matches.length} templates that match "${userText}". Please select one:`,
+                    suggestions: matches
+                }]);
+                return;
             }
 
-            setMessages(prev => [...prev, { role: "system", content: responseContent, suggestion: foundTemplate }]);
-        }, 1500);
+            // FAILURE: No Matches
+            const newAttempts = attempts + 1;
+            setAttempts(newAttempts);
+
+            if (newAttempts >= 3) {
+                // Strike 3: Force "See All"
+                setMessages(prev => [...prev, {
+                    role: "system",
+                    content: "It seems I'm having trouble finding the specific template you're looking for. Please browse our full catalog to select manually.",
+                    showSeeAll: true
+                }]);
+            } else {
+                // Strike 1 & 2: Ask for clarification + Examples
+                setMessages(prev => [...prev, {
+                    role: "system",
+                    content: `I couldn't find a template matching "${userText}". Could you be more specific? You can try saying:`,
+                    showExamples: true
+                }]);
+            }
+
+        }, 1200);
     };
 
     return (
@@ -89,78 +146,88 @@ export function AIAssistantView({ onTemplateSelect, templates }: { onTemplateSel
                         </p>
                     </div>
                 </div>
-                <div className="px-3 py-1.5 bg-green-50 text-green-700 text-xs font-bold rounded-full flex items-center gap-2 border border-green-100">
-                    <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                    </span>
-                    Online
-                </div>
             </div>
 
-            {/* Chat Area - Scrollable */}
-            <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-gray-50/30 scroll-smooth">
+            {/* Chat Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/30 scroll-smooth">
                 {messages.length === 1 && (
-                    <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto mt-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delayed-fade">
+                    <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto mt-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        {/* Initial Onboarding Chips */}
                         {[
-                            { label: "Create Non-Disclosure Agreement", icon: "🔒", desc: "Protect confidential info" },
-                            { label: "Hire a Contractor", icon: "🤝", desc: "Service agreement for freelancers" },
-                            { label: "Draft Purchase Order", icon: "📦", desc: "Order goods or supplies" },
-                            { label: "New Employment Contract", icon: "💼", desc: "Onboard a new employee" }
-                        ].map((prompt) => (
+                            { label: "Create NDA", icon: "🔒", prompt: "I need a Non-Disclosure Agreement" },
+                            { label: "Service Agreement", icon: "🤝", prompt: "I need a Service Agreement" },
+                            { label: "Purchase Order", icon: "📦", prompt: "Create a Purchase Order" },
+                            { label: "Employment", icon: "💼", prompt: "New Employment Contract" }
+                        ].map((item) => (
                             <button
-                                key={prompt.label}
-                                onClick={() => { setInput(`I need to ${prompt.label.toLowerCase()}`); }}
+                                key={item.label}
+                                onClick={() => handleSend(item.prompt)}
                                 className="p-4 bg-white border border-gray-200 rounded-xl text-left hover:border-orange-300 hover:shadow-md transition-all group"
                             >
-                                <span className="text-2xl mb-2 block">{prompt.icon}</span>
-                                <span className="font-semibold text-gray-900 block group-hover:text-orange-600 transition-colors">{prompt.label}</span>
-                                <span className="text-xs text-gray-500">{prompt.desc}</span>
+                                <span className="text-xl mb-2 block">{item.icon}</span>
+                                <span className="font-semibold text-gray-900 block group-hover:text-orange-600 transition-colors">{item.label}</span>
                             </button>
                         ))}
                     </div>
                 )}
 
                 {messages.map((msg, i) => (
-                    <div key={i} className={`flex gap-4 animate-in slide-in-from-bottom-5 duration-500 fade-in ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-
-                        {/* Avatar */}
+                    <div key={i} className={`flex gap-4 animate-in slide-in-from-bottom-2 duration-500 fade-in ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                         <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center shadow-sm ${msg.role === "user" ? "bg-gray-900 text-white" : "bg-white border border-gray-100 text-orange-600"}`}>
                             {msg.role === "user" ? <User size={18} /> : <Bot size={20} />}
                         </div>
 
-                        {/* Bubble */}
-                        <div className={`max-w-[75%] space-y-3`}>
-                            <div className={`p-5 rounded-2xl text-[15px] leading-relaxed shadow-sm ${msg.role === "user" ? "bg-gray-900 text-white rounded-tr-none shadow-gray-200" : "bg-white text-gray-600 border border-gray-100 rounded-tl-none shadow-[0_2px_8px_rgb(0,0,0,0.02)]"}`}>
+                        <div className="max-w-[80%] space-y-3">
+                            <div className={`p-4 rounded-2xl text-[15px] leading-relaxed shadow-sm ${msg.role === "user" ? "bg-gray-900 text-white rounded-tr-none" : "bg-white text-gray-600 border border-gray-100 rounded-tl-none"}`}>
                                 <p>{msg.content}</p>
                             </div>
 
-                            {/* Template Suggestion Card */}
-                            {msg.suggestion && (
-                                <div className="bg-white p-5 rounded-2xl border border-orange-100 shadow-[0_4px_20px_rgb(249,115,22,0.1)] animate-in slide-in-from-bottom-2 duration-700 hover:border-orange-200 transition-colors cursor-pointer group" onClick={() => onTemplateSelect(msg.suggestion!)}>
-                                    <div className="flex justify-between items-start gap-4">
-                                        <div>
-                                            <h4 className="font-bold text-gray-900 mb-1 group-hover:text-orange-600 transition-colors">{msg.suggestion.name}</h4>
-                                            <p className="text-sm text-gray-500 leading-relaxed mb-3 line-clamp-2">{msg.suggestion.description}</p>
-                                            <div className="inline-flex items-center text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded-md">
-                                                Recommended Match
+                            {/* Template Suggestions Carousel */}
+                            {msg.suggestions && msg.suggestions.length > 0 && (
+                                <div className="grid gap-3">
+                                    {msg.suggestions.map(tmpl => (
+                                        <div key={tmpl.id} className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm hover:border-orange-200 transition-all flex justify-between items-center group cursor-pointer" onClick={() => onTemplateSelect(tmpl)}>
+                                            <div>
+                                                <h4 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors">{tmpl.name}</h4>
+                                                <p className="text-xs text-gray-500 line-clamp-1">{tmpl.category}</p>
                                             </div>
+                                            <Button size="sm" variant="secondary" className="group-hover:bg-orange-100 group-hover:text-orange-700">Select</Button>
                                         </div>
-                                        <button
-                                            className="whitespace-nowrap px-4 py-2 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-orange-600 transition-all shadow-md hover:shadow-lg group-hover:bg-orange-600"
-                                        >
-                                            Select
-                                        </button>
-                                    </div>
+                                    ))}
                                 </div>
+                            )}
+
+                            {/* Fallback Examples */}
+                            {msg.showExamples && (
+                                <div className="flex flex-wrap gap-2 pt-2">
+                                    {["I want an NDA", "Standard Service Agreement", "Purchase Order for Goods"].map(ex => (
+                                        <button
+                                            key={ex}
+                                            onClick={() => handleSend(ex)}
+                                            className="px-3 py-1.5 bg-orange-50 text-orange-700 text-xs font-medium rounded-full border border-orange-100 hover:bg-orange-100 transition-colors"
+                                        >
+                                            "{ex}"
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* See All CTA */}
+                            {msg.showSeeAll && (
+                                <button
+                                    onClick={onShowAll}
+                                    className="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-bold rounded-xl hover:bg-gray-800 transition-all shadow-md mt-2 w-full justify-center"
+                                >
+                                    <Search className="w-4 h-4" />
+                                    Browse All Templates
+                                </button>
                             )}
                         </div>
                     </div>
                 ))}
 
-                {/* Typing Indicator */}
                 {isTyping && (
-                    <div className="flex gap-4 animate-in fade-in duration-300">
+                    <div className="flex gap-4">
                         <div className="w-10 h-10 rounded-full bg-white border border-gray-100 flex-shrink-0 flex items-center justify-center text-orange-600 shadow-sm">
                             <Bot size={20} />
                         </div>
@@ -174,7 +241,7 @@ export function AIAssistantView({ onTemplateSelect, templates }: { onTemplateSel
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area - Sticky Bottom */}
+            {/* Input Area */}
             <div className="p-5 bg-white border-t border-gray-100 sticky bottom-0 z-20">
                 <form
                     onSubmit={(e) => { e.preventDefault(); handleSend(); }}
@@ -184,13 +251,13 @@ export function AIAssistantView({ onTemplateSelect, templates }: { onTemplateSel
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Type your request here (e.g., 'I need a purchase order for IT equipment')..."
-                        className="flex-1 px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:outline-none focus:bg-white focus:border-orange-500/20 focus:ring-4 focus:ring-orange-500/10 transition-all text-gray-700 placeholder:text-gray-400 shadow-inner"
+                        placeholder="Type your request here..."
+                        className="flex-1 px-6 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:outline-none focus:bg-white focus:border-orange-500/20 focus:ring-4 focus:ring-orange-500/10 transition-all text-gray-700"
                     />
                     <button
                         type="submit"
                         disabled={!input.trim() || isTyping}
-                        className="absolute right-2 top-2 bottom-2 px-6 bg-gray-900 text-white rounded-xl hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center shadow-lg hover:shadow-orange-200"
+                        className="absolute right-2 top-2 bottom-2 px-6 bg-gray-900 text-white rounded-xl hover:bg-orange-600 disabled:opacity-50 transition-all flex items-center justify-center"
                     >
                         <Send size={18} />
                     </button>
