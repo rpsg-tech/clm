@@ -143,28 +143,47 @@ async function refreshTokens(): Promise<boolean> {
   }
 }
 
+// Cache for auth.me request to prevent redundant calls
+let mePromise: Promise<{ user: any; currentOrg: any; role: string; permissions: string[] }> | null = null;
+
 export const api = {
   // Auth
   auth: {
-    login: (email: string, password: string) =>
-      authFetch<{ user: any }>('/auth/login', {
+    login: async (email: string, password: string) => {
+      mePromise = null; // Clear cache on login attempt
+      return authFetch<{ user: any }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
-      }),
+      });
+    },
 
-    me: () => authFetch<{ user: any; currentOrg: any; role: string; permissions: string[] }>('/auth/me'),
+    me: () => {
+      if (!mePromise) {
+        mePromise = authFetch<{ user: any; currentOrg: any; role: string; permissions: string[] }>('/auth/me')
+          .catch(err => {
+            mePromise = null; // Clear cache on failure so retry works
+            throw err;
+          });
+      }
+      return mePromise;
+    },
 
-    switchOrg: (organizationId: string) =>
-      authFetch<{
+    switchOrg: async (organizationId: string) => {
+      mePromise = null; // Clear cache as org context changes
+      return authFetch<{
         organization: { id: string; name: string; code: string };
         role: string;
         permissions: string[];
       }>('/auth/switch-org', {
         method: 'POST',
         body: JSON.stringify({ organizationId }),
-      }),
+      });
+    },
 
-    logout: () => authFetch('/auth/logout', { method: 'POST' }),
+    logout: async () => {
+      mePromise = null; // Clear cache
+      return authFetch('/auth/logout', { method: 'POST' });
+    },
   },
 
   // Contracts
