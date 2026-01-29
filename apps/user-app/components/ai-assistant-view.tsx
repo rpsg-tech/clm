@@ -49,19 +49,28 @@ export function AIAssistantView({ onTemplateSelect, templates, onShowAll }: { on
             "purchase": "PURCHASE_ORDER",
             "order": "PURCHASE_ORDER",
             "goods": "PURCHASE_ORDER",
+
+            "vendor": "VENDOR_AGREEMENT",
+            "supplier": "VENDOR_AGREEMENT",
+            "partner": "VENDOR_AGREEMENT",
+            "onboarding": "VENDOR_AGREEMENT",
+
             "nda": "NDA",
             "confidential": "NDA",
             "disclosure": "NDA",
             "secret": "NDA",
+
             "hire": "SERVICE_AGREEMENT",
             "freelance": "SERVICE_AGREEMENT",
             "contractor": "SERVICE_AGREEMENT",
             "service": "SERVICE_AGREEMENT",
-            "employee": "EMPLOYMENT_AGREEMENT",
-            "job": "EMPLOYMENT_AGREEMENT",
-            "work": "EMPLOYMENT_AGREEMENT",
-            "sell": "SALES_AGREEMENT",
-            "sale": "SALES_AGREEMENT",
+
+            "employee": "EMPLOYMENT",
+            "job": "EMPLOYMENT",
+            "work": "EMPLOYMENT",
+
+            "lease": "LEASE",
+            "rent": "LEASE"
         };
 
         const matchedCategories = Object.entries(keywords)
