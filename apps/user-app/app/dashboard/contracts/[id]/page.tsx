@@ -25,6 +25,7 @@ import {
     FileDiff,
     Eye,
     ChevronRight,
+    Wand2,
     Calendar,
     User,
     Mail
@@ -385,13 +386,13 @@ function ContractDetailContent() {
     if (!contract) {
         return (
             <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="w-24 h-24 rounded-full bg-neutral-100 flex items-center justify-center mb-6">
-                    <FileText className="w-12 h-12 text-neutral-400" />
+                <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center mb-6">
+                    <FileText className="w-12 h-12 text-slate-400" />
                 </div>
-                <h2 className="text-2xl font-bold text-neutral-900 mb-2">Contract Not Found</h2>
-                <p className="text-neutral-500 mb-8 max-w-md">The contract you are looking for might have been deleted or you may not have permission to view it.</p>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Contract Not Found</h2>
+                <p className="text-slate-500 mb-8 max-w-md">The contract you are looking for might have been deleted or you may not have permission to view it.</p>
                 <Link href="/dashboard/contracts">
-                    <Button variant="default" className="bg-neutral-900 text-white hover:bg-neutral-800">
+                    <Button variant="default" className="bg-slate-900 text-white hover:bg-slate-800">
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Back to Contracts
                     </Button>
@@ -405,18 +406,18 @@ function ContractDetailContent() {
     return (
         <div className="min-h-[calc(100vh-100px)] pb-12">
             {/* Breadcrumb & Header */}
-            <div className="mb-8 relative bg-neutral-50 py-4 border-b border-neutral-200/50 -mx-6 px-6 sm:-mx-8 sm:px-8">
+            <div className="mb-8 relative bg-slate-50/50 backdrop-blur-sm py-6 border-b border-slate-200/60 -mx-6 px-6 sm:-mx-8 sm:px-8 sticky top-0 z-20">
                 <div className="max-w-[1600px] mx-auto">
-                    <nav className="flex items-center text-sm text-neutral-500 mb-3">
-                        <Link href="/dashboard/contracts" className="hover:text-neutral-900 transition-colors">Contracts</Link>
-                        <ChevronRight className="w-4 h-4 mx-1.5 text-neutral-400" />
-                        <span className="font-medium text-neutral-900 truncate max-w-[300px]">{contract.title}</span>
+                    <nav className="flex items-center text-sm text-slate-500 mb-3 font-medium">
+                        <Link href="/dashboard/contracts" className="hover:text-slate-900 transition-colors">Contracts</Link>
+                        <ChevronRight className="w-4 h-4 mx-1.5 text-slate-400" />
+                        <span className="text-slate-900 truncate max-w-[300px]">{contract.title}</span>
                     </nav>
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-4">
-                            <h1 className="text-2xl font-bold text-neutral-900 truncate">{contract.title}</h1>
-                            <Badge variant={statusColors[contract.status]} className="h-6 px-2.5 shadow-none border">
+                            <h1 className="text-3xl font-bold text-slate-900 truncate tracking-tight">{contract.title}</h1>
+                            <Badge variant={statusColors[contract.status]} className="h-7 px-3 text-xs font-bold shadow-sm border uppercase tracking-wider">
                                 {contract.status.replace(/_/g, ' ')}
                             </Badge>
                         </div>
@@ -424,8 +425,8 @@ function ContractDetailContent() {
                         <div className="flex items-center gap-2 flex-wrap justify-end">
                             {contract.status === 'DRAFT' && canEdit && (
                                 <Link href={`/dashboard/contracts/${contract.id}/edit`}>
-                                    <Button variant="outline" className="shadow-sm bg-white hover:bg-neutral-50 border-neutral-300 text-neutral-700 font-medium">
-                                        <Edit className="w-4 h-4 mr-2" />
+                                    <Button variant="outline" className="shadow-sm bg-white hover:bg-slate-50 border-slate-200 text-slate-700 font-bold text-xs uppercase tracking-wide h-9">
+                                        <Edit className="w-3.5 h-3.5 mr-2" />
                                         Edit Content
                                     </Button>
                                 </Link>
@@ -434,19 +435,19 @@ function ContractDetailContent() {
                                 <Button
                                     onClick={handleSubmit}
                                     disabled={actionLoading}
-                                    className="bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/20 font-medium"
+                                    className="bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/20 font-bold text-xs uppercase tracking-wide h-9 px-6"
                                 >
-                                    {actionLoading ? <Spinner size="sm" className="mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                                    Submit for Approval
+                                    {actionLoading ? <Spinner size="sm" className="mr-2" /> : <Send className="w-3.5 h-3.5 mr-2" />}
+                                    Submit for Review
                                 </Button>
                             )}
                             {contract.status === 'APPROVED' && canSend && (
                                 <Button
                                     onClick={handleSend}
                                     disabled={actionLoading}
-                                    className="bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/20"
+                                    className="bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/20 font-bold text-xs uppercase tracking-wide h-9 px-6"
                                 >
-                                    {actionLoading ? <Spinner size="sm" className="mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                                    {actionLoading ? <Spinner size="sm" className="mr-2" /> : <Send className="w-3.5 h-3.5 mr-2" />}
                                     Send to Counterparty
                                 </Button>
                             )}
@@ -462,9 +463,9 @@ function ContractDetailContent() {
                                     <Button
                                         onClick={handleUploadClick}
                                         disabled={actionLoading}
-                                        className="bg-success hover:bg-success-dark text-white shadow-lg shadow-success/20"
+                                        className="bg-success hover:bg-success-dark text-white shadow-lg shadow-success/20 font-bold text-xs uppercase tracking-wide h-9 px-6"
                                     >
-                                        {actionLoading ? <Spinner size="sm" className="mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
+                                        {actionLoading ? <Spinner size="sm" className="mr-2" /> : <Upload className="w-3.5 h-3.5 mr-2" />}
                                         Upload Signed PDF
                                     </Button>
                                 </>
@@ -477,22 +478,22 @@ function ContractDetailContent() {
 
             {/* Lifecycle Progress Stepper */}
             <div className="max-w-[1600px] mx-auto mb-8">
-                <div className="bg-white border border-neutral-200 rounded-xl p-6 shadow-sm overflow-x-auto">
+                <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm overflow-x-auto">
                     <div className="flex items-center justify-between relative min-w-[600px] lg:min-w-0">
                         {/* Connecting Line background */}
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-neutral-100 -z-0"></div>
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 -z-0 rounded-full"></div>
 
                         {statusFlow.map((step, index) => {
                             const isCompleted = index <= currentStepIndex;
                             const isCurrent = index === currentStepIndex;
 
                             return (
-                                <div key={step.status} className="relative z-10 flex flex-col items-center bg-white px-2">
+                                <div key={step.status} className="relative z-10 flex flex-col items-center bg-white px-3">
                                     <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${isCurrent
                                         ? 'border-orange-600 bg-orange-50 text-orange-600 ring-4 ring-orange-100 scale-110 shadow-lg'
                                         : isCompleted
                                             ? 'border-orange-600 bg-orange-600 text-white shadow-md'
-                                            : 'border-neutral-200 bg-white text-neutral-300'
+                                            : 'border-slate-200 bg-white text-slate-300'
                                         }`}>
                                         {isCompleted && !isCurrent ? (
                                             <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5" />
@@ -500,11 +501,11 @@ function ContractDetailContent() {
                                             <span className="text-xs lg:text-sm font-bold">{index + 1}</span>
                                         )}
                                     </div>
-                                    <span className={`mt-3 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-center max-w-[80px] leading-tight ${isCurrent
+                                    <span className={`mt-4 text-[10px] lg:text-xs font-bold uppercase tracking-wider text-center max-w-[100px] leading-tight transition-colors duration-300 ${isCurrent
                                         ? 'text-orange-700'
                                         : isCompleted
                                             ? 'text-orange-600'
-                                            : 'text-neutral-400'
+                                            : 'text-slate-400'
                                         }`}>
                                         {step.label}
                                     </span>
@@ -519,13 +520,13 @@ function ContractDetailContent() {
                 {/* Left Column: Document Canvas */}
                 <div className="lg:col-span-8 space-y-6">
                     {/* Document Container */}
-                    <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden min-h-[800px] relative group">
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden min-h-[800px] relative group">
                         {/* Paper Texture / Background */}
-                        <div className="absolute inset-0 bg-neutral-50/50 pointer-events-none" />
+                        <div className="absolute inset-0 bg-slate-50/50 pointer-events-none" />
 
                         {/* Header Bar within Document */}
-                        <div className="relative border-b border-neutral-100 bg-white px-8 py-4 flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-neutral-400">
+                        <div className="relative border-b border-slate-100 bg-white px-8 py-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-slate-400">
                                 <FileText className="w-4 h-4" />
                                 <span className="text-xs font-mono uppercase tracking-wider">Document Preview</span>
                             </div>
@@ -534,7 +535,7 @@ function ContractDetailContent() {
                                 size="sm"
                                 disabled={actionLoading}
                                 onClick={handleDownloadPdf}
-                                className="text-neutral-500 hover:text-neutral-900"
+                                className="text-slate-500 hover:text-slate-900"
                             >
                                 <Download className="w-4 h-4 mr-2" />
                                 <span className="hidden sm:inline">Download PDF</span>
@@ -542,7 +543,7 @@ function ContractDetailContent() {
                         </div>
 
                         {/* Actual Content - A4 Ratio Wrapper */}
-                        <div className="relative p-8 md:p-12 lg:p-16 bg-neutral-100/50 min-h-[800px] flex flex-col items-center gap-8">
+                        <div className="relative p-8 md:p-12 lg:p-16 bg-slate-100/50 min-h-[800px] flex flex-col items-center gap-8">
                             {/* PREVIEW ONLY - Does NOT affect PDF Gen anymore */}
                             <div id="contract-content-view-preview" className="w-full max-w-[750px] mx-auto flex flex-col gap-8">
                                 {(() => {
@@ -555,8 +556,8 @@ function ContractDetailContent() {
 
                                     // Simple Preview Render
                                     return (
-                                        <div className="bg-white shadow-sm md:shadow-xl border border-neutral-200/50 relative px-12 md:px-16 pb-12 md:pb-16 pt-[480px] min-h-[1000px]">
-                                            <SafeHtml className="prose prose-neutral max-w-none font-serif leading-relaxed text-neutral-800 text-justify" html={stitchedContent} />
+                                        <div className="bg-white shadow-sm md:shadow-xl border border-slate-200/50 relative px-12 md:px-16 pb-12 md:pb-16 pt-[480px] min-h-[1000px]">
+                                            <SafeHtml className="prose prose-slate max-w-none font-serif leading-relaxed text-slate-800 text-justify" html={stitchedContent} />
                                         </div>
                                     );
                                 })()}
@@ -608,39 +609,39 @@ function ContractDetailContent() {
                 <div className="lg:col-span-4 space-y-6">
 
                     {/* Metadata Card */}
-                    <Card className="border-neutral-200 shadow-sm">
-                        <CardHeader className="pb-3 border-b border-neutral-100">
+                    <Card className="border-slate-200 shadow-sm">
+                        <CardHeader className="pb-3 border-b border-slate-100">
                             <CardTitle className="text-base font-semibold">Contract Details</CardTitle>
                         </CardHeader>
                         <CardContent className="pt-4 space-y-4">
                             <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                                    <User className="w-4 h-4 text-neutral-500" />
+                                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                    <User className="w-4 h-4 text-slate-500" />
                                 </div>
                                 <div className="flex-1 overflow-hidden">
-                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-0.5">Counterparty</p>
-                                    <p className="font-medium text-neutral-900 truncate" title={contract.counterpartyName || ''}>{contract.counterpartyName || 'Not specified'}</p>
+                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Counterparty</p>
+                                    <p className="font-medium text-slate-900 truncate" title={contract.counterpartyName || ''}>{contract.counterpartyName || 'Not specified'}</p>
                                 </div>
                             </div>
 
                             <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                                    <Mail className="w-4 h-4 text-neutral-500" />
+                                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                    <Mail className="w-4 h-4 text-slate-500" />
                                 </div>
                                 <div className="flex-1 overflow-hidden">
-                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-0.5">Contact Email</p>
-                                    <p className="font-medium text-neutral-900 truncate" title={contract.counterpartyEmail || ''}>{contract.counterpartyEmail || '-'}</p>
+                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Contact Email</p>
+                                    <p className="font-medium text-slate-900 truncate" title={contract.counterpartyEmail || ''}>{contract.counterpartyEmail || '-'}</p>
                                 </div>
                             </div>
 
                             {contract.amount !== undefined && contract.amount !== null && (
                                 <div className="flex items-start gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                                        <span className="text-sm font-bold text-neutral-600">₹</span>
+                                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                        <span className="text-sm font-bold text-slate-600">₹</span>
                                     </div>
                                     <div className="flex-1 overflow-hidden">
-                                        <p className="text-xs text-neutral-500 uppercase tracking-wide mb-0.5">Contract Value</p>
-                                        <p className="font-medium text-neutral-900 truncate">
+                                        <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Contract Value</p>
+                                        <p className="font-medium text-slate-900 truncate">
                                             {formatCurrency(contract.amount)}
                                         </p>
                                     </div>
@@ -652,23 +653,23 @@ function ContractDetailContent() {
                                     <>
                                         {contract.startDate && (
                                             <div className="flex items-start gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                                                    <Calendar className="w-4 h-4 text-neutral-500" />
+                                                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                                    <Calendar className="w-4 h-4 text-slate-500" />
                                                 </div>
                                                 <div className="flex-1 overflow-hidden">
-                                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-0.5">Effective</p>
-                                                    <p className="font-medium text-neutral-900">{new Date(contract.startDate).toLocaleDateString()}</p>
+                                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Effective</p>
+                                                    <p className="font-medium text-slate-900">{new Date(contract.startDate).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
                                         )}
                                         {contract.endDate && (
                                             <div className="flex items-start gap-3">
-                                                <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                                                    <Clock className="w-4 h-4 text-neutral-500" />
+                                                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                                    <Clock className="w-4 h-4 text-slate-500" />
                                                 </div>
                                                 <div className="flex-1 overflow-hidden">
-                                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-0.5">Expires</p>
-                                                    <p className="font-medium text-neutral-900">{new Date(contract.endDate).toLocaleDateString()}</p>
+                                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Expires</p>
+                                                    <p className="font-medium text-slate-900">{new Date(contract.endDate).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
                                         )}
@@ -677,58 +678,58 @@ function ContractDetailContent() {
                             </div>
 
                             <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                                    <FileSignature className="w-4 h-4 text-neutral-500" />
+                                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                    <FileSignature className="w-4 h-4 text-slate-500" />
                                 </div>
                                 <div className="flex-1 overflow-hidden">
-                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-0.5">Template</p>
-                                    <p className="font-medium text-neutral-900 truncate">{contract.template.name}</p>
+                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Template</p>
+                                    <p className="font-medium text-slate-900 truncate">{contract.template.name}</p>
                                 </div>
                             </div>
 
                             <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center flex-shrink-0">
-                                    <div className="w-4 h-4 rounded-full bg-neutral-300 flex items-center justify-center text-[10px] text-white font-bold">
+                                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                                    <div className="w-4 h-4 rounded-full bg-slate-300 flex items-center justify-center text-[10px] text-white font-bold">
                                         {contract.createdByUser.name.charAt(0)}
                                     </div>
                                 </div>
                                 <div className="flex-1 overflow-hidden">
-                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-0.5">Created By</p>
-                                    <p className="font-medium text-neutral-900 truncate">
+                                    <p className="text-xs text-slate-500 uppercase tracking-wide mb-0.5">Created By</p>
+                                    <p className="font-medium text-slate-900 truncate">
                                         {contract.createdByUser.name}
                                     </p>
-                                    <p className="text-xs text-neutral-400">{new Date(contract.createdAt).toLocaleDateString()}</p>
+                                    <p className="text-xs text-slate-400">{new Date(contract.createdAt).toLocaleDateString()}</p>
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Approvals Card */}
-                    <Card className="border-neutral-200 shadow-sm overflow-hidden">
-                        <CardHeader className="pb-3 border-b border-neutral-100 bg-neutral-50/50">
+                    <Card className="border-slate-200 shadow-sm overflow-hidden">
+                        <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/50">
                             <CardTitle className="text-base font-semibold flex items-center justify-between">
                                 Approvals
                                 {contract.approvals.length > 0 && (
-                                    <span className="text-xs font-normal text-neutral-500 bg-white px-2 py-0.5 rounded-full border border-neutral-200">{contract.approvals.length}</span>
+                                    <span className="text-xs font-normal text-slate-500 bg-white px-2 py-0.5 rounded-full border border-slate-200">{contract.approvals.length}</span>
                                 )}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
                             {contract.approvals.length === 0 ? (
-                                <div className="p-6 text-center text-neutral-500 text-sm">
+                                <div className="p-6 text-center text-slate-500 text-sm">
                                     No approvals required yet.
                                 </div>
                             ) : (
-                                <div className="divide-y divide-neutral-100">
+                                <div className="divide-y divide-slate-100">
                                     {contract.approvals.map((approval) => (
-                                        <div key={approval.id} className="p-3 flex items-center justify-between hover:bg-neutral-50 transition-colors">
+                                        <div key={approval.id} className="p-3 flex items-center justify-between hover:bg-slate-50 transition-colors">
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-2 h-2 rounded-full ${approval.status === 'APPROVED' ? 'bg-success' :
                                                     approval.status === 'REJECTED' ? 'bg-error' : 'bg-warning'
                                                     }`} />
                                                 <div>
-                                                    <p className="text-sm font-medium text-neutral-900">{approval.type === 'LEGAL' ? 'Legal Team' : 'Finance Team'}</p>
-                                                    <p className="text-xs text-neutral-500">{approval.assignedUser?.name || 'Unassigned'}</p>
+                                                    <p className="text-sm font-medium text-slate-900">{approval.type === 'LEGAL' ? 'Legal Team' : 'Finance Team'}</p>
+                                                    <p className="text-xs text-slate-500">{approval.assignedUser?.name || 'Unassigned'}</p>
                                                 </div>
                                             </div>
                                             <Badge variant={
@@ -745,38 +746,42 @@ function ContractDetailContent() {
                     </Card>
 
                     {/* Risk Analysis Banner */}
-                    <div className="rounded-xl p-4 bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-lg relative overflow-hidden group cursor-pointer"
+                    <div className="rounded-xl p-6 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-xl shadow-slate-900/10 relative overflow-hidden group cursor-pointer border border-slate-700/50"
                         onClick={() => router.push(`/dashboard/contracts/${contract.id}/analysis`)}>
                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Sparkles className="w-24 h-24" />
+                            <Wand2 className="w-32 h-32 -mr-8 -mt-8 rotate-12" />
                         </div>
                         <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Sparkles className="w-4 h-4 text-indigo-200" />
-                                <span className="text-xs font-bold uppercase tracking-wider text-indigo-200">AI Insights</span>
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="w-6 h-6 rounded-md bg-orange-500/20 flex items-center justify-center border border-orange-500/30">
+                                    <Wand2 className="w-3.5 h-3.5 text-orange-400" />
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-orange-200">AI Risk Analysis</span>
                             </div>
-                            <h3 className="text-lg font-bold mb-1">Risk Analysis</h3>
-                            <p className="text-sm text-indigo-100 mb-3 line-clamp-2">View AI-generated risk assessment and clause recommendations.</p>
-                            <Button size="sm" variant="secondary" className="w-full bg-white text-indigo-600 hover:bg-indigo-50 border-none">
+                            <h3 className="text-lg font-bold mb-2 tracking-tight">Contract Insights</h3>
+                            <p className="text-sm text-slate-300 mb-5 leading-relaxed">
+                                View AI-generated risk assessment and clause recommendations for this contract.
+                            </p>
+                            <Button size="sm" variant="secondary" className="w-full bg-white text-slate-900 hover:bg-orange-50 hover:text-orange-700 border-none font-bold text-xs uppercase tracking-wide h-9 shadow-lg">
                                 View Analysis
                             </Button>
                         </div>
                     </div>
 
                     {/* Version History Quick Link */}
-                    <Card className="border-neutral-200 shadow-sm cursor-pointer hover:border-neutral-300 transition-colors"
+                    <Card className="border-slate-200 shadow-sm cursor-pointer hover:border-slate-300 transition-colors"
                         onClick={() => setShowChangelog(true)}>
                         <CardContent className="p-4 flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center">
-                                    <History className="w-4 h-4 text-neutral-500" />
+                                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                                    <History className="w-4 h-4 text-slate-500" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-medium text-neutral-900">Version History</p>
-                                    <p className="text-xs text-neutral-500">{contract.versions.length} version{contract.versions.length !== 1 ? 's' : ''}</p>
+                                    <p className="text-sm font-medium text-slate-900">Version History</p>
+                                    <p className="text-xs text-slate-500">{contract.versions.length} version{contract.versions.length !== 1 ? 's' : ''}</p>
                                 </div>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-neutral-400" />
+                            <ChevronRight className="w-4 h-4 text-slate-400" />
                         </CardContent>
                     </Card>
 

@@ -118,7 +118,7 @@ async function bootstrap() {
 
     // ============ SWAGGER API DOCS ============
 
-    if (configService.get('NODE_ENV', 'development') !== 'production') {
+    if (configService.get('NODE_ENV') !== 'production' || configService.get('ENABLE_SWAGGER') === 'true') {
         const swaggerConfig = new DocumentBuilder()
             .setTitle('CLM Enterprise API')
             .setDescription('Contract Lifecycle Management Enterprise Platform API Documentation')

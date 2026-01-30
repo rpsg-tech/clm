@@ -9,9 +9,8 @@ This is a **Turborepo monorepo** with the following structure:
 ```
 clm-enterprise/
 ├── apps/
-│   ├── backend/       # NestJS API Server
-│   ├── user-app/      # Next.js User Application
-
+│   ├── backend/       # NestJS API Server (Modular, Scalable)
+│   ├── user-app/      # Next.js User Application (App Router)
 ├── packages/
 │   ├── ui/            # Shared UI components
 │   ├── types/         # Shared TypeScript types
@@ -24,10 +23,10 @@ clm-enterprise/
 
 ### Prerequisites
 
-- Node.js 20+
-- Docker & Docker Compose
-- PostgreSQL (via Docker or external)
-- Redis (via Docker or Upstash)
+- **Node.js 20+**
+- **Docker & Docker Compose**
+- **PostgreSQL** (Active instances required)
+- **Redis** (Critical for Rate Limiting & Auth)
 
 ### Development Setup
 
@@ -51,17 +50,40 @@ npm run db:seed
 npm run dev
 ```
 
-### Individual Apps
+## 📦 Production Deployment
+
+### 1. Build & Optimize
+Our Dockerfiles are optimized for production. They automatically prune `devDependencies` to keep images lightweight.
 
 ```bash
-# Backend only
-npm run dev:backend
-
-# User App only
-npm run dev:user
-
-
+# Build production images
+docker-compose -f docker-compose.production.yml build
 ```
+
+### 2. Environment Configuration
+Ensure `.env` files are configured for production:
+
+**Backend (`apps/backend/.env`):**
+```env
+NODE_ENV=production
+DATABASE_URL=postgresql://...
+REDIS_URL=redis://... (Required for Global Rate Limiting)
+ENABLE_SWAGGER=true   # Optional: Enable API Docs in Prod
+JWT_SECRET=...        # Strong 32+ char secret
+```
+
+### 3. Scalability
+- **Rate Limiting:** Uses **Redis** storage (`RedisThrottlerStorage`). This allows the backend to scale horizontally while maintaining accurate global rate limits.
+- **Stateless:** The backend is fully stateless; sessions are managed via JWTs and Redis.
+
+## ⚠️ Production Status: Risk Accepted
+
+**Current Status:** `Conditionally Ready`
+
+> [!WARNING]
+> **Testing Gap:** The system currently lacks comprehensive automated tests.
+> Deployment proceeds under "Risk Accepted" status.
+> **DevOps Note:** Rate limiting and Docker image sizes have been optimized.
 
 ## 📦 Tech Stack
 
@@ -69,7 +91,7 @@ npm run dev:user
 - **NestJS** - Modular Node.js framework
 - **Prisma** - Type-safe ORM
 - **PostgreSQL** - Primary database
-- **Redis** - Caching & job queues
+- **Redis** - Distributed Throttling & Caching
 - **BullMQ** - Background job processing
 
 ### Frontend
@@ -78,30 +100,6 @@ npm run dev:user
 - **Tailwind CSS** - Utility-first styling
 - **Radix UI** - Accessible components
 - **Framer Motion** - Animations
-
-### Infrastructure
-- **Docker** - Containerization
-- **Turborepo** - Monorepo management
-- **AWS S3** - Document storage
-
-## 🔐 Security
-
-- JWT authentication with refresh tokens
-- Role-Based Access Control (RBAC)
-- Organization-level data isolation
-- Input validation on all endpoints
-- Audit logging for all mutations
-
-## 📊 Quality Standards
-
-- **Lighthouse Score**: ≥ 90
-- **API Response (p95)**: < 200ms
-- **Test Coverage**: ≥ 80%
-- **Accessibility**: WCAG 2.1 AA
-
-## 📁 Environment Variables
-
-Create `.env` files in each app directory. See `.env.example` for required variables.
 
 ## 📝 License
 

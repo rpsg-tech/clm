@@ -40,6 +40,9 @@ RUN npx prisma generate --schema=apps/backend/prisma/schema.prisma
 # Build the NestJS application
 RUN npm run build --workspace=apps/backend
 
+# Prune dev dependencies to reduce image size
+RUN npm prune --production
+
 # ============ Stage 3: Production ============
 FROM node:20-alpine AS runner
 

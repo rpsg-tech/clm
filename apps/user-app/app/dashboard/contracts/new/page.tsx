@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, Check, Wand2, Calendar, FileText, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Wand2, Calendar, FileText, User, AlertCircle } from "lucide-react";
 import { WizardStepper } from "@/components/wizard-stepper";
 import { AIAssistantView } from "@/components/ai-assistant-view";
 import { TemplateSelectionView } from "@/components/template-selection-view";
@@ -114,120 +114,144 @@ function ContractDetailsForm({ data, onChange, templateName, onError }: Contract
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500 max-w-4xl mx-auto">
+        <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500 max-w-4xl mx-auto min-h-[600px]">
             <div className="text-center space-y-2 mb-8">
-                <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center mx-auto mb-3 border border-orange-100">
-                    <Wand2 className="w-5 h-5 text-orange-600" />
+                <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-4 border border-orange-100 ring-4 ring-orange-50/50">
+                    <Wand2 className="w-6 h-6 text-orange-600" />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Contract Details</h2>
-                <p className="text-slate-500 font-medium text-sm max-w-md mx-auto">Specifics for <span className="text-slate-900 font-bold">{templateName || "Contract"}</span>.</p>
+                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Contract Details</h2>
+                <p className="text-slate-500 font-medium text-sm max-w-md mx-auto">Specifics for <span className="text-slate-900 font-bold px-2 py-0.5 bg-slate-100 rounded-md">{templateName || "Contract"}</span>.</p>
             </div>
 
-            <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl p-8 space-y-8">
+            <Card className="bg-white border border-slate-100 shadow-xl shadow-slate-200/40 rounded-3xl p-6 sm:p-10 space-y-10">
                 {/* Basic Info Group */}
                 <div className="space-y-4">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-                        <FileText className="w-4 h-4 text-orange-600" />
-                        <h3 className="text-sm font-bold text-slate-900">General Information</h3>
+                    <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
+                        <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
+                            <FileText className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">General Information</h3>
                     </div>
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Contract Title</label>
-                        <input
-                            type="text"
-                            value={data.title || ""}
-                            onChange={(e) => handleChange("title", e.target.value)}
-                            placeholder="e.g. Master Service Agreement - Q4 2024"
-                            className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-bold text-base ${errors.title ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
-                        />
-                        {errors.title && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.title}</p>}
+                    <div className="space-y-2 group">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Contract Title</label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={data.title || ""}
+                                onChange={(e) => handleChange("title", e.target.value)}
+                                placeholder="e.g. Master Service Agreement - Q4 2024"
+                                className={`w-full bg-slate-50 border rounded-2xl px-5 py-4 text-slate-900 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-bold text-lg ${errors.title ? "border-rose-200 bg-rose-50 focus:ring-rose-500/10" : "border-slate-200 group-hover:border-slate-300"
+                                    }`}
+                            />
+                            {!errors.title && data.title?.length > 5 && (
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-emerald-500 animate-in fade-in zoom-in">
+                                    <Check size={20} strokeWidth={3} />
+                                </div>
+                            )}
+                        </div>
+                        {errors.title && <p className="text-rose-600 text-xs font-bold mt-1.5 ml-1 flex items-center gap-1">
+                            <AlertCircle size={12} /> {errors.title}
+                        </p>}
                     </div>
                 </div>
 
                 {/* Counterparty Group */}
                 <div className="space-y-4">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-                        <User className="w-4 h-4 text-orange-600" />
-                        <h3 className="text-sm font-bold text-slate-900">Counterparty</h3>
+                    <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
+                        <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
+                            <User className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Counterparty Details</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Entity Name</label>
-                            <input
-                                type="text"
-                                value={data.counterpartyName || ""}
-                                onChange={(e) => handleChange("counterpartyName", e.target.value)}
-                                placeholder="Client or Vendor Name"
-                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm ${errors.counterpartyName ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
-                            />
-                            {errors.counterpartyName && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.counterpartyName}</p>}
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Entity Name</label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={data.counterpartyName || ""}
+                                    onChange={(e) => handleChange("counterpartyName", e.target.value)}
+                                    placeholder="Client or Vendor Name"
+                                    className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm ${errors.counterpartyName ? "border-rose-200 bg-rose-50 focus:ring-rose-500/10" : "border-slate-200"
+                                        }`}
+                                />
+                                {!errors.counterpartyName && data.counterpartyName?.length > 2 && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-500 animate-in fade-in zoom-in">
+                                        <Check size={16} strokeWidth={3} />
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Email Address</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Email Address</label>
                             <input
                                 type="email"
                                 value={data.counterpartyEmail || ""}
                                 onChange={(e) => handleChange("counterpartyEmail", e.target.value)}
                                 placeholder="contact@example.com"
-                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm ${errors.counterpartyEmail ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
+                                className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm ${errors.counterpartyEmail ? "border-rose-200 bg-rose-50 focus:ring-rose-500/10" : "border-slate-200"
+                                    }`}
                             />
-                            {errors.counterpartyEmail && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.counterpartyEmail}</p>}
+                            {errors.counterpartyEmail && <p className="text-rose-600 text-xs font-bold mt-1.5 ml-1">{errors.counterpartyEmail}</p>}
                         </div>
                     </div>
                 </div>
 
                 {/* Commercial Terms Group */}
                 <div className="space-y-4">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-50">
-                        <Calendar className="w-4 h-4 text-orange-600" />
-                        <h3 className="text-sm font-bold text-slate-900">Terms & Value</h3>
+                    <div className="flex items-center gap-3 pb-2 border-b border-slate-100">
+                        <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center">
+                            <Calendar className="w-4 h-4 text-orange-600" />
+                        </div>
+                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">Terms & Value</h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Start Date</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Start Date</label>
                             <input
                                 type="date"
                                 value={data.startDate || ""}
                                 onChange={(e) => handleChange("startDate", e.target.value)}
-                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm ${errors.startDate ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
+                                className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm ${errors.startDate ? "border-rose-200 bg-rose-50" : "border-slate-200"
+                                    }`}
                             />
-                            {errors.startDate && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.startDate}</p>}
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">End Date</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">End Date</label>
                             <input
                                 type="date"
                                 value={data.endDate || ""}
                                 onChange={(e) => handleChange("endDate", e.target.value)}
-                                className={`w-full bg-slate-50 border rounded-xl px-4 py-2.5 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm ${errors.endDate ? "border-rose-200 bg-rose-50" : "border-slate-200"}`}
+                                className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-slate-900 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all font-medium text-sm ${errors.endDate ? "border-rose-200 bg-rose-50" : "border-slate-200"
+                                    }`}
                             />
-                            {errors.endDate && <p className="text-rose-600 text-[10px] font-bold mt-1">{errors.endDate}</p>}
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Contract Value</label>
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Contract Value</label>
                             <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">₹</span>
                                 <input
                                     type="number"
                                     value={data.amount || ""}
                                     onChange={(e) => handleChange("amount", e.target.value)}
                                     placeholder="0.00"
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 pl-8 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-mono font-medium text-sm"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pl-8 text-slate-900 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-mono font-bold text-sm"
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Scope / Brief</label>
+                    <div className="space-y-2 pt-2">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wide ml-1">Scope / Brief</label>
                         <textarea
                             value={data.description || ""}
                             onChange={(e) => handleChange("description", e.target.value)}
                             placeholder="Briefly describe the purpose of this agreement..."
                             rows={3}
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm resize-none"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all placeholder-slate-400 font-medium text-sm resize-none"
                         />
                     </div>
                 </div>
@@ -496,10 +520,10 @@ export default function NewContractPage() {
 
                         {/* Collapsible Sidebar */}
                         <div className={`
-                            border-l border-slate-200 bg-white transition-all duration-300 ease-in-out flex flex-col z-20
-                             ${showAiPanel ? 'w-[400px] translate-x-0 opacity-100' : 'w-0 translate-x-full opacity-0 overflow-hidden'}
+                            border-l border-slate-200 bg-white transition-all duration-300 ease-in-out flex flex-col z-30
+                             ${showAiPanel ? 'w-[85vw] sm:w-[400px] translate-x-0 opacity-100 max-xl:absolute max-xl:right-0 max-xl:h-full max-xl:shadow-2xl' : 'w-0 translate-x-full opacity-0 overflow-hidden'}
                         `}>
-                            <div className="h-full flex flex-col min-w-[400px]">
+                            <div className="h-full flex flex-col min-w-full">
                                 <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                                     <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
                                         <Wand2 className="w-4 h-4 text-orange-600" />
@@ -564,10 +588,10 @@ export default function NewContractPage() {
                         </div>
 
                         <div className={`
-                            border-l border-slate-200 bg-white transition-all duration-300 ease-in-out flex flex-col z-20
-                             ${showAiPanel ? 'w-[400px] translate-x-0 opacity-100' : 'w-0 translate-x-full opacity-0 overflow-hidden'}
+                            border-l border-slate-200 bg-white transition-all duration-300 ease-in-out flex flex-col z-30
+                             ${showAiPanel ? 'w-[85vw] sm:w-[400px] translate-x-0 opacity-100 max-xl:absolute max-xl:right-0 max-xl:h-full max-xl:shadow-2xl' : 'w-0 translate-x-full opacity-0 overflow-hidden'}
                         `}>
-                            <div className="h-full flex flex-col min-w-[400px]">
+                            <div className="h-full flex flex-col min-w-full">
                                 <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                                     <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
                                         <Wand2 className="w-4 h-4 text-orange-600" />

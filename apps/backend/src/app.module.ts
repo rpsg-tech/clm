@@ -14,6 +14,8 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
 import { IdempotencyMiddleware } from './common/middleware/idempotency.middleware';
 import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { validateEnvironment } from './common/config/config.validation';
+import { RedisService } from './redis/redis.service';
+import { RedisThrottlerStorage } from './common/throttler/redis-throttler.storage';
 
 // Core Modules
 import { PrismaModule } from './prisma/prisma.module';
@@ -54,20 +56,26 @@ import { NotificationsModule } from './notifications/notifications.module';
 
         // Rate Limiting
         // Rate Limiting
-        ThrottlerModule.forRoot({
-            throttlers: [
-                {
-                    name: 'default',
-                    ttl: 60000, // 1 minute
-                    limit: 1000, // 1000 requests per minute
-                },
-                {
-                    name: 'strict',
-                    ttl: 60000,
-                    limit: 60, // 60 requests per minute for sensitive endpoints
-                },
-            ],
-            errorMessage: 'Too many requests, please try again later.',
+        // Rate Limiting
+        ThrottlerModule.forRootAsync({
+            imports: [RedisModule],
+            inject: [RedisService],
+            useFactory: (redisService: RedisService) => ({
+                throttlers: [
+                    {
+                        name: 'default',
+                        ttl: 60000,
+                        limit: 1000,
+                    },
+                    {
+                        name: 'strict',
+                        ttl: 60000,
+                        limit: 60,
+                    },
+                ],
+                errorMessage: 'Too many requests, please try again later.',
+                storage: new RedisThrottlerStorage(redisService),
+            }),
         }),
 
         // Core
