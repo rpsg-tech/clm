@@ -8,6 +8,8 @@ import { Button, Input, Checkbox, Spinner } from '@repo/ui';
 import { useAuth } from '@/lib/auth-context';
 import { Shield, Lock, FileText, CheckCircle2 } from 'lucide-react';
 
+import { Logo } from '@/components/logo';
+
 export default function LoginPage() {
     const router = useRouter();
     const { login } = useAuth();
@@ -57,11 +59,9 @@ export default function LoginPage() {
                 </div>
 
                 {/* Top Brand */}
-                <div className="relative z-10 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center shadow-lg shadow-orange-600/20">
-                        <FileText className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="text-2xl font-bold tracking-tight">CLM Enterprise</span>
+                {/* Top Brand */}
+                <div className="relative z-10">
+                    <Logo />
                 </div>
 
                 {/* Middle Quote */}
@@ -98,11 +98,8 @@ export default function LoginPage() {
 
                     {/* Header */}
                     <div className="text-center lg:text-left">
-                        <div className="flex lg:hidden items-center justify-center gap-2 mb-8">
-                            <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center">
-                                <FileText className="w-5 h-5 text-white" />
-                            </div>
-                            <span className="text-xl font-bold text-slate-900">CLM Enterprise</span>
+                        <div className="lg:hidden mb-8">
+                            <Logo className="justify-center" lightMode={true} textSize="text-xl" iconSize="w-8 h-8" />
                         </div>
                         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Welcome back</h1>
                         <p className="mt-2 text-slate-500">Enter your credentials to access the workspace.</p>
