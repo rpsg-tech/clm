@@ -509,7 +509,7 @@ export const api = {
 
   // Oracle AI
   oracle: {
-    chat: (data: { query: string; contextUrl?: string }) =>
+    chat: (data: { query: string; contextUrl?: string; organizationId?: string }) =>
       authFetch<{ response: string; context?: any; meta?: any }>('/oracle/chat', {
         method: 'POST',
         body: JSON.stringify(data)

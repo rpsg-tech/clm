@@ -22,13 +22,7 @@ import { useEffect, forwardRef, useImperativeHandle } from 'react';
 import { EditorToolbar } from './editor-toolbar';
 import { VariableExtension } from './extensions/variable-extension';
 
-interface TipTapEditorProps {
-    content: string;
-    onChange: (content: string) => void;
-    editable?: boolean;
-    className?: string;
-    placeholder?: string;
-}
+
 
 export interface TipTapEditorRef {
     insertContent: (content: string) => void;

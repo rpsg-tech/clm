@@ -31,9 +31,13 @@ export async function POST(req: NextRequest) {
         } else {
             // PRODUCTION (Vercel): Use sparticuz/chromium
             browser = await puppeteer.launch({
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 args: (chromium as any).args,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 defaultViewport: (chromium as any).defaultViewport,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 executablePath: await (chromium as any).executablePath(),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 headless: (chromium as any).headless,
             });
         }
@@ -62,6 +66,7 @@ export async function POST(req: NextRequest) {
         await browser.close();
 
         // Return PDF stream
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return new NextResponse(pdfBuffer as any, {
             headers: {
                 'Content-Type': 'application/pdf',
