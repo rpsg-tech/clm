@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-
+import { api } from '@/lib/api-client';
 import { Sparkles, X, Send, Bot, Paperclip, Maximize2, Minimize2, ChevronDown, ArrowRight } from 'lucide-react';
 import { cn } from '@repo/ui';
 import { useAuth } from '@/lib/auth-context';
@@ -25,7 +25,7 @@ interface Message {
 }
 
 export function OracleAssistant() {
-    const { user } = useAuth();
+    const { user, currentOrg: organization } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [input, setInput] = useState('');
@@ -69,29 +69,33 @@ export function OracleAssistant() {
         setInput('');
         setIsTyping(true);
 
-        // Simulate AI Response with "Smart" delay based on length
-        const delay = Math.min(1000 + text.length * 20, 3000);
-
-        setTimeout(() => {
-            let responseContent = "I'm analyzing your request. Since I am a demo integration, I can help navigate the dashboard or explain contract clauses, but I'm not fully connected to the LLM backend yet.";
-
-            // Simple keyword matching for "functional" feel
-            const lowerText = text.toLowerCase();
-            if (lowerText.includes('draft') || lowerText.includes('nda')) {
-                responseContent = "I can help with that. To draft an NDA, please navigate to the 'New Contract' page or click the '+' button in the sidebar. Would you like me to take you there?";
-            } else if (lowerText.includes('expiring') || lowerText.includes('analyze')) {
-                responseContent = "I've scanned your recent contracts. There are 2 contracts expiring this month. I recommend reviewing the 'Master Service Agreement' with Acme Corp.";
-            }
+        try {
+            // Real API Call with Context
+            const result = await api.oracle.chat({
+                query: text.trim(),
+                contextUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+                organizationId: organization?.id
+            });
 
             const aiMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',
-                content: responseContent,
+                content: result.response,
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, aiMsg]);
+        } catch (error) {
+            console.error('Oracle Error:', error);
+            const errorMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: "I'm securely connected, but I couldn't reach the reasoning engine. Please try again or contact support.",
+                timestamp: new Date()
+            };
+            setMessages(prev => [...prev, errorMsg]);
+        } finally {
             setIsTyping(false);
-        }, delay);
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -165,13 +169,27 @@ export function OracleAssistant() {
                                 {/* Bubble */}
                                 <div
                                     className={cn(
-                                        "max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm",
+                                        "max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap",
                                         msg.role === 'assistant'
                                             ? "bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none"
                                             : "bg-orange-600 text-white rounded-tr-none shadow-orange-900/20"
                                     )}
                                 >
-                                    {msg.content}
+                                    {msg.content.split(/(\[[^\]]+\]\([^)]+\))/g).map((part, i) => {
+                                        const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+                                        if (match) {
+                                            return (
+                                                <a
+                                                    key={i}
+                                                    href={match[2]}
+                                                    className="underline decoration-orange-400/50 hover:decoration-orange-400 hover:text-white transition-colors font-medium"
+                                                >
+                                                    {match[1]}
+                                                </a>
+                                            );
+                                        }
+                                        return part;
+                                    })}
                                     <div className={`text-[9px] mt-1.5 font-medium opacity-50 ${msg.role === 'user' ? 'text-right' : ''}`}>
                                         {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </div>

@@ -22,7 +22,7 @@ export function MobileHeader() {
                     </SheetTrigger>
                     <SheetContent side="left" className="p-0 w-[300px]">
                         {/* Override sticky and height for mobile drawer context */}
-                        <DashboardSidebar className="w-full border-none h-full min-h-0 bg-white static top-0 p-4 shadow-none" />
+                        <DashboardSidebar className="w-full border-none h-full min-h-0 static top-0 p-4 shadow-none" />
                         <div className="sr-only">
                             <SheetTitle>Mobile Menu</SheetTitle>
                             <SheetDescription>

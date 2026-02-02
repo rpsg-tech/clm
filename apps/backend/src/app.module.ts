@@ -38,6 +38,7 @@ import { SearchModule } from './search/search.module';
 import { RedisModule } from './redis/redis.module';
 import { StorageModule } from './common/storage/storage.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { OracleModule } from './oracle/oracle.module';
 
 @Module({
     imports: [
@@ -99,6 +100,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 
         NotificationsModule,
         StorageModule,
+        OracleModule,
     ],
     providers: [
         // Apply rate limiting globally

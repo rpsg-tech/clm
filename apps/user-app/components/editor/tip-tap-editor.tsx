@@ -18,7 +18,7 @@ import Underline from '@tiptap/extension-underline';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import CharacterCount from '@tiptap/extension-character-count';
-import { useEffect } from 'react';
+import { useEffect, forwardRef, useImperativeHandle } from 'react';
 import { EditorToolbar } from './editor-toolbar';
 import { VariableExtension } from './extensions/variable-extension';
 
@@ -30,7 +30,22 @@ interface TipTapEditorProps {
     placeholder?: string;
 }
 
-export function TipTapEditor({ content, onChange, editable = true, className = "", placeholder = "Start typing..." }: TipTapEditorProps) {
+export interface TipTapEditorRef {
+    insertContent: (content: string) => void;
+    getSelectedText: () => string;
+    focus: () => void;
+}
+
+interface TipTapEditorProps {
+    content: string;
+    onChange: (content: string) => void;
+    onSelectionChange?: (text: string) => void;
+    editable?: boolean;
+    className?: string;
+    placeholder?: string;
+}
+
+export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(({ content, onChange, onSelectionChange, editable = true, className = "", placeholder = "Start typing..." }, ref) => {
     const editor = useEditor({
         immediatelyRender: false,
         extensions: [
@@ -70,12 +85,39 @@ export function TipTapEditor({ content, onChange, editable = true, className = "
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML());
         },
+        onSelectionUpdate: ({ editor }) => {
+            if (onSelectionChange) {
+                const selection = editor.state.doc.textBetween(
+                    editor.state.selection.from,
+                    editor.state.selection.to,
+                    ' '
+                );
+                onSelectionChange(selection);
+            }
+        },
         editorProps: {
             attributes: {
                 class: 'prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl focus:outline-none max-w-none min-h-full p-8 lg:p-12',
             },
         },
     });
+
+    useImperativeHandle(ref, () => ({
+        insertContent: (content: string) => {
+            editor?.chain().focus().insertContent(content).run();
+        },
+        getSelectedText: () => {
+            if (!editor) return "";
+            return editor.state.doc.textBetween(
+                editor.state.selection.from,
+                editor.state.selection.to,
+                ' '
+            );
+        },
+        focus: () => {
+            editor?.chain().focus().run();
+        }
+    }));
 
     const insertVariable = (label: string) => {
         editor?.chain().focus().insertContent({
@@ -133,9 +175,12 @@ export function TipTapEditor({ content, onChange, editable = true, className = "
                 <div className="flex gap-4">
                     <span>{editor.storage.characterCount.characters()} characters</span>
                     <span>{editor.storage.characterCount.words()} words</span>
+                    {onSelectionChange && <span>Selection Active</span>}
                 </div>
                 <span>Pro Tip: Type '/' for commands</span>
             </div>
         </div>
     );
-}
+});
+
+TipTapEditor.displayName = 'TipTapEditor';

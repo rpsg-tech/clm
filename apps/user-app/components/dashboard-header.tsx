@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Badge } from '@repo/ui';
 import { useAuth } from '@/lib/auth-context';
 import { NotificationBell } from '@/components/notification-bell';
-import { ChevronDown, Sparkles } from 'lucide-react';
+import { ChevronDown, Sparkles, User } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
 export function DashboardHeader() {
@@ -36,24 +36,12 @@ export function DashboardHeader() {
     return (
         <header className="sticky top-0 z-50 glass border-b border-neutral-200/60 shadow-glass">
             <div className="flex items-center justify-between px-6 py-3 h-[64px]">
-                {/* Logo & Org Context */}
+                {/* Breadcrumb / Context */}
                 <div className="flex items-center gap-6">
-                    <Link href="/dashboard" className="flex items-center gap-2 group">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white shadow-lg shadow-primary-500/30 transition-transform group-hover:scale-105">
-                            <Sparkles className="w-4 h-4 fill-white" />
-                        </div>
-                        <span className="text-xl font-bold bg-neutral-900 bg-clip-text text-transparent">
-                            CLM
-                        </span>
-                    </Link>
-
-                    <div className="h-6 w-px bg-neutral-200" />
-
                     <div className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-neutral-50 transition-colors cursor-default">
                         <span className="text-sm font-semibold text-neutral-700 tracking-tight">{currentOrg.name}</span>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 h-5 font-mono shadow-none border-neutral-200 bg-neutral-100 text-neutral-500 uppercase">
-                            {currentOrg.code}
-                        </Badge>
+                        <span className="text-neutral-300">/</span>
+                        <span className="text-sm font-bold text-neutral-900">Contracts</span>
                     </div>
                 </div>
 
@@ -67,16 +55,11 @@ export function DashboardHeader() {
                     <div className="relative" ref={menuRef}>
                         <button
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-full hover:bg-neutral-50 transition-all border border-transparent hover:border-neutral-200"
+                            className="rounded-full hover:bg-neutral-100 transition-all focus:outline-none focus:ring-2 focus:ring-neutral-200"
                         >
-                            <div className="flex flex-col items-end mr-1">
-                                <span className="text-sm font-semibold text-neutral-900 leading-none">{user.name}</span>
-                                <span className="text-[10px] text-neutral-500 font-medium uppercase tracking-wide mt-0.5">{role}</span>
+                            <div className="w-9 h-9 rounded-full bg-neutral-50 border border-neutral-200 flex items-center justify-center text-neutral-600 hover:text-neutral-900 transition-colors">
+                                <User className="w-5 h-5" />
                             </div>
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200 border border-white shadow-sm flex items-center justify-center">
-                                <span className="text-xs font-bold text-neutral-600">{user.name.charAt(0)}</span>
-                            </div>
-                            <ChevronDown className={`w-3 h-3 text-neutral-400 transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {/* Dropdown */}

@@ -21,3 +21,4 @@ export { Spinner, LoadingOverlay } from "./components/spinner";
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "./components/ui/tooltip";
 export { Switch } from "./components/ui/switch";
 export * from "./components/ui/sheet";
+export * from "./components/dropdown-menu";

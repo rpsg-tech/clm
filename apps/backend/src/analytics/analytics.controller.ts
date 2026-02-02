@@ -26,7 +26,7 @@ export class AnalyticsController {
     async getContractSummary(@CurrentUser() user: AuthenticatedUser) {
         const orgId = user.orgId;
 
-        const [total, byStatus] = await Promise.all([
+        const [total, byStatus, activeValueResult] = await Promise.all([
             // Total contracts
             this.prisma.contract.count({
                 where: { organizationId: orgId },
@@ -38,6 +38,15 @@ export class AnalyticsController {
                 where: { organizationId: orgId },
                 _count: true,
             }),
+
+            // Total Active Value
+            this.prisma.contract.aggregate({
+                _sum: { amount: true },
+                where: {
+                    organizationId: orgId,
+                    status: { in: ['ACTIVE', 'COUNTERSIGNED', 'APPROVED', 'SENT_TO_COUNTERPARTY'] as any[] }
+                }
+            })
         ]);
 
         // Convert groupBy to object
@@ -50,7 +59,8 @@ export class AnalyticsController {
             total,
             byStatus: statusCounts,
             pendingApproval: (statusCounts['PENDING_LEGAL'] || 0) + (statusCounts['PENDING_FINANCE'] || 0),
-            active: (statusCounts['ACTIVE'] || 0) + (statusCounts['SIGNED'] || 0) + (statusCounts['COUNTERSIGNED'] || 0) + (statusCounts['SENT_TO_COUNTERPARTY'] || 0),
+            active: (statusCounts['ACTIVE'] || 0) + (statusCounts['COUNTERSIGNED'] || 0) + (statusCounts['SENT_TO_COUNTERPARTY'] || 0) + (statusCounts['APPROVED'] || 0),
+            activeValue: activeValueResult._sum.amount || 0,
             draft: statusCounts['DRAFT'] || 0,
             rejected: statusCounts['REJECTED'] || 0,
             expired: (statusCounts['EXPIRED'] || 0) + (statusCounts['TERMINATED'] || 0),

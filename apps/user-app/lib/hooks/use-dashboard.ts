@@ -20,6 +20,7 @@ export function useDashboardData(orgId?: string) {
                 stats: {
                     totalContracts: (summary as any).total || 0,
                     activeContracts: (summary as any).active || 0,
+                    activeValue: (summary as any).activeValue || 0,
                     draftContracts: (summary as any).draft || 0,
                     pendingApprovals: (Array.isArray(approvalsLegal) ? approvalsLegal.length : 0) +
                         (Array.isArray(approvalsFinance) ? approvalsFinance.length : 0),

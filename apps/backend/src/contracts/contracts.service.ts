@@ -298,6 +298,12 @@ export class ContractsService {
             organizationId,
             status: params?.status,
             createdByUserId: params?.createdByUserId,
+            ...(params?.expiringDays && {
+                endDate: {
+                    gte: new Date(),
+                    lte: new Date(new Date().getTime() + params.expiringDays * 24 * 60 * 60 * 1000),
+                },
+            }),
             ...(params?.search && {
                 OR: [
                     { title: { contains: params.search, mode: 'insensitive' } },

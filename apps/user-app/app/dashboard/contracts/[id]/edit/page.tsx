@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button, Spinner, Badge } from '@repo/ui';
 import { api } from '@/lib/api-client';
@@ -9,8 +9,9 @@ import { ArrowLeft, Save, Send, Wand2, Maximize2, Minimize2 } from 'lucide-react
 import { AnnexureItem, AnnexuresView } from '@/components/annexures-view';
 import { PageErrorBoundary } from '@/components/error-boundary';
 import { ContractAssistantSidebar } from '@/components/contract-assistant-sidebar';
-import { ContractEditorView } from '@/components/contract-editor-view';
+import { ContractEditorView, ContractEditorRef } from '@/components/contract-editor-view';
 import { ContractNavigationSidebar } from '@/components/contract-navigation-sidebar';
+import { AiClauseAssistant } from '@/components/ai-clause-assistant';
 
 interface Contract {
     id: string;
@@ -93,6 +94,8 @@ function EditContractContent() {
 
     // Unified Selection State
     const [activeDocId, setActiveDocId] = useState<string>('main');
+    const [selectedText, setSelectedText] = useState("");
+    const editorRef = useRef<ContractEditorRef>(null);
 
     // Data States
     const [contract, setContract] = useState<Contract | null>(null);
@@ -324,8 +327,10 @@ function EditContractContent() {
                         {activeDocId === 'main' ? (
                             /* Read Only Main Agreement */
                             <ContractEditorView
+                                ref={editorRef}
                                 content={contract.content || '<p class="text-slate-400 italic text-center py-10">No main content available.</p>'}
                                 onChange={() => { }}
+                                onSelectionChange={setSelectedText}
                                 readOnly={true}
                                 className="h-full border-none shadow-none rounded-none"
                             />
@@ -345,8 +350,10 @@ function EditContractContent() {
                                     </div>
                                 </div>
                                 <ContractEditorView
+                                    ref={editorRef}
                                     content={activeAnnexure.content}
                                     onChange={(val) => handleAnnexureChange(activeAnnexure.id, val)}
+                                    onSelectionChange={setSelectedText}
                                     readOnly={false}
                                     className="h-full border-none shadow-none rounded-none"
                                     toolbarSimple={true}
@@ -374,7 +381,13 @@ function EditContractContent() {
                             </Button>
                         </div>
                         <div className="flex-1 overflow-hidden">
-                            <ContractAssistantSidebar embedded className="h-full" />
+                            <AiClauseAssistant
+                                isOpen={showAiPanel}
+                                onClose={() => setShowAiPanel(false)}
+                                onInsertClause={(text) => editorRef.current?.insertContent(text)}
+                                selectedText={selectedText}
+                                embedded={true}
+                            />
                         </div>
                     </div>
                 </div>

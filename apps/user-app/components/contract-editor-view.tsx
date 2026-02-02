@@ -1,20 +1,36 @@
 "use client";
 
+import { useRef, forwardRef, useImperativeHandle } from "react";
 import { ArrowLeft, ArrowRight, FileText } from "lucide-react";
-import { TipTapEditor } from "@/components/editor/tip-tap-editor";
+import { TipTapEditor, TipTapEditorRef } from "@/components/editor/tip-tap-editor";
 
 interface ContractEditorViewProps {
     content: string;
     onChange: (content: string) => void;
     onContinue?: () => void;
+    onSelectionChange?: (text: string) => void;
     className?: string;
     toolbarSimple?: boolean;
     readOnly?: boolean;
 }
 
-export function ContractEditorView({ content, onChange, onContinue, className = "", toolbarSimple = false, readOnly = false }: ContractEditorViewProps) {
-    // Preserve newlines handled by parent or RichTextEditor logic now
+export interface ContractEditorRef {
+    insertContent: (content: string) => void;
+    getSelectedText: () => string;
+}
 
+export const ContractEditorView = forwardRef<ContractEditorRef, ContractEditorViewProps>(({ content, onChange, onContinue, onSelectionChange, className = "", toolbarSimple = false, readOnly = false }, ref) => {
+    // Preserve newlines handled by parent or RichTextEditor logic now
+    const editorRef = useRef<TipTapEditorRef>(null);
+
+    useImperativeHandle(ref, () => ({
+        insertContent: (content: string) => {
+            editorRef.current?.insertContent(content);
+        },
+        getSelectedText: () => {
+            return editorRef.current?.getSelectedText() || "";
+        }
+    }));
 
     return (
         <div className={`flex flex-col h-full bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-sm animate-in fade-in zoom-in-95 duration-300 ${className}`}>
@@ -40,8 +56,10 @@ export function ContractEditorView({ content, onChange, onContinue, className = 
             {/* Main Editor */}
             <div className={`flex-1 overflow-hidden flex flex-col min-h-0 ${toolbarSimple ? 'bg-white p-4' : 'bg-gray-50/30 p-6'}`}>
                 <TipTapEditor
+                    ref={editorRef}
                     content={content}
                     onChange={onChange}
+                    onSelectionChange={onSelectionChange}
                     editable={!readOnly}
                     className="h-full"
                 />
@@ -61,4 +79,6 @@ export function ContractEditorView({ content, onChange, onContinue, className = 
             )}
         </div>
     );
-}
+});
+
+ContractEditorView.displayName = 'ContractEditorView';

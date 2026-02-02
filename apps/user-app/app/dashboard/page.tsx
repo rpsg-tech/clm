@@ -1,33 +1,37 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, Badge, Skeleton, Button } from '@repo/ui';
+import {
+    Card,
+    Badge,
+    Skeleton,
+    Button,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+    DropdownMenuSeparator
+} from '@repo/ui';
 import { useAuth, usePermission } from '@/lib/auth-context';
-import { api } from '@/lib/api-client';
 import { useDashboardData } from '@/lib/hooks/use-dashboard';
 import {
     FileText,
     Clock,
-    CheckCircle2,
     AlertCircle,
     Plus,
     ArrowRight,
     TrendingUp,
-    FileSignature,
+    MoreHorizontal,
+    Eye,
+    Edit2,
+    Trash2,
+    Download,
+    MessageSquare,
     Sparkles,
-    Calendar,
-    ArrowUpRight,
-    Zap,
-    Briefcase
+    Briefcase,
+    Mail
 } from 'lucide-react';
-
-interface DashboardStats {
-    totalContracts: number;
-    activeContracts: number;
-    draftContracts: number;
-    pendingApprovals: number;
-}
 
 interface RecentContract {
     id: string;
@@ -39,21 +43,16 @@ interface RecentContract {
     counterpartyName?: string;
 }
 
-interface PendingApproval {
-    id: string;
-    contractTitle: string;
-    submittedBy: string;
-    submittedAt: string;
-    approvalType: 'LEGAL' | 'FINANCE';
-}
-
 export default function DashboardPage() {
     const router = useRouter();
-    const { user, currentOrg, permissions } = useAuth();
+    const { user, currentOrg } = useAuth();
+    const [isOracleOpen, setIsOracleOpen] = useState(false);
 
     // Permissions
     const canViewContracts = usePermission('contract:view');
     const canCreateContract = usePermission('contract:create');
+    const canEditContract = usePermission('contract:edit');
+    const canDeleteContract = usePermission('contract:delete');
     const canViewLegalApprovals = usePermission('approval:legal:view');
     const canViewFinanceApprovals = usePermission('approval:finance:view');
 
@@ -63,6 +62,7 @@ export default function DashboardPage() {
     const stats = dashboardData?.stats || {
         totalContracts: 0,
         activeContracts: 0,
+        activeValue: 0,
         draftContracts: 0,
         pendingApprovals: 0
     };
@@ -70,6 +70,7 @@ export default function DashboardPage() {
     const recentContracts = (dashboardData?.recentContracts || []) as RecentContract[];
     const pendingApprovals = (dashboardData?.pendingApprovals || []).map((approval: any) => ({
         id: approval.id,
+        contractId: approval.contract?.id,
         contractTitle: approval.contract?.title || 'Unknown Contract',
         submittedBy: approval.contract?.createdByUser?.name || 'Unknown',
         submittedAt: approval.createdAt,
@@ -83,23 +84,33 @@ export default function DashboardPage() {
         if (hour < 18) return 'Good afternoon';
         return 'Good evening';
     })();
-    const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-    const getStatusColor = (status: string) => {
+    const getStatusStyles = (status: string) => {
         const statusMap: Record<string, string> = {
-            DRAFT: 'bg-slate-50 text-slate-500 border-slate-200',
-            PENDING_LEGAL: 'bg-amber-50 text-amber-600 border-amber-100',
-            PENDING_FINANCE: 'bg-amber-50 text-amber-600 border-amber-100',
-            ACTIVE: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-            SIGNED: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-            REJECTED: 'bg-rose-50 text-rose-600 border-rose-100',
-            CANCELLED: 'bg-rose-50 text-rose-600 border-rose-100',
+            DRAFT: 'bg-slate-100 text-slate-600',
+            PENDING_LEGAL: 'bg-amber-50 text-amber-700 border-amber-200',
+            PENDING_FINANCE: 'bg-amber-50 text-amber-700 border-amber-200',
+            ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            SIGNED: 'bg-blue-50 text-blue-700 border-blue-200',
+            REJECTED: 'bg-rose-50 text-rose-700 border-rose-200',
+            CANCELLED: 'bg-rose-50 text-rose-700 border-rose-200',
         };
-        return statusMap[status] || 'bg-slate-50 text-slate-500 border-slate-100';
+        return statusMap[status] || 'bg-slate-50 text-slate-500';
     };
 
     const formatStatus = (status: string) => {
         return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    };
+
+    const formatCurrency = (amount: number) => {
+        if (amount >= 10000000) {
+            return `₹${(amount / 10000000).toFixed(1)}Cr`;
+        } else if (amount >= 100000) {
+            return `₹${(amount / 100000).toFixed(1)}L`;
+        } else if (amount >= 1000) {
+            return `₹${(amount / 1000).toFixed(1)}k`;
+        }
+        return `₹${amount.toLocaleString('en-IN')}`;
     };
 
     if (!user || !currentOrg) {
@@ -111,16 +122,13 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700 pb-20 selection:bg-orange-100 relative max-w-[1600px] mx-auto px-6 py-8">
+        <div className="space-y-6 animate-in fade-in duration-700 pb-24 selection:bg-orange-100 relative">
 
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div className="space-y-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{currentDate}</p>
-                    </div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight leading-none">
+                <div>
+
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight leading-none mb-2">
                         {timeOfDay}, {user.name.split(' ')[0]}
                     </h1>
                     <p className="text-slate-500 font-medium text-sm">Here is your operational snapshot for <span className="text-slate-900 font-bold">{currentOrg.name}</span>.</p>
@@ -129,309 +137,271 @@ export default function DashboardPage() {
                 {canCreateContract && (
                     <Button
                         onClick={() => router.push('/dashboard/contracts/new')}
-                        className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl px-5 h-10 shadow-lg shadow-orange-600/20 border-none transition-all font-bold tracking-tight uppercase text-[10px] flex items-center gap-2"
+                        className="bg-orange-600 hover:bg-orange-500 text-white rounded-xl px-6 h-11 shadow-lg shadow-orange-600/30 transition-all hover:scale-[1.02] hover:shadow-orange-600/40 font-bold tracking-tight text-sm group relative overflow-hidden flex items-center gap-2"
+                        size="lg"
                     >
-                        <Plus className="w-4 h-4" />
-                        New Contract
+                        <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
+                        Create New Contract
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                     </Button>
                 )}
             </div>
 
-
-
-            {/* Stats Grid - Compact */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {canViewContracts && (
-                    <>
-                        <Card className="bg-white border border-slate-100 shadow-sm rounded-xl p-4 hover:border-slate-200 transition-colors">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Volume</div>
-                                <div className="p-1.5 bg-blue-50 rounded-lg">
-                                    <FileText className="w-3.5 h-3.5 text-blue-600" />
-                                </div>
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{stats.totalContracts}</h3>
-                                <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                                    <TrendingUp className="w-3 h-3" />
-                                    <span>+12%</span>
-                                </div>
-                            </div>
-                        </Card>
-
-                        <Card className="bg-white border border-slate-100 shadow-sm rounded-xl p-4 hover:border-slate-200 transition-colors">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Active & Live</div>
-                                <div className="p-1.5 bg-emerald-50 rounded-lg">
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                </div>
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{stats.activeContracts}</h3>
-                                <span className="text-[10px] font-bold text-slate-400">Contracts running</span>
-                            </div>
-                        </Card>
-
-                        <Card className="bg-white border border-slate-100 shadow-sm rounded-xl p-4 hover:border-slate-200 transition-colors">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pending Drafts</div>
-                                <div className="p-1.5 bg-amber-50 rounded-lg">
-                                    <Clock className="w-3.5 h-3.5 text-amber-600" />
-                                </div>
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                                <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{stats.draftContracts}</h3>
-                                <span className="text-[10px] font-bold text-slate-400">Work in progress</span>
-                            </div>
-                        </Card>
-                    </>
-                )}
-
-                {(canViewLegalApprovals || canViewFinanceApprovals) && (
-                    <Card className="bg-slate-900 border border-slate-800 shadow-sm rounded-xl p-4 text-white relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl -mr-16 -mt-16 pointer-events-none group-hover:bg-orange-500/20 transition-colors" />
-                        <div className="flex items-center justify-between mb-3 relative z-10">
-                            <div className="text-[10px] font-bold text-orange-200/60 uppercase tracking-wider">Approvals</div>
-                            <div className="p-1.5 bg-white/10 rounded-lg">
-                                <Zap className="w-3.5 h-3.5 text-orange-400" />
-                            </div>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="bg-white border-0 shadow-sm rounded-2xl p-6 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Volume</p>
+                            <h3 className="text-4xl font-bold text-slate-900 tracking-tight">{stats.totalContracts}</h3>
                         </div>
-                        <div className="flex items-baseline gap-2 relative z-10">
-                            <h3 className="text-2xl font-bold text-white tracking-tight">{stats.pendingApprovals}</h3>
-                            <span className="text-[10px] font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded border border-orange-500/20">Action Required</span>
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                            <FileText size={20} />
                         </div>
-                    </Card>
-                )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center text-emerald-600 text-xs font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+                            <TrendingUp size={12} className="mr-1" />
+                            +12%
+                        </div>
+                        <span className="text-slate-400 text-xs">from last month</span>
+                    </div>
+                </Card>
+
+                <Card className="bg-white border-0 shadow-sm rounded-2xl p-6 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Active Value</p>
+                            <h3 className="text-4xl font-bold text-slate-900 tracking-tight">{formatCurrency(stats.activeValue || 0)}</h3>
+                        </div>
+                        <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                            <Briefcase size={20} />
+                        </div>
+                    </div>
+                    <span className="text-slate-400 text-xs">Total active contract value</span>
+                </Card>
+
+                <Card className="bg-white border-0 shadow-sm rounded-2xl p-6 relative overflow-hidden group hover:shadow-md transition-all duration-300">
+                    <div className="flex justify-between items-start mb-4">
+                        <div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Pending Drafts</p>
+                            <h3 className="text-4xl font-bold text-slate-900 tracking-tight">{stats.draftContracts}</h3>
+                        </div>
+                        <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
+                            <Clock size={20} />
+                        </div>
+                    </div>
+                    <span className="text-slate-400 text-xs">Work in progress</span>
+                </Card>
             </div>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Recent Activity Section */}
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 tracking-tight">
-                            Recent Contracts
-                        </h2>
-                        {canViewContracts && (
-                            <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/contracts')} className="text-slate-500 hover:text-slate-900 font-bold text-xs flex items-center gap-1 group transition-colors">
-                                View All <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                            </Button>
-                        )}
+            {/* Attention Needed Banner */}
+            {(stats.pendingApprovals > 0 || (dashboardData?.expiringContracts?.length || 0) > 0) && (
+                <div className="bg-rose-50 border border-rose-100 rounded-2xl p-1">
+                    <div className="px-4 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-rose-700 font-bold text-sm">
+                            <AlertCircle size={16} />
+                            Attention Needed
+                        </div>
+                        <Badge variant="outline" className="bg-white text-rose-700 border-rose-200">
+                            Expiring in ≤ 30 days
+                        </Badge>
                     </div>
-
-                    {/* Expiring Contracts Widget (Common for all roles) */}
-                    {(dashboardData?.expiringContracts?.length || 0) > 0 && (
-                        <Card className="bg-orange-50/50 border border-orange-100 shadow-sm rounded-2xl overflow-hidden mb-6">
-                            <div className="p-4 border-b border-orange-100 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-orange-600" />
-                                    <h3 className="text-sm font-bold text-orange-900 tracking-wide">Expiring Soon (30 Days)</h3>
-                                </div>
-                                <Badge className="bg-orange-100 text-orange-700 border-orange-200">{dashboardData?.expiringContracts?.length}</Badge>
-                            </div>
-                            <div className="divide-y divide-orange-100/50">
-                                {dashboardData?.expiringContracts?.map((contract: any) => (
-                                    <div key={contract.id} className="p-4 flex items-center justify-between hover:bg-orange-50 transition-colors cursor-pointer" onClick={() => router.push(`/dashboard/contracts/${contract.id}`)}>
-                                        <div>
-                                            <p className="font-bold text-slate-900 text-sm mb-0.5">{contract.title}</p>
-                                            <p className="text-[10px] text-slate-500">Expires {new Date(contract.endDate).toLocaleDateString()}</p>
-                                        </div>
-                                        <Button size="sm" variant="outline" className="h-7 text-[10px] bg-white border-orange-200 text-orange-700 hover:bg-orange-100 hover:text-orange-800">
-                                            Renew
-                                        </Button>
+                    <div className="bg-white rounded-xl divide-y divide-slate-50 border border-rose-100/50 shadow-sm">
+                        {dashboardData?.expiringContracts?.map((contract: any) => (
+                            <div key={contract.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => router.push(`/dashboard/contracts/${contract.id}`)}>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-500">
+                                        <Clock size={18} />
                                     </div>
-                                ))}
+                                    <div>
+                                        <h4 className="font-bold text-slate-900 text-sm group-hover:text-rose-600 transition-colors">{contract.title}</h4>
+                                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                                            <span>{contract.counterpartyName || 'External Vendor'}</span>
+                                            <span className="text-rose-600 font-medium">• Expires {new Date(contract.endDate).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Button size="sm" variant="outline" className="bg-white text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700">
+                                    Review Contract
+                                </Button>
                             </div>
-                        </Card>
-                    )}
+                        ))}
+                        {pendingApprovals.map((item) => (
+                            <div key={item.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => router.push(canViewLegalApprovals ? '/dashboard/approvals/legal' : '/dashboard/approvals/finance')}>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
+                                        <FileText size={18} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-slate-900 text-sm group-hover:text-amber-600 transition-colors">{item.contractTitle}</h4>
+                                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                                            <span>Pending {item.approvalType} Approval</span>
+                                            <span className="text-slate-400">• Submitted by {item.submittedBy}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Button size="sm" variant="outline" className="bg-white text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700">
+                                    Review Request
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
-                    <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-slate-50/50 border-b border-slate-100">
+            {/* Recent Contracts Table */}
+            <div>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-slate-900">Recent Contracts</h2>
+                    {canViewContracts && (
+                        <Button variant="ghost" onClick={() => router.push('/dashboard/contracts')} className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 font-bold text-sm">
+                            View All <ArrowRight className="w-4 h-4 ml-1" />
+                        </Button>
+                    )}
+                </div>
+
+                <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl overflow-visible">
+                    <div className="overflow-x-auto rounded-2xl">
+                        <table className="w-full">
+                            <thead className="bg-slate-50/50 border-b border-slate-100">
+                                <tr>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest w-[40%]">Contract</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest w-[15%]">Status</th>
+                                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest w-[25%]">Date</th>
+                                    <th className="px-6 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-widest w-[10%]">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {isLoading ? (
+                                    [1, 2, 3].map(i => (
+                                        <tr key={i}>
+                                            <td className="px-6 py-4"><Skeleton className="h-5 w-32" /></td>
+                                            <td className="px-6 py-4"><Skeleton className="h-5 w-16" /></td>
+                                            <td className="px-6 py-4"><Skeleton className="h-5 w-24" /></td>
+                                            <td className="px-6 py-4"><Skeleton className="h-8 w-8 ml-auto" /></td>
+                                        </tr>
+                                    ))
+                                ) : recentContracts.length === 0 ? (
                                     <tr>
-                                        <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider w-[40%]">Contract</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider w-[20%]">Status</th>
-                                        <th className="px-6 py-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider w-[30%]">Counterparty</th>
-                                        <th className="px-6 py-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider w-[10%]">Action</th>
+                                        <td colSpan={4} className="p-12 text-center">
+                                            <div className="inline-flex p-4 bg-slate-50 rounded-full mb-3">
+                                                <Briefcase className="w-6 h-6 text-slate-300" />
+                                            </div>
+                                            <p className="text-slate-500 font-medium">No recent contracts found.</p>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-50">
-                                    {isLoading ? (
-                                        [1, 2, 3].map(i => (
-                                            <tr key={i}>
-                                                <td className="px-6 py-4"><Skeleton className="h-4 w-32" /></td>
-                                                <td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
-                                                <td className="px-6 py-4"><Skeleton className="h-4 w-24" /></td>
-                                                <td className="px-6 py-4"><Skeleton className="h-8 w-8 ml-auto" /></td>
-                                            </tr>
-                                        ))
-                                    ) : recentContracts.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={4} className="p-12 text-center flex flex-col items-center justify-center space-y-3">
-                                                <div className="p-4 bg-slate-50 rounded-full">
-                                                    <Briefcase className="w-6 h-6 text-slate-300" />
+                                ) : (
+                                    recentContracts.map((contract) => (
+                                        <tr key={contract.id} className="hover:bg-slate-50/50 transition-colors group">
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+                                                        <FileText size={16} />
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-bold text-slate-900 text-sm mb-0.5 cursor-pointer hover:text-orange-600 transition-colors" onClick={() => router.push(`/dashboard/contracts/${contract.id}`)}>{contract.title}</div>
+                                                        <div className="text-sm text-slate-500">{contract.counterpartyName || 'External Vendor'}</div>
+                                                    </div>
                                                 </div>
-                                                <p className="text-slate-400 font-medium text-xs">No recent activity detected.</p>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <Badge variant="outline" className={`border-none px-2.5 py-1 rounded-md font-bold text-[10px] uppercase tracking-wide ${getStatusStyles(contract.status)}`}>
+                                                    {formatStatus(contract.status)}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-6 py-5 text-sm font-medium text-slate-500">
+                                                {new Date(contract.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                            </td>
+                                            <td className="px-6 py-5 text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900 rounded-lg">
+                                                            <MoreHorizontal size={18} />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-56 p-1.5 bg-white rounded-xl border border-slate-100 shadow-xl z-[100]">
+                                                        <DropdownMenuItem onClick={() => router.push(`/dashboard/contracts/${contract.id}`)} className="flex items-center px-3 py-2 text-sm font-medium text-slate-700 rounded-lg hover:bg-slate-50 cursor-pointer outline-none">
+                                                            <Eye className="w-4 h-4 mr-3 text-slate-400" />
+                                                            Review
+                                                        </DropdownMenuItem>
+                                                        {canEditContract && (
+                                                            <DropdownMenuItem onClick={() => router.push(`/dashboard/contracts/${contract.id}/edit`)} className="flex items-center px-3 py-2 text-sm font-medium text-slate-700 rounded-lg hover:bg-slate-50 cursor-pointer outline-none">
+                                                                <Edit2 className="w-4 h-4 mr-3 text-slate-400" />
+                                                                Edit Terms
+                                                            </DropdownMenuItem>
+                                                        )}
+                                                        <DropdownMenuItem className="flex items-center px-3 py-2 text-sm font-medium text-slate-700 rounded-lg hover:bg-slate-50 cursor-pointer outline-none">
+                                                            <Mail className="w-4 h-4 mr-3 text-slate-400" />
+                                                            Send by Email
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="flex items-center px-3 py-2 text-sm font-medium text-slate-700 rounded-lg hover:bg-slate-50 cursor-pointer outline-none">
+                                                            <Download className="w-4 h-4 mr-3 text-slate-400" />
+                                                            Download PDF
+                                                        </DropdownMenuItem>
+                                                        {canDeleteContract && (
+                                                            <>
+                                                                <DropdownMenuSeparator className="my-1 bg-slate-50" />
+                                                                <DropdownMenuItem className="flex items-center px-3 py-2 text-sm font-medium text-rose-600 rounded-lg hover:bg-rose-50 cursor-pointer outline-none">
+                                                                    <Trash2 className="w-4 h-4 mr-3" />
+                                                                    Delete
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </td>
                                         </tr>
-                                    ) : (
-                                        recentContracts.map((contract) => (
-                                            <tr
-                                                key={contract.id}
-                                                className="hover:bg-slate-50/50 transition-all group cursor-pointer"
-                                                onClick={() => router.push(`/dashboard/contracts/${contract.id}`)}
-                                            >
-                                                <td className="px-6 py-4">
-                                                    <div className="font-bold text-slate-900 group-hover:text-orange-600 transition-colors text-sm tracking-tight mb-0.5">{contract.title}</div>
-                                                    <div className="text-[10px] font-bold text-slate-400 font-mono tracking-wide">{contract.contractCode}</div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <Badge className={`px-2.5 py-1 rounded-lg font-bold text-[9px] uppercase tracking-wide shadow-sm border ${getStatusColor(contract.status)}`}>
-                                                        {formatStatus(contract.status)}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-6 py-4 text-xs font-bold text-slate-600">
-                                                    {contract.counterpartyName || '—'}
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 ml-auto group-hover:bg-white group-hover:text-orange-600 group-hover:shadow-sm border border-transparent group-hover:border-slate-100 transition-all">
-                                                        <ArrowUpRight className="w-3.5 h-3.5" />
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </Card>
-                </div>
-
-                {/* Right Sidebar */}
-                <div className="space-y-6">
-                    {/* Quick Actions Card */}
-                    <Card className="bg-slate-900 text-white border-transparent shadow-sm rounded-2xl p-6 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-48 h-48 bg-orange-600/20 rounded-full blur-[60px] group-hover:bg-orange-600/30 transition-colors duration-1000" />
-
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-6">
-                                <Sparkles className="w-4 h-4 text-orange-400" />
-                                <h3 className="text-sm font-bold tracking-wide uppercase">Quick Actions</h3>
-                            </div>
-
-                            <div className="space-y-3">
-                                {canCreateContract && (
-                                    <button
-                                        onClick={() => router.push('/dashboard/contracts/new')}
-                                        className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all group/btn"
-                                    >
-                                        <span className="text-xs font-bold tracking-wide">Start New Contract</span>
-                                        <div className="p-1.5 bg-orange-600 rounded-lg group-hover/btn:scale-105 transition-transform">
-                                            <Plus className="w-3 h-3 text-white" />
-                                        </div>
-                                    </button>
-                                )}
-                                {canViewContracts && (
-                                    <button
-                                        onClick={() => router.push('/dashboard/templates')}
-                                        className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all group/btn"
-                                    >
-                                        <span className="text-xs font-bold tracking-wide">Browse Templates</span>
-                                        <div className="p-1.5 bg-white/10 rounded-lg group-hover/btn:bg-white/20 transition-colors">
-                                            <FileSignature className="w-3 h-3 text-white" />
-                                        </div>
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </Card>
-
-                    {/* Pending Approvals List */}
-                    {(canViewLegalApprovals || canViewFinanceApprovals) && (
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 px-1">
-                                <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
-                                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                    Approval Queue
-                                </h3>
-                            </div>
-
-                            {isLoading ? (
-                                <Skeleton className="h-20 w-full rounded-2xl" />
-                            ) : pendingApprovals.length === 0 ? (
-                                <Card className="border border-dashed border-slate-200 bg-slate-50/50 rounded-2xl">
-                                    <CardContent className="p-6 text-center">
-                                        <CheckCircle2 className="w-6 h-6 text-slate-300 mx-auto mb-2" />
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">All caught up</p>
-                                    </CardContent>
-                                </Card>
-                            ) : (
-                                <div className="space-y-3">
-                                    {pendingApprovals.map((item) => (
-                                        <div
-                                            key={item.id}
-                                            onClick={() => router.push(canViewLegalApprovals ? '/dashboard/approvals/legal' : '/dashboard/approvals/finance')}
-                                            className="p-4 rounded-xl border border-slate-100 bg-white hover:border-orange-200 hover:shadow-sm transition-all cursor-pointer group relative overflow-hidden"
-                                        >
-                                            <div className="relative z-10">
-                                                <div className="flex items-center justify-between mb-2">
-                                                    <Badge className="bg-amber-50 text-amber-700 border border-amber-100 font-bold text-[9px] px-2 py-0.5 rounded-md uppercase tracking-wide">
-                                                        {item.approvalType}
-                                                    </Badge>
-                                                    <span className="text-[9px] font-medium text-slate-400">
-                                                        {new Date(item.submittedAt).toLocaleDateString()}
-                                                    </span>
-                                                </div>
-                                                <p className="font-bold text-slate-900 text-sm mb-1 group-hover:text-orange-600 transition-colors line-clamp-1">
-                                                    {item.contractTitle}
-                                                </p>
-                                                <p className="text-[10px] font-medium text-slate-400">
-                                                    From <span className="text-slate-700 font-bold">{item.submittedBy}</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Activity Feed Placeholder */}
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 px-1">
-                            <Zap className="w-3.5 h-3.5 text-slate-400" />
-                            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                Live Feed
-                            </h3>
-                        </div>
-                        <Card className="border border-slate-100 bg-white rounded-2xl p-4">
-                            <div className="space-y-4">
-                                {dashboardData?.auditLogs?.length === 0 ? (
-                                    <div className="text-center py-4">
-                                        <p className="text-[10px] text-slate-400 font-medium">No recent activity</p>
-                                    </div>
-                                ) : (
-                                    (dashboardData?.auditLogs || []).map((log: any) => (
-                                        <div key={log.id} className="flex gap-3">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0" />
-                                            <div>
-                                                <p className="text-xs text-slate-600 leading-relaxed">
-                                                    <span className="font-bold text-slate-900">{log.user?.name || 'System'}</span> {log.action.toLowerCase().replace(/_/g, ' ')} {log.module.toLowerCase()}
-                                                </p>
-                                                <p className="text-[10px] text-slate-400 mt-0.5">
-                                                    {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </p>
-                                            </div>
-                                        </div>
                                     ))
                                 )}
-                            </div>
-                        </Card>
+                            </tbody>
+                        </table>
                     </div>
-
-                </div>
+                </Card>
             </div>
+
+            {/* Oracle AI FAB */}
+            <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end gap-4">
+                {isOracleOpen && (
+                    <div className="w-[350px] bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 mb-2">
+                        <div className="bg-slate-900 p-4 flex items-center justify-between text-white">
+                            <div className="flex items-center gap-2">
+                                <Sparkles size={16} className="text-orange-400" />
+                                <span className="font-bold text-sm">Lumina Oracle</span>
+                            </div>
+                            <button onClick={() => setIsOracleOpen(false)} className="text-slate-400 hover:text-white">✕</button>
+                        </div>
+                        <div className="p-6">
+                            <div className="flex gap-3 mb-6">
+                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                                    <Sparkles size={14} className="text-slate-600" />
+                                </div>
+                                <div className="p-3 bg-slate-50 rounded-2xl rounded-tl-none text-xs text-slate-600 leading-relaxed">
+                                    Hello! I am Oracle, your contract intelligence assistant. Ask me about your expiring contracts, total liability, or template usage.
+                                </div>
+                            </div>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    placeholder="Ask Oracle..."
+                                    className="w-full bg-white border border-slate-200 rounded-full pl-4 pr-10 py-2.5 text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
+                                />
+                                <button className="absolute right-1.5 top-1.5 p-1 bg-slate-100 rounded-full text-slate-400 hover:bg-orange-600 hover:text-white transition-colors">
+                                    <ArrowRight size={14} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <button
+                    onClick={() => setIsOracleOpen(!isOracleOpen)}
+                    className="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-xl shadow-indigo-600/30 flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+                >
+                    {isOracleOpen ? <MessageSquare size={24} /> : <Sparkles size={24} />}
+                </button>
+            </div>
+
         </div>
     );
 }

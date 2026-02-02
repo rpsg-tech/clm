@@ -34,11 +34,19 @@ async function setupGroupCounsel() {
     const firstsource = await prisma.organization.findUnique({ where: { code: 'FIRSTSOURCE' } });
     const quest = await prisma.organization.findUnique({ where: { code: 'QUEST' } });
 
-    // 3. Get Legal Head role (highest legal authority)
-    const legalHeadRole = await prisma.role.findUnique({ where: { code: 'LEGAL_HEAD' } });
+    // 3. Ensure Legal Head role exists
+    const legalHeadRole = await prisma.role.upsert({
+        where: { code: 'LEGAL_HEAD' },
+        update: {},
+        create: {
+            code: 'LEGAL_HEAD',
+            name: 'Group Legal Head',
+            description: 'Head of Legal with cross-entity oversight'
+        }
+    });
 
-    if (!cesc || !firstsource || !quest || !legalHeadRole) {
-        throw new Error('Required organizations or role not found');
+    if (!cesc || !firstsource || !quest) {
+        throw new Error('Required organizations not found');
     }
 
     // 4. Assign Priya to all three organizations as Legal Head
