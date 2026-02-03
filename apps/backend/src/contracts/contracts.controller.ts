@@ -208,6 +208,69 @@ export class ContractsController {
         return contract;
     }
 
+    // New: Generic Document Upload (for Third Party Paper / Drafts)
+    @Post(':id/document/upload-url')
+    @Permissions('contract:edit')
+    async getDocumentUploadUrl(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+        @Body('filename') filename: string,
+        @Body('contentType') contentType: string,
+    ) {
+        return this.contractsService.getDocumentUploadUrl(
+            id,
+            user.orgId!,
+            filename,
+            contentType
+        );
+    }
+
+    @Post(':id/document/upload-confirm')
+    @Permissions('contract:edit')
+    async confirmDocumentUpload(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+        @Body('key') key: string,
+        @Body('filename') filename: string,
+        @Body('fileSize') fileSize: number,
+    ) {
+        const attachment = await this.contractsService.confirmDocumentUpload(
+            id,
+            user.orgId!,
+            key,
+            filename,
+            fileSize
+        );
+
+        // Audit log
+        await this.auditService.log({
+            organizationId: user.orgId,
+            contractId: id,
+            userId: user.id,
+            action: 'DOCUMENT_UPLOADED',
+            module: 'contracts',
+            targetType: 'ContractAttachment',
+            targetId: attachment.id,
+            metadata: {
+                filename,
+                s3Key: key,
+                type: 'MAIN_DOCUMENT'
+            } as Prisma.InputJsonValue,
+        });
+
+        return attachment;
+    }
+
+    @Get(':id/attachments/:attachmentId/download-url')
+    @Permissions('contract:view')
+    async getAttachmentDownloadUrl(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+        @Param('attachmentId') attachmentId: string,
+    ) {
+        return this.contractsService.getAttachmentDownloadUrl(id, attachmentId, user.orgId!);
+    }
+
     @Get(':id/versions')
     @Permissions('contract:history')
     async getVersions(

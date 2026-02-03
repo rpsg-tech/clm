@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Badge, Skeleton } from '@repo/ui';
 import { useAuth } from '@/lib/auth-context';
@@ -26,6 +27,7 @@ interface Approval {
 }
 
 export default function LegalApprovalsPage() {
+    const searchParams = useSearchParams();
     const { hasPermission } = useAuth();
     const canAct = hasPermission('approval:legal:act');
 
@@ -42,6 +44,28 @@ export default function LegalApprovalsPage() {
         fetchApprovals();
     }, []);
 
+    // Effect to handle URL parameters for deep linking
+    useEffect(() => {
+        if (!isLoading && approvals.length > 0) {
+            const contractId = searchParams.get('id');
+            const action = searchParams.get('action');
+
+            if (contractId) {
+                // Find approval matching the contract ID
+                const target = approvals.find(a => a.contract.id === contractId);
+                if (target) {
+                    setSelectedId(target.id);
+                    // Open modal if action is specified
+                    if (action === 'approve') {
+                        setShowApproveModal(true);
+                    } else if (action === 'reject') {
+                        setShowRejectModal(true);
+                    }
+                }
+            }
+        }
+    }, [isLoading, approvals, searchParams]);
+
     const fetchApprovals = async () => {
         setIsLoading(true);
         setError(null);
@@ -49,8 +73,9 @@ export default function LegalApprovalsPage() {
             const data = await api.approvals.pending('LEGAL');
             const pendingApprovals = data as Approval[];
             setApprovals(pendingApprovals);
-            if (pendingApprovals.length > 0 && !selectedId) {
-                // Auto-select first item
+
+            // Auto-select first if no URL param
+            if (pendingApprovals.length > 0 && !selectedId && !searchParams.get('id')) {
                 setSelectedId(pendingApprovals[0].id);
             }
         } catch (error: any) {

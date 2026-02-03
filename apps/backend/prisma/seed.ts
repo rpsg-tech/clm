@@ -311,15 +311,32 @@ async function main() {
 <p>The Vendor shall provide the following products/services...</p>`,
             isGlobal: false,
         },
+        {
+            name: 'Third Party Contract',
+            code: 'THIRD_PARTY',
+            category: TemplateCategory.OTHER, // Using OTHER as a generic fallback
+            description: 'Generic template for imported third-party contracts',
+            baseContent: `<p>This contract was uploaded from an external source.</p>`,
+            isGlobal: true,
+        },
     ];
 
     for (const template of templatesData) {
+        console.log(`Processing template: ${template.name} (${template.code})`);
         const created = await prisma.template.upsert({
             where: { code: template.code },
-            update: {},
+            update: {
+                name: template.name,
+                category: template.category,
+                description: template.description,
+                baseContent: template.baseContent,
+                isGlobal: template.isGlobal,
+                isActive: true, // Force active
+            },
             create: {
                 ...template,
                 createdByUserId: adminUser!.id,
+                isActive: true,
             },
         });
 

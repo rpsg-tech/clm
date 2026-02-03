@@ -102,6 +102,9 @@ function EditContractContent() {
     const [title, setTitle] = useState('');
     const [isEditingTitle, setIsEditingTitle] = useState(false);
 
+    // Uploaded File Support
+    const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+
     // Annexures (Editable)
     const [annexures, setAnnexures] = useState<AnnexureItem[]>([]);
 
@@ -116,7 +119,19 @@ function EditContractContent() {
             setContract(c);
             setTitle(c.title);
 
-            if (typeof window !== 'undefined') {
+            // Check for uploaded file
+            let isUploaded = false;
+            if (c.attachments && c.attachments.length > 0) {
+                try {
+                    isUploaded = true;
+                    const res = await api.contracts.getAttachmentDownloadUrl(c.id, c.attachments[0].id);
+                    setFilePreviewUrl(res.url);
+                } catch (e) {
+                    console.error("Failed to load file preview", e);
+                }
+            }
+
+            if (!isUploaded && typeof window !== 'undefined') {
                 const rawAnnexureData = c.annexureData || '';
 
                 if (!rawAnnexureData) {
@@ -309,22 +324,33 @@ function EditContractContent() {
             {/* Main Workspace */}
             <div className="flex-1 flex overflow-hidden relative">
 
-                {/* Unified Sidebar */}
-                <div className="w-[300px] border-r border-slate-200 hidden md:block z-10">
-                    <ContractNavigationSidebar
-                        items={navItems}
-                        activeId={activeDocId}
-                        onSelect={setActiveDocId}
-                        onAddAnnexure={handleAddAnnexure}
-                        onRemoveAnnexure={handleRemoveAnnexure}
-                        className="h-full"
-                    />
-                </div>
+                {/* Unified Sidebar - Hide if uploaded file */}
+                {!filePreviewUrl && (
+                    <div className="w-[300px] border-r border-slate-200 hidden md:block z-10">
+                        <ContractNavigationSidebar
+                            items={navItems}
+                            activeId={activeDocId}
+                            onSelect={setActiveDocId}
+                            onAddAnnexure={handleAddAnnexure}
+                            onRemoveAnnexure={handleRemoveAnnexure}
+                            className="h-full"
+                        />
+                    </div>
+                )}
 
                 {/* Main Content Area */}
                 <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50 overflow-hidden relative">
                     <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-white md:p-0">
-                        {activeDocId === 'main' ? (
+                        {filePreviewUrl ? (
+                            /* Uploaded File Preview */
+                            <div className="w-full h-full bg-slate-100 p-4">
+                                <iframe
+                                    src={filePreviewUrl}
+                                    className="w-full h-full border border-slate-200 shadow-sm rounded-lg bg-white"
+                                    title="Contract Preview"
+                                />
+                            </div>
+                        ) : activeDocId === 'main' ? (
                             /* Read Only Main Agreement */
                             <ContractEditorView
                                 ref={editorRef}

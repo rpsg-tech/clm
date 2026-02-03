@@ -90,33 +90,30 @@ export class ContractsService {
             throw new ForbiddenException('Contract must be in SENT_TO_COUNTERPARTY status');
         }
 
-        // Verify file exists (optional, but good practice)
-        // await this.storageService.headObject(key); 
-
         // Update status to ACTIVE
         const updated = await this.prisma.contract.update({
             where: { id },
             data: {
                 status: ContractStatus.ACTIVE,
                 signedAt: new Date(),
-                // Store the S3 key reference if schema supported it. 
-                // For now, we assume implicit path or add metadata to fieldData
                 fieldData: {
                     ...(contract.fieldData as Prisma.JsonObject),
                     signedContractKey: key,
                 } as Prisma.InputJsonValue,
             },
+            include: { createdByUser: true }
         });
 
         // Notify creator
-        if (contract.createdByUser?.email) {
+        const contractWithUser = updated as any;
+        if (contractWithUser.createdByUser?.email) {
             this.emailService.send({
-                to: contract.createdByUser.email,
+                to: contractWithUser.createdByUser.email,
                 template: 'CONTRACT_SIGNED' as any,
-                subject: `Contract Active: ${contract.title}`,
+                subject: `Contract Active: ${updated.title}`,
                 data: {
-                    contractTitle: contract.title,
-                    contractReference: contract.reference,
+                    contractTitle: updated.title,
+                    contractReference: updated.reference,
                     signedDate: new Date().toLocaleDateString(),
                     contractUrl: `${process.env.FRONTEND_URL}/dashboard/contracts/${id}`,
                 },
@@ -125,6 +122,65 @@ export class ContractsService {
 
         return updated;
     }
+
+    /**
+     * Step 1 (Draft): Get Upload URL for Third Party/Main Document
+     */
+    async getDocumentUploadUrl(id: string, organizationId: string, filename: string, contentType: string) {
+        const contract = await this.findById(id, organizationId);
+
+        // Allow uploads in DRAFT or negotiation stages
+        if (contract.status !== ContractStatus.DRAFT && contract.status !== ContractStatus.PENDING_LEGAL) {
+            // relaxed check for now, can be stricter
+            // throw new ForbiddenException('Can only upload documents for Draft contracts');
+        }
+
+        const bucketPath = `organizations/${organizationId}/contracts/${id}/documents`;
+        return this.storageService.getUploadUrl(bucketPath, filename, contentType);
+    }
+
+    /**
+     * Step 2 (Draft): Confirm Upload and Link Attachment
+     */
+    async confirmDocumentUpload(id: string, organizationId: string, key: string, filename: string, fileSize: number) {
+        const contract = await this.findById(id, organizationId);
+
+        return this.prisma.contractAttachment.create({
+            data: {
+                contractId: id,
+                fileName: filename,
+                fileUrl: key, // Storing key as URL/Path for now, assuming helper resolves it
+                fileType: 'application/pdf', // Simplified, or pass from controller
+                fileSize: fileSize,
+                category: 'MAIN_DOCUMENT',
+                uploadedBy: 'system' // or pass user ID
+            }
+        });
+
+    }
+
+    /**
+     * Get Download URL for an attachment
+     */
+    async getAttachmentDownloadUrl(id: string, attachmentId: string, organizationId: string) {
+        await this.findById(id, organizationId); // Verify access
+
+        const attachment = await this.prisma.contractAttachment.findUnique({
+            where: { id: attachmentId },
+        });
+
+        if (!attachment || attachment.contractId !== id) {
+            throw new NotFoundException('Attachment not found');
+        }
+
+        // Generate presigned URL
+        return {
+            url: await this.storageService.getDownloadUrl(attachment.fileUrl),
+            filename: attachment.fileName,
+            contentType: attachment.fileType
+        };
+    }
+
 
     /**
      * Generate unique contract reference
@@ -369,6 +425,7 @@ export class ContractsService {
                         actor: { select: { name: true, email: true } },
                     },
                 },
+                attachments: true,
             },
         });
 

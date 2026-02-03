@@ -265,6 +265,21 @@ export const api = {
       });
     },
 
+    getDocumentUploadUrl: (id: string, filename: string, contentType: string) =>
+      authFetch<{ uploadUrl: string; key: string }>(`/contracts/${id}/document/upload-url`, {
+        method: 'POST',
+        body: JSON.stringify({ filename, contentType }),
+      }),
+
+    confirmDocumentUpload: (id: string, key: string, filename: string, fileSize: number) =>
+      authFetch<any>(`/contracts/${id}/document/upload-confirm`, {
+        method: 'POST',
+        body: JSON.stringify({ key, filename, fileSize }),
+      }),
+
+    getAttachmentDownloadUrl: (id: string, attachmentId: string) =>
+      authFetch<{ url: string; filename: string; contentType: string }>(`/contracts/${id}/attachments/${attachmentId}/download-url`),
+
     getVersions: (id: string) => authFetch<any[]>(`/contracts/${id}/versions`),
 
     getVersionChangelog: (id: string, versionId: string) =>

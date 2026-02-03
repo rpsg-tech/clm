@@ -12,7 +12,7 @@ import { Logo } from '@/components/logo';
 
 export default function LoginPage() {
     const router = useRouter();
-    const { login } = useAuth();
+    const { login, switchOrg } = useAuth();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -28,10 +28,21 @@ export default function LoginPage() {
         try {
             const authState = await login(email, password);
 
-            // Check for Admin Access and Redirect
-            if (authState.permissions && authState.permissions.includes('admin:access')) {
+            // Check for Admin Access first
+            if (authState.permissions?.includes('admin:access')) {
                 router.push('/dashboard/organizations');
+                return;
+            }
+
+            // Standard User Redirect Logic
+            const orgs = authState.user?.organizations || [];
+
+            if (orgs.length === 1) {
+                // Auto-select the only organization
+                await switchOrg(orgs[0].id);
+                router.push('/dashboard');
             } else {
+                // Multiple organizations or none -> let them select
                 router.push('/select-org');
             }
         } catch (err: unknown) {
