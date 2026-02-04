@@ -1,13 +1,7 @@
 'use client';
 
-/**
- * Notifications Context
- * 
- * Manages notification state and simulates real-time updates.
- * In production, this would use WebSocket for real-time notifications.
- */
-
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useCallback, type ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './auth-context';
 import { api } from './api-client';
 
@@ -32,118 +26,100 @@ interface NotificationsContextType {
 
 const NotificationsContext = createContext<NotificationsContextType | null>(null);
 
-// Initial mock notifications
-const initialNotifications: Notification[] = [
-    {
-        id: '1',
-        type: 'APPROVAL_REQUEST',
-        title: 'New Approval Request',
-        message: 'Service Agreement with Vendor XYZ requires your approval',
-        link: '/dashboard/approvals/legal',
-        isRead: false,
-        createdAt: new Date(Date.now() - 1800000).toISOString(), // 30 min ago
-    },
-    {
-        id: '2',
-        type: 'CONTRACT_UPDATE',
-        title: 'Contract Status Changed',
-        message: 'NDA Agreement has been approved by Legal',
-        link: '/dashboard/contracts',
-        isRead: false,
-        createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-    },
-    {
-        id: '3',
-        type: 'SYSTEM',
-        title: 'Welcome to CLM Enterprise',
-        message: 'Your account is now set up and ready to use.',
-        isRead: true,
-        createdAt: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-    },
-];
+const NOTIFICATIONS_QUERY_KEY = ['notifications'];
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
     const { isAuthenticated } = useAuth();
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+    const queryClient = useQueryClient();
 
-    // Load notifications on auth
-    const fetchNotifications = useCallback(async () => {
-        if (!isAuthenticated) {
-            setNotifications([]);
-            setUnreadCount(0);
-            return;
-        }
+    // Use React Query to fetch notifications with automatic polling
+    const { data } = useQuery({
+        queryKey: NOTIFICATIONS_QUERY_KEY,
+        queryFn: async () => {
+            try {
+                return await api.notifications.list();
+            } catch (error: any) {
+                // Silently handle auth errors (401) - user is logging out or not authenticated
+                if (error?.statusCode === 401 || error?.status === 401) {
+                    return { notifications: [], unreadCount: 0 };
+                }
+                console.error('Failed to fetch notifications:', error);
+                return { notifications: [], unreadCount: 0 };
+            }
+        },
+        staleTime: 2 * 60 * 1000, // 2 minutes
+        refetchInterval: 60 * 1000, // Poll every 60 seconds (reduced from 30s)
+        enabled: isAuthenticated, // Only fetch when authenticated
+        retry: false, // Don't retry on auth failures
+    });
 
-        try {
-            const data = await api.notifications.list();
-            setNotifications(data.notifications);
-            setUnreadCount(data.unreadCount);
-        } catch (error) {
-            console.error('Failed to fetch notifications:', error);
-        }
-    }, [isAuthenticated]);
+    const notifications = data?.notifications || [];
+    const unreadCount = data?.unreadCount || 0;
 
-    useEffect(() => {
-        if (!isAuthenticated) {
-            setNotifications([]);
-            setUnreadCount(0);
-            return;
-        }
+    // Client-side add notification (e.g., for optimistic updates or testing)
+    const addNotification = useCallback(
+        (notification: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) => {
+            const newNotification: Notification = {
+                ...notification,
+                id: Math.random().toString(36).substring(2, 9),
+                isRead: false,
+                createdAt: new Date().toISOString(),
+            };
 
-        fetchNotifications();
+            // Optimistically update cache
+            queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: any) => ({
+                notifications: [newNotification, ...(old?.notifications || [])],
+                unreadCount: (old?.unreadCount || 0) + 1,
+            }));
+        },
+        [queryClient]
+    );
 
-        // Poll every 30 seconds for updates
-        const interval = setInterval(fetchNotifications, 30000);
-        return () => clearInterval(interval);
-    }, [fetchNotifications, isAuthenticated]);
+    const markAsRead = useCallback(
+        async (id: string) => {
+            // Optimistic update
+            queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: any) => ({
+                notifications: old?.notifications?.map((n: Notification) =>
+                    n.id === id ? { ...n, isRead: true } : n
+                ) || [],
+                unreadCount: Math.max(0, (old?.unreadCount || 0) - 1),
+            }));
 
-    // WebSocket implementation would go here
-
-    const addNotification = useCallback((notification: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) => {
-        // Optimistic update
-        const newNotification: Notification = {
-            ...notification,
-            id: Math.random().toString(36).substring(2, 9),
-            isRead: false,
-            createdAt: new Date().toISOString(),
-        };
-
-        setNotifications(prev => [newNotification, ...prev]);
-        setUnreadCount(prev => prev + 1);
-    }, []);
-
-    const markAsRead = useCallback(async (id: string) => {
-        // Optimistic update
-        setNotifications(prev =>
-            prev.map(n => (n.id === id ? { ...n, isRead: true } : n))
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
-
-        try {
-            await api.notifications.markRead(id);
-        } catch (error) {
-            // Revert on failure (optional, simplified here)
-            console.error('Failed to mark read:', error);
-        }
-    }, []);
+            try {
+                await api.notifications.markRead(id);
+                // Refetch to stay in sync with server
+                queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
+            } catch (error) {
+                console.error('Failed to mark read:', error);
+                // Refetch to revert on failure
+                queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
+            }
+        },
+        [queryClient]
+    );
 
     const markAllAsRead = useCallback(async () => {
         // Optimistic update
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-        setUnreadCount(0);
+        queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: any) => ({
+            notifications: old?.notifications?.map((n: Notification) => ({ ...n, isRead: true })) || [],
+            unreadCount: 0,
+        }));
 
         try {
             await api.notifications.markAllRead();
+            queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
         } catch (error) {
             console.error('Failed to mark all read:', error);
+            queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
         }
-    }, []);
+    }, [queryClient]);
 
     const clearAll = useCallback(() => {
-        setNotifications([]);
-        setUnreadCount(0);
-    }, []);
+        queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, {
+            notifications: [],
+            unreadCount: 0,
+        });
+    }, [queryClient]);
 
     return (
         <NotificationsContext.Provider
