@@ -16,6 +16,7 @@ import {
     Res,
     Req,
     UnauthorizedException,
+    Header,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Response, Request as ExpressRequest } from 'express';
@@ -28,22 +29,48 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuditService } from '../audit/audit.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from './strategies/jwt.strategy';
 import { Prisma } from '@prisma/client';
+
 
 @Controller('auth')
 export class AuthController {
     constructor(
         private readonly authService: AuthService,
         private readonly auditService: AuditService,
+        private readonly prisma: PrismaService,
     ) { }
 
     @Get('me')
     @UseGuards(JwtAuthGuard)
     @HttpCode(HttpStatus.OK)
+    @Header('Cache-Control', 'private, max-age=300') // 5 minutes browser cache
     async getProfile(@Request() req: { user: AuthenticatedUser }) {
         // Return current user context
         return this.authService.getProfile(req.user.id, req.user.orgId);
+    }
+
+    /**
+     * Get session data (profile + notification count)
+     * Consolidated endpoint to reduce initial page load from 2 calls to 1
+     */
+    @Get('session')
+    @UseGuards(JwtAuthGuard)
+    @HttpCode(HttpStatus.OK)
+    @Header('Cache-Control', 'private, max-age=300') // 5 minutes browser cache
+    async getSession(@Request() req: { user: AuthenticatedUser }) {
+        const [profile, unreadNotifications] = await Promise.all([
+            this.authService.getProfile(req.user.id, req.user.orgId),
+            this.prisma.notification.count({
+                where: { userId: req.user.id, isRead: false },
+            }),
+        ]);
+
+        return {
+            ...profile,
+            unreadNotifications,
+        };
     }
 
     /**

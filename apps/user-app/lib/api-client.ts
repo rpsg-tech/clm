@@ -168,6 +168,21 @@ export const api = {
       return mePromise;
     },
 
+    /**
+     * Get session data (profile + notification count)
+     * Consolidated endpoint to reduce initial load
+     */
+    session: () => {
+      return authFetch<{
+        user: any;
+        currentOrg: any;
+        role: string;
+        permissions: string[];
+        features: any;
+        unreadNotifications: number;
+      }>('/auth/session');
+    },
+
     switchOrg: async (organizationId: string) => {
       mePromise = null; // Clear cache as org context changes
       return authFetch<{
