@@ -489,8 +489,22 @@ export class AuthService {
 
     /**
      * Get user profile with current context
+     * 
+     * PERFORMANCE: Cached in Redis for 5 minutes to reduce database load
      */
     async getProfile(userId: string, orgId?: string) {
+        // Build cache key
+        const cacheKey = `auth:profile:${userId}:${orgId || 'default'}`;
+
+        // Try cache first
+        const cached = await this.redisService.getCache(cacheKey);
+        if (cached) {
+            this.logger.debug(`Cache HIT: ${cacheKey}`);
+            return JSON.parse(cached);
+        }
+
+        this.logger.debug(`Cache MISS: ${cacheKey}`);
+
         // Parallelize fetching user and their roles to reduce latency
         const [user, userOrgs] = await Promise.all([
             this.prisma.user.findUnique({
@@ -554,7 +568,7 @@ export class AuthService {
             });
         }
 
-        return {
+        const result = {
             user: {
                 ...user,
                 organizations: userOrgs.map((uo) => ({
@@ -569,6 +583,23 @@ export class AuthService {
             permissions,
             features, // Inject enabled features
         };
+
+        // Cache for 5 minutes (300 seconds)
+        await this.redisService.setCache(cacheKey, JSON.stringify(result), 300);
+
+        return result;
+    }
+
+    /**
+     * Invalidate cached profile data for a user
+     * Call this when user roles, permissions, or org memberships change
+     */
+    async invalidateUserCache(userId: string): Promise<void> {
+        const pattern = `auth:profile:${userId}:*`;
+        const deletedCount = await this.redisService.deleteCachePattern(pattern);
+        if (deletedCount > 0) {
+            this.logger.log(`Invalidated ${deletedCount} cache entries for user ${userId}`);
+        }
     }
 
     /**
