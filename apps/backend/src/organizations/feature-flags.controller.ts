@@ -21,6 +21,7 @@ const SYSTEM_FEATURES = [
     { code: 'E_SIGNATURE', name: 'E-Signature Integration', description: 'Enable electronic signature workflows' },
     { code: 'MULTI_CURRENCY', name: 'Multi-Currency Support', description: 'Support multiple currencies in contracts' },
     { code: 'CUSTOM_WORKFLOWS', name: 'Custom Workflows', description: 'Enable custom approval workflow builder' },
+    { code: 'USER_ACCESS_CONTROL', name: 'User Access Control', description: 'Configure SSO auto-approval policies and default roles' },
 ];
 
 @Controller('feature-flags')

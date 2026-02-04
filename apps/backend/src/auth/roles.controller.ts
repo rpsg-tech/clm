@@ -1,3 +1,4 @@
+import { AuditService } from '../audit/audit.service';
 import { Controller, Get, Post, Patch, Param, Body, UseGuards, Query, ForbiddenException, NotFoundException, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -12,7 +13,10 @@ import { AuthenticatedUser } from './strategies/jwt.strategy';
 @Controller('roles')
 @UseGuards(JwtAuthGuard, OrgContextGuard, PermissionsGuard)
 export class RolesController {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private auditService: AuditService
+    ) { }
 
     /**
      * List all roles (global roles available to all organizations)
@@ -140,6 +144,16 @@ export class RolesController {
             }
         });
 
+        // Log Audit
+        await this.auditService.log({
+            module: AuditService.Modules.ROLES,
+            action: AuditService.Actions.ROLE_CREATED,
+            userId: user.id,
+            targetId: role.id,
+            organizationId: user.orgId,
+            metadata: { name, code, description, permissionIds }
+        });
+
         return {
             id: role.id,
             name: role.name,
@@ -202,6 +216,16 @@ export class RolesController {
                     include: { permission: true }
                 }
             }
+        });
+
+        // Log Audit
+        await this.auditService.log({
+            module: AuditService.Modules.ROLES,
+            action: AuditService.Actions.ROLE_UPDATED,
+            userId: user.id,
+            targetId: id,
+            organizationId: user.orgId,
+            metadata: { name, description, permissionIds }
         });
 
         return {

@@ -40,9 +40,17 @@ model Organization {
   @@index([updatedAt])
 }
 
+
 enum OrgType {
   PARENT
   ENTITY
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING_APPROVAL
+  INACTIVE
+  INVITED
 }
 
 // ============ USER ============
@@ -56,6 +64,7 @@ model User {
   avatarUrl     String?
   
   isActive      Boolean  @default(true)
+  status        UserStatus @default(ACTIVE)
   mustChangePassword Boolean @default(false)
   lastLoginAt   DateTime?
   
@@ -250,14 +259,20 @@ model Contract {
   @@index([organizationId, status]) // Compound index for filtering
   @@index([organizationId, createdAt]) // Compound index for sorting
   @@index([updatedAt])
+  @@index([templateId, status]) // Compound: Filter contracts by template type and status
+  @@index([status, updatedAt]) // Compound: List contracts by status sorted by last update
 }
 
 enum ContractStatus {
   DRAFT
-  PENDING_LEGAL
-  PENDING_FINANCE
+  SENT_TO_LEGAL             // Renamed from PENDING_LEGAL
+  LEGAL_REVIEW_IN_PROGRESS
+  SENT_TO_FINANCE           // Renamed from PENDING_FINANCE
+  FINANCE_REVIEW_IN_PROGRESS
+  IN_REVIEW
+  REVISION_REQUESTED
   LEGAL_APPROVED
-  FINANCE_APPROVED
+  FINANCE_REVIEWED          // Renamed from FINANCE_APPROVED
   APPROVED
   SENT_TO_COUNTERPARTY
   COUNTERSIGNED
@@ -265,6 +280,8 @@ enum ContractStatus {
   EXPIRED
   TERMINATED
   REJECTED
+  CANCELLED
+  EXECUTED
 }
 
 model ContractVersion {
@@ -309,6 +326,9 @@ model Approval {
   @@index([status])
   @@index([type])
   @@index([actorId])
+  @@index([contractId, status]) // Compound: Get approvals for contract by status
+  @@index([type, status]) // Compound: Filter approvals by type and status (e.g. pending legal)
+  @@index([status, createdAt]) // Compound: List pending approvals sorted by date
 }
 
 enum ApprovalType {
@@ -458,10 +478,10 @@ model ContractAttachment {
   
   uploadedAt  DateTime @default(now())
   uploadedBy  String?
+  metadata    Json?    // Added for OCR text, etc.
   
   contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   @@index([contractId])
   @@index([category])
 }
-

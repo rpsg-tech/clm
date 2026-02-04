@@ -146,7 +146,6 @@ export default function NewContractPage() {
         setPendingUploadFile(file);
         setSelectedTemplate(thirdPartyTemplate);
 
-        // Pre-fill details from file
         // Create Preview URL
         const url = URL.createObjectURL(file);
         setFilePreviewUrl(url);
@@ -160,8 +159,43 @@ export default function NewContractPage() {
         // Clear editor content (we'll show preview instead)
         setEditorContent("");
 
-        // No annexures for raw file upload by default (can be added if user wants)
+        // No annexures for raw file upload by default
         setAnnexures([]);
+
+        // AI ANALYSIS TRIGGER
+        // We upload to temp storage to let AI analyze dates
+        try {
+            showSuccess("Analyzing...", "AI is reading the contract dates");
+
+            // 1. Get Temp Upload URL
+            const { uploadUrl, key } = await api.ai.getUploadUrl(file.name, file.type);
+
+            // 2. Upload to S3
+            await fetch(uploadUrl, {
+                method: 'PUT',
+                body: file,
+                headers: { 'Content-Type': file.type }
+            });
+
+            // 3. Analyze
+            const analysis = await api.ai.analyzeFile(key);
+
+            if (analysis.expiryDate) {
+                const expiry = new Date(analysis.expiryDate);
+                const isoDate = expiry.toISOString().split('T')[0];
+
+                setContractDetails((prev: any) => ({
+                    ...prev,
+                    endDate: isoDate,
+                    // If we found an end date, maybe set start date to today if missing?
+                    startDate: prev.startDate || new Date().toISOString().split('T')[0]
+                }));
+                showSuccess("AI Analysis Complete", `Found expiry date: ${isoDate}`);
+            }
+        } catch (err) {
+            console.error("AI Analysis failed:", err);
+            // Non-blocking, just log
+        }
     };
 
     const handleTemplateSelect = (template: Template) => {
@@ -467,7 +501,7 @@ export default function NewContractPage() {
                                     />
                                 )}
                                 errors={errors}
-                                mainContentReadOnly={!!pendingUploadFile}
+                                mainContentReadOnly={true} // Main Agreement matches template, strictly read-only per user request
                                 filePreviewUrl={filePreviewUrl} // Pass preview URL
                                 onValidate={handleValidateField}
                                 onDetailsChange={(data) => {

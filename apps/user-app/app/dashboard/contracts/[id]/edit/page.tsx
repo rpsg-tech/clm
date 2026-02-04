@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button, Spinner, Badge } from '@repo/ui';
 import { api } from '@/lib/api-client';
 import { useToast } from '@/lib/toast-context';
-import { ArrowLeft, Save, Send, Wand2, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeft, Save, Send, Wand2, Maximize2, Minimize2, Check } from 'lucide-react';
 import { AnnexureItem, AnnexuresView } from '@/components/annexures-view';
 import { PageErrorBoundary } from '@/components/error-boundary';
 import { ContractAssistantSidebar } from '@/components/contract-assistant-sidebar';
@@ -187,21 +187,10 @@ function EditContractContent() {
         }
     };
 
-    const handleSubmit = async () => {
+    const handleDone = async () => {
         if (!contract) return;
         await handleSave(true);
-        if (confirm("Are you sure you want to submit this contract for review? You will not be able to edit it afterwards.")) {
-            setIsApproveLoading(true);
-            try {
-                await api.contracts.submit(contract.id);
-                success('Submitted', 'Contract submitted for approval');
-                router.push(`/dashboard/contracts/${contract.id}`);
-            } catch (err: any) {
-                toastError('Error', err.message || 'Failed to submit contract');
-            } finally {
-                setIsApproveLoading(false);
-            }
-        }
+        router.push(`/dashboard/contracts/${contract.id}`);
     };
 
     const handleAnnexureChange = (id: string, newContent: string) => {
@@ -314,9 +303,9 @@ function EditContractContent() {
                         Save
                     </Button>
 
-                    <Button onClick={handleSubmit} disabled={isApproveLoading || isSaving} className="bg-orange-600 hover:bg-slate-900 text-white font-bold text-xs uppercase tracking-wide h-9 px-5 shadow-lg shadow-orange-600/20 active:scale-95 transition-all">
-                        <Send className="w-3.5 h-3.5 mr-2" />
-                        Submit
+                    <Button onClick={handleDone} disabled={isApproveLoading || isSaving} className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wide h-9 px-5 shadow-md active:scale-95 transition-all">
+                        <Check className="w-3.5 h-3.5 mr-2" />
+                        Done
                     </Button>
                 </div>
             </header>

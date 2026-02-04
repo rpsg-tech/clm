@@ -36,7 +36,7 @@ export class ApprovalsService {
             throw new ForbiddenException('Approval has already been processed');
         }
 
-        return this.prisma.$transaction(async (tx) => {
+        const result = await this.prisma.$transaction(async (tx) => {
             // Update approval
             await tx.approval.update({
                 where: { id: approvalId },
@@ -48,41 +48,42 @@ export class ApprovalsService {
                 },
             });
 
-            // Check if both approvals are complete
+            // Check if BOTH approvals are currently active (prevent race conditions by re-fetching all)
             const allApprovals = await tx.approval.findMany({
                 where: { contractId: approval.contractId },
             });
 
-            const legalApproval = allApprovals.find((a) => a.type === 'LEGAL');
-            const financeApproval = allApprovals.find((a) => a.type === 'FINANCE');
+            // "Gatekeeper" Logic: Check if ALL required approvals are now APPROVED
+            const isFullyApproved = allApprovals.every(
+                (a) => a.id === approvalId ? true : a.status === ApprovalStatus.APPROVED // Check current (being updated) + others
+            );
 
-            // Determine new contract status
+            // Determine granular status
+            // If fully approved -> APPROVED
+            // If not, determine intermediate state based on what IS approved
             let newStatus: ContractStatus;
-            let isFullyApproved = false;
 
-            if (
-                legalApproval?.status === ApprovalStatus.APPROVED &&
-                financeApproval?.status === ApprovalStatus.APPROVED
-            ) {
-                // Both approved - fully approved
+            if (isFullyApproved) {
                 newStatus = ContractStatus.APPROVED;
-                isFullyApproved = true;
-            } else if (
-                legalApproval?.status === ApprovalStatus.APPROVED &&
-                financeApproval?.status === ApprovalStatus.PENDING
-            ) {
-                newStatus = ContractStatus.LEGAL_APPROVED;
-            } else if (
-                financeApproval?.status === ApprovalStatus.APPROVED &&
-                legalApproval?.status === ApprovalStatus.PENDING
-            ) {
-                newStatus = ContractStatus.FINANCE_APPROVED;
             } else {
-                // Keep current status
-                const contract = await tx.contract.findUnique({
-                    where: { id: approval.contractId },
-                });
-                newStatus = contract!.status;
+                // Check specific combinations for granular status (UI Feedback)
+                const legal = allApprovals.find(a => a.type === 'LEGAL');
+                const finance = allApprovals.find(a => a.type === 'FINANCE');
+
+                // Note: We use the *projected* status of the current approval being acted on
+                const isLegalApproved = legal?.id === approvalId || legal?.status === ApprovalStatus.APPROVED;
+                const isFinanceApproved = finance?.id === approvalId || finance?.status === ApprovalStatus.APPROVED;
+
+                if (isLegalApproved && isFinanceApproved) {
+                    // Should be covered by isFullyApproved, but safety check
+                    newStatus = ContractStatus.APPROVED;
+                } else if (isLegalApproved) {
+                    newStatus = ContractStatus.LEGAL_APPROVED;
+                } else if (isFinanceApproved) {
+                    newStatus = ContractStatus.FINANCE_REVIEWED;
+                } else {
+                    newStatus = ContractStatus.IN_REVIEW;
+                }
             }
 
             // Update contract status
@@ -99,6 +100,16 @@ export class ApprovalsService {
                 `Approval ${approval.type} granted for contract ${approval.contractId}. New status: ${newStatus}`,
             );
 
+            // Returning updated contract and approval
+
+
+            return { contract: updatedContract, approval };
+        });
+
+        // Notifications (Outside Transaction)
+        try {
+            const { contract: updatedContract, approval: updatedApproval } = result;
+
             // Notify Creator
             if (updatedContract.createdByUser?.email) {
                 await this.emailService.sendApprovalResult(
@@ -106,7 +117,7 @@ export class ApprovalsService {
                     true,
                     updatedContract.title,
                     'Approver',
-                    comment || (isFullyApproved ? 'Fully approved' : `${approval.type} approved`),
+                    comment || (updatedContract.status === ContractStatus.APPROVED ? 'Fully approved' : `${updatedApproval.type} approved`),
                     `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/contracts/${updatedContract.id}`,
                 );
 
@@ -114,14 +125,17 @@ export class ApprovalsService {
                 await this.notificationsService.create({
                     userId: updatedContract.createdByUserId,
                     type: 'APPROVAL_COMPLETE',
-                    title: `Contract ${isFullyApproved ? 'Approved' : 'Updated'}`,
-                    message: `${updatedContract.title} was ${isFullyApproved ? 'fully approved' : `${approval.type} approved`}`,
+                    title: `Contract ${updatedContract.status === ContractStatus.APPROVED ? 'Approved' : 'Updated'}`,
+                    message: `${updatedContract.title} was ${updatedContract.status === ContractStatus.APPROVED ? 'fully approved' : `${updatedApproval.type} approved`}`,
                     link: `/dashboard/contracts/${updatedContract.id}`,
                 });
             }
+        } catch (error) {
+            this.logger.error(`Failed to send approval notifications: ${(error as Error).message}`);
+            // Don't throw, successful approval is more important
+        }
 
-            return { contract: updatedContract, approval };
-        });
+        return result;
     }
 
     /**
@@ -143,7 +157,7 @@ export class ApprovalsService {
             throw new ForbiddenException('Approval has already been processed');
         }
 
-        return this.prisma.$transaction(async (tx) => {
+        const result = await this.prisma.$transaction(async (tx) => {
             // Update approval
             await tx.approval.update({
                 where: { id: approvalId },
@@ -166,7 +180,13 @@ export class ApprovalsService {
                 `Approval ${approval.type} rejected for contract ${approval.contractId}`,
             );
 
-            // Notify Creator
+            return { contract: updatedContract, approval };
+        });
+
+        // Notifications (Outside Transaction)
+        try {
+            const { contract: updatedContract, approval: updatedApproval } = result;
+
             if (updatedContract.createdByUser?.email) {
                 await this.emailService.sendApprovalResult(
                     updatedContract.createdByUser.email,
@@ -182,13 +202,15 @@ export class ApprovalsService {
                     userId: updatedContract.createdByUserId,
                     type: 'APPROVAL_COMPLETE',
                     title: 'Contract Rejected',
-                    message: `${updatedContract.title} was rejected by ${approval.type}. Reason: ${comment}`,
+                    message: `${updatedContract.title} was rejected by ${updatedApproval.type}. Reason: ${comment}`,
                     link: `/dashboard/contracts/${updatedContract.id}`,
                 });
             }
+        } catch (error) {
+            this.logger.error(`Failed to send rejection notifications: ${(error as Error).message}`);
+        }
 
-            return { contract: updatedContract, approval };
-        });
+        return result;
     }
 
     /**

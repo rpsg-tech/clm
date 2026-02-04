@@ -88,8 +88,8 @@ export default function DashboardPage() {
     const getStatusStyles = (status: string) => {
         const statusMap: Record<string, string> = {
             DRAFT: 'bg-slate-100 text-slate-600',
-            PENDING_LEGAL: 'bg-amber-50 text-amber-700 border-amber-200',
-            PENDING_FINANCE: 'bg-amber-50 text-amber-700 border-amber-200',
+            SENT_TO_LEGAL: 'bg-amber-50 text-amber-700 border-amber-200',
+            SENT_TO_FINANCE: 'bg-amber-50 text-amber-700 border-amber-200',
             ACTIVE: 'bg-emerald-50 text-emerald-700 border-emerald-200',
             SIGNED: 'bg-blue-50 text-blue-700 border-blue-200',
             REJECTED: 'bg-rose-50 text-rose-700 border-rose-200',
@@ -196,7 +196,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Attention Needed Banner */}
-            {(stats.pendingApprovals > 0 || (dashboardData?.expiringContracts?.length || 0) > 0) && (
+            {(stats.pendingApprovals > 0 || (dashboardData?.expiringContracts?.length || 0) > 0 || (dashboardData?.rejectedContracts?.length || 0) > 0) && (
                 <div className="bg-rose-50 border border-rose-100 rounded-2xl p-1">
                     <div className="px-4 py-3 flex items-center justify-between">
                         <div className="flex items-center gap-2 text-rose-700 font-bold text-sm">
@@ -204,7 +204,7 @@ export default function DashboardPage() {
                             Attention Needed
                         </div>
                         <Badge variant="outline" className="bg-white text-rose-700 border-rose-200">
-                            Expiring in ≤ 30 days
+                            Action Required
                         </Badge>
                     </div>
                     <div className="bg-white rounded-xl divide-y divide-slate-50 border border-rose-100/50 shadow-sm">
@@ -224,6 +224,25 @@ export default function DashboardPage() {
                                 </div>
                                 <Button size="sm" variant="outline" className="bg-white text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700">
                                     Review Contract
+                                </Button>
+                            </div>
+                        ))}
+                        {dashboardData?.rejectedContracts?.map((contract: any) => (
+                            <div key={contract.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors group cursor-pointer" onClick={() => router.push(`/dashboard/contracts/${contract.id}`)}>
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-500">
+                                        <AlertCircle size={18} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-slate-900 text-sm group-hover:text-rose-600 transition-colors">{contract.title}</h4>
+                                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                                            <span className="text-rose-600 font-bold">Revision Requested</span>
+                                            <span className="text-slate-400">• Check comments</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <Button size="sm" variant="outline" className="bg-white text-rose-600 border-rose-200 hover:bg-rose-50 hover:text-rose-700">
+                                    Revise Draft
                                 </Button>
                             </div>
                         ))}
@@ -248,7 +267,8 @@ export default function DashboardPage() {
                         ))}
                     </div>
                 </div>
-            )}
+            )
+            }
 
             {/* Recent Contracts Table */}
             <div>
@@ -402,6 +422,6 @@ export default function DashboardPage() {
                 </button>
             </div>
 
-        </div>
+        </div >
     );
 }

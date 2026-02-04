@@ -84,6 +84,12 @@ const navigation = [
         icon: Shield,
         permission: 'role:view', // Same permission as view roles for now
     },
+    {
+        name: 'System Modules',
+        href: '/dashboard/admin/modules',
+        icon: Sparkles, // Using Sparkles as it represents Features/AI/Magic
+        permission: 'admin:config_modules',
+    },
 
 ];
 

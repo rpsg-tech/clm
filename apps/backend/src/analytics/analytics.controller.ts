@@ -11,12 +11,12 @@ import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
-import { PrismaService } from '../prisma/prisma.service';
+import { AnalyticsService } from './analytics.service';
 
 @Controller('analytics')
 @UseGuards(JwtAuthGuard, OrgContextGuard, PermissionsGuard)
 export class AnalyticsController {
-    constructor(private prisma: PrismaService) { }
+    constructor(private analyticsService: AnalyticsService) { }
 
     /**
      * Get contract summary statistics
@@ -24,47 +24,7 @@ export class AnalyticsController {
     @Get('contracts/summary')
     @Permissions('analytics:view')
     async getContractSummary(@CurrentUser() user: AuthenticatedUser) {
-        const orgId = user.orgId;
-
-        const [total, byStatus, activeValueResult] = await Promise.all([
-            // Total contracts
-            this.prisma.contract.count({
-                where: { organizationId: orgId },
-            }),
-
-            // Count by status
-            this.prisma.contract.groupBy({
-                by: ['status'],
-                where: { organizationId: orgId },
-                _count: true,
-            }),
-
-            // Total Active Value
-            this.prisma.contract.aggregate({
-                _sum: { amount: true },
-                where: {
-                    organizationId: orgId,
-                    status: { in: ['ACTIVE', 'COUNTERSIGNED', 'APPROVED', 'SENT_TO_COUNTERPARTY'] as any[] }
-                }
-            })
-        ]);
-
-        // Convert groupBy to object
-        const statusCounts: Record<string, number> = {};
-        byStatus.forEach(item => {
-            statusCounts[item.status] = item._count;
-        });
-
-        return {
-            total,
-            byStatus: statusCounts,
-            pendingApproval: (statusCounts['PENDING_LEGAL'] || 0) + (statusCounts['PENDING_FINANCE'] || 0),
-            active: (statusCounts['ACTIVE'] || 0) + (statusCounts['COUNTERSIGNED'] || 0) + (statusCounts['SENT_TO_COUNTERPARTY'] || 0) + (statusCounts['APPROVED'] || 0),
-            activeValue: activeValueResult._sum.amount || 0,
-            draft: statusCounts['DRAFT'] || 0,
-            rejected: statusCounts['REJECTED'] || 0,
-            expired: (statusCounts['EXPIRED'] || 0) + (statusCounts['TERMINATED'] || 0),
-        };
+        return this.analyticsService.getContractsSummary(user.orgId!);
     }
 
     /**
@@ -73,17 +33,7 @@ export class AnalyticsController {
     @Get('contracts/by-status')
     @Permissions('analytics:view')
     async getContractsByStatus(@CurrentUser() user: AuthenticatedUser) {
-        const result = await this.prisma.contract.groupBy({
-            by: ['status'],
-            where: { organizationId: user.orgId },
-            _count: true,
-        });
-
-        return result.map(item => ({
-            status: item.status,
-            count: item._count,
-            label: this.formatStatus(item.status),
-        }));
+        return this.analyticsService.getContractsByStatus(user.orgId!);
     }
 
     /**
@@ -92,39 +42,7 @@ export class AnalyticsController {
     @Get('contracts/trend')
     @Permissions('analytics:view')
     async getContractTrend(@CurrentUser() user: AuthenticatedUser) {
-        const sixMonthsAgo = new Date();
-        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-        const contracts = await this.prisma.contract.findMany({
-            where: {
-                organizationId: user.orgId,
-                createdAt: { gte: sixMonthsAgo },
-            },
-            select: { createdAt: true },
-        });
-
-        // Group by month
-        const monthlyData: Record<string, { count: number }> = {};
-
-        for (let i = 5; i >= 0; i--) {
-            const date = new Date();
-            date.setMonth(date.getMonth() - i);
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            monthlyData[key] = { count: 0 };
-        }
-
-        contracts.forEach(c => {
-            const key = `${c.createdAt.getFullYear()}-${String(c.createdAt.getMonth() + 1).padStart(2, '0')}`;
-            if (monthlyData[key]) {
-                monthlyData[key].count++;
-            }
-        });
-
-        return Object.entries(monthlyData).map(([month, data]) => ({
-            month,
-            label: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-            count: data.count,
-        }));
+        return this.analyticsService.getContractTrend(user.orgId!);
     }
 
     /**
@@ -133,30 +51,7 @@ export class AnalyticsController {
     @Get('approvals/metrics')
     @Permissions('analytics:view')
     async getApprovalMetrics(@CurrentUser() user: AuthenticatedUser) {
-        const [pending, completed] = await Promise.all([
-            // Pending approvals
-            this.prisma.approval.count({
-                where: {
-                    contract: { organizationId: user.orgId },
-                    status: 'PENDING',
-                },
-            }),
-
-            // Completed approvals (all time)
-            this.prisma.approval.count({
-                where: {
-                    contract: { organizationId: user.orgId },
-                    status: { in: ['APPROVED', 'REJECTED'] },
-                },
-            }),
-        ]);
-
-        return {
-            pendingCount: pending,
-            completedCount: completed,
-            averageApprovalTime: 2.5, // Mock - would need actedAt tracking
-            approvalRate: completed > 0 ? 0.85 : 0, // Mock approval rate
-        };
+        return this.analyticsService.getApprovalMetrics(user.orgId!);
     }
 
     /**
@@ -168,25 +63,7 @@ export class AnalyticsController {
         @CurrentUser() user: AuthenticatedUser,
         @Query('limit') limit = '10',
     ) {
-        const recentContracts = await this.prisma.contract.findMany({
-            where: { organizationId: user.orgId },
-            orderBy: { updatedAt: 'desc' },
-            take: parseInt(limit),
-            select: {
-                id: true,
-                title: true,
-                status: true,
-                updatedAt: true,
-            },
-        });
-
-        return recentContracts.map(c => ({
-            id: c.id,
-            type: 'contract',
-            title: c.title,
-            status: c.status,
-            timestamp: c.updatedAt,
-        }));
+        return this.analyticsService.getRecentActivity(user.orgId!, parseInt(limit));
     }
 
     /**
@@ -195,29 +72,8 @@ export class AnalyticsController {
     @Get('admin/stats')
     // Ideally this should be protected by a SuperAdminGuard
     async getAdminStats() {
-        // Run parallel queries for system-wide stats
-        const [totalUsers, totalOrgs, totalContracts, totalTemplates, totalPermissions] = await Promise.all([
-            this.prisma.user.count(),
-            this.prisma.organization.count(),
-            this.prisma.contract.count(),
-            this.prisma.template.count(),
-            this.prisma.permission.count(),
-        ]);
-
-        return {
-            totalUsers,
-            totalOrgs,
-            totalContracts,
-            totalTemplates,
-            totalPermissions,
-            systemHealth: '100%',
-            lastUpdated: new Date()
-        };
+        return this.analyticsService.getAdminStats();
     }
 
-    private formatStatus(status: string): string {
-        return status
-            .replace(/_/g, ' ')
-            .replace(/\b\w/g, c => c.toUpperCase());
-    }
+    // No longer need formatStatus - it's in the service
 }

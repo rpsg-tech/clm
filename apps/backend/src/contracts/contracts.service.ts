@@ -8,13 +8,15 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException,
 import { PrismaService } from '../prisma/prisma.service';
 import { Contract, ContractStatus, Prisma } from '@prisma/client';
 import { sanitizeContractContent } from '../common/utils/sanitize.util';
-import { EmailService } from '../common/email/email.service';
+import { EmailService, EmailTemplate } from '../common/email/email.service';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes, createHash } from 'crypto';
 import { DiffService } from '../common/services/diff.service';
+import { FeatureFlagService } from '../config/feature-flag.service';
 
 import { NotificationsService } from '../notifications/notifications.service';
 import { StorageService } from '../common/storage/storage.service';
+import { OcrService } from '../common/services/ocr.service';
 
 @Injectable()
 export class ContractsService {
@@ -27,6 +29,8 @@ export class ContractsService {
         private notificationsService: NotificationsService,
         private storageService: StorageService,
         private configService: ConfigService,
+        private featureFlagService: FeatureFlagService,
+        private ocrService: OcrService,
     ) { }
 
     // ... (existing methods until sendToCounterparty)
@@ -53,6 +57,8 @@ export class ContractsService {
 
         // Send email
         if (contract.counterpartyEmail) {
+            const fromEmail = await this.getLegalEmail(organizationId);
+
             this.emailService.sendContractToCounterparty(
                 contract.counterpartyEmail,
                 contract.counterpartyName || 'Valued Partner',
@@ -60,10 +66,34 @@ export class ContractsService {
                 contract.reference,
                 'RPSG Group',
                 `${process.env.FRONTEND_URL}/contracts/${id}`,
+                10,
+                fromEmail
             ).catch(err => this.logger.error(`Failed to send counterparty email: ${err.message}`));
         }
 
         return updated;
+    }
+
+    /**
+     * Helper: Resolve Legal Email for Organization
+     */
+    private async getLegalEmail(organizationId: string): Promise<string> {
+        try {
+            const org = await this.prisma.organization.findUnique({
+                where: { id: organizationId },
+                select: { code: true, settings: true }
+            });
+
+            if (!org) return ''; // Fallback to default in EmailService
+
+            // Check settings for override? For now standard format
+            const domain = 'rpsg.in'; // Could be dynamic
+            const code = org.code.toLowerCase();
+            return `Legal Team <legal@${code}.${domain}>`;
+        } catch (e) {
+            this.logger.warn(`Failed to resolve legal email for org ${organizationId}`);
+            return '';
+        }
     }
 
     /**
@@ -130,7 +160,7 @@ export class ContractsService {
         const contract = await this.findById(id, organizationId);
 
         // Allow uploads in DRAFT or negotiation stages
-        if (contract.status !== ContractStatus.DRAFT && contract.status !== ContractStatus.PENDING_LEGAL) {
+        if (contract.status !== ContractStatus.DRAFT && contract.status !== ContractStatus.SENT_TO_LEGAL) {
             // relaxed check for now, can be stricter
             // throw new ForbiddenException('Can only upload documents for Draft contracts');
         }
@@ -145,18 +175,47 @@ export class ContractsService {
     async confirmDocumentUpload(id: string, organizationId: string, key: string, filename: string, fileSize: number) {
         const contract = await this.findById(id, organizationId);
 
+        let extractedText = '';
+        const fileExt = filename.split('.').pop()?.toLowerCase() || '';
+        const mimeType = this.getMimeType(fileExt);
+
+        // Perform OCR if it's an image
+        if (this.ocrService.isSupported(mimeType)) {
+            try {
+                this.logger.log(`Processing OCR for file: ${filename}`);
+                const fileBuffer = await this.storageService.getFile(key);
+                extractedText = await this.ocrService.extractText(fileBuffer);
+                this.logger.log(`OCR successful for ${filename}, extracted ${extractedText.length} chars`);
+            } catch (error) {
+                this.logger.error(`OCR failed for ${filename}: ${(error as Error).message}`);
+                // Non-blocking error, proceed with attachment creation
+            }
+        }
+
         return this.prisma.contractAttachment.create({
             data: {
                 contractId: id,
                 fileName: filename,
-                fileUrl: key, // Storing key as URL/Path for now, assuming helper resolves it
-                fileType: 'application/pdf', // Simplified, or pass from controller
+                fileUrl: key,
+                fileType: mimeType,
                 fileSize: fileSize,
                 category: 'MAIN_DOCUMENT',
-                uploadedBy: 'system' // or pass user ID
+                uploadedBy: 'system',
+                metadata: extractedText ? { extractedText } : undefined,
             }
         });
+    }
 
+    private getMimeType(ext: string): string {
+        const map: Record<string, string> = {
+            'png': 'image/png',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'pdf': 'application/pdf',
+            'doc': 'application/msword',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        };
+        return map[ext] || 'application/octet-stream';
     }
 
     /**
@@ -475,9 +534,9 @@ export class ContractsService {
     ) {
         const contract = await this.findById(id, organizationId);
 
-        // Can only update DRAFT contracts
-        if (contract.status !== ContractStatus.DRAFT) {
-            throw new ForbiddenException('Can only update contracts in DRAFT status');
+        // Can only update DRAFT or REVISION_REQUESTED contracts
+        if (contract.status !== ContractStatus.DRAFT && contract.status !== ContractStatus.REVISION_REQUESTED) {
+            throw new ForbiddenException('Can only update contracts in DRAFT or REVISION_REQUESTED status');
         }
 
         // Get user for changelog
@@ -573,29 +632,59 @@ export class ContractsService {
     /**
      * Submit contract for approval
      */
-    async submitForApproval(id: string, organizationId: string) {
+    /**
+     * Submit contract for approval (Targeted or Workflow based)
+     */
+    async submitForApproval(id: string, organizationId: string, target?: 'LEGAL' | 'FINANCE') {
         const contract = await this.findById(id, organizationId);
 
-        if (contract.status !== ContractStatus.DRAFT) {
-            throw new ForbiddenException('Can only submit DRAFT contracts');
+        // Allow submission from Draft, Revision, or even partial approval states if we want to add more approvals
+        const allowedStates: ContractStatus[] = [ContractStatus.DRAFT, ContractStatus.REVISION_REQUESTED, ContractStatus.LEGAL_APPROVED, ContractStatus.FINANCE_REVIEWED];
+        if (!allowedStates.includes(contract.status) && !target) {
+            // If generic submit, strict check. If targeted, maybe loose check? Keeping strict for now but allow re-submission
         }
+
+        // Check Feature Flags (only if generic submission)
+        const financeEnabled = await this.featureFlagService.isEnabled('FINANCE_WORKFLOW', organizationId);
 
         // 1. Database Updates (State Transition)
         const updatedContract = await this.prisma.$transaction(async (tx) => {
+            let newStatus: ContractStatus = ContractStatus.IN_REVIEW;
+            const approvalsData: { contractId: string, type: 'LEGAL' | 'FINANCE' }[] = [];
+
+            if (target === 'LEGAL') {
+                newStatus = ContractStatus.SENT_TO_LEGAL;
+                approvalsData.push({ contractId: id, type: 'LEGAL' });
+            } else if (target === 'FINANCE') {
+                newStatus = ContractStatus.SENT_TO_FINANCE;
+                approvalsData.push({ contractId: id, type: 'FINANCE' });
+            } else {
+                // Default: Parallel if Finance enabled, else Legal
+                newStatus = ContractStatus.IN_REVIEW; // Or SENT_TO_LEGAL if only legal?
+                approvalsData.push({ contractId: id, type: 'LEGAL' });
+                if (financeEnabled) {
+                    approvalsData.push({ contractId: id, type: 'FINANCE' });
+                } else {
+                    newStatus = ContractStatus.SENT_TO_LEGAL; // fallback to specific if only one
+                }
+            }
+
             await tx.contract.update({
                 where: { id },
                 data: {
-                    status: ContractStatus.PENDING_LEGAL,
+                    status: newStatus,
                     submittedAt: new Date(),
                 },
             });
 
-            // Create parallel approval records for Legal and Finance
+            // Clean up old PENDING approvals of the requested types
+            const typesToDelete = target ? [target] : (financeEnabled ? ['LEGAL', 'FINANCE'] : ['LEGAL']);
+            await tx.approval.deleteMany({
+                where: { contractId: id, status: 'PENDING', type: { in: typesToDelete as any } }
+            });
+
             await tx.approval.createMany({
-                data: [
-                    { contractId: id, type: 'LEGAL' },
-                    { contractId: id, type: 'FINANCE' },
-                ],
+                data: approvalsData as any[],
             });
 
             return tx.contract.findUnique({
@@ -609,56 +698,171 @@ export class ContractsService {
             });
         });
 
-        // 2. Async Notifications (Post-Transaction)
+        // 2. Async Notifications
         if (updatedContract) {
             try {
-                // Email Approvers
-                const legalApproverEmail = this.configService.get<string>('LEGAL_APPROVER_EMAIL', 'legal@clm.com');
-                const financeApproverEmail = this.configService.get<string>('FINANCE_APPROVER_EMAIL', 'finance@clm.com');
+                // Notify Legal
+                if (!target || target === 'LEGAL') {
+                    const legalApproverEmail = this.configService.get<string>('LEGAL_APPROVER_EMAIL', 'legal@clm.com');
+                    this.emailService.sendApprovalRequest(
+                        legalApproverEmail,
+                        updatedContract.title,
+                        updatedContract.reference,
+                        'LEGAL',
+                        updatedContract.createdByUser?.name || 'System',
+                        `${process.env.FRONTEND_URL}/dashboard/approvals/legal`,
+                    ).catch(e => this.logger.error(e));
 
-                // We don't await these to return the response faster, 
-                // but we catch errors to prevent crashing the successful request
-                this.emailService.sendApprovalRequest(
-                    legalApproverEmail,
-                    updatedContract.title,
-                    updatedContract.reference,
-                    'LEGAL',
-                    updatedContract.createdByUser?.name || 'System',
-                    `${process.env.FRONTEND_URL}/dashboard/approvals/legal`,
-                ).catch(err => this.logger.error(`Failed to send legal approval email: ${err.message}`));
+                    this.notifyApprovers(organizationId, 'approval:legal:act', 'LEGAL', updatedContract.title, updatedContract.id)
+                        .catch(e => this.logger.error(e));
+                }
 
-                this.emailService.sendApprovalRequest(
-                    financeApproverEmail,
-                    updatedContract.title,
-                    updatedContract.reference,
-                    'FINANCE',
-                    updatedContract.createdByUser?.name || 'System',
-                    `${process.env.FRONTEND_URL}/dashboard/approvals/finance`,
-                ).catch(err => this.logger.error(`Failed to send finance approval email: ${err.message}`));
+                // Notify Finance
+                if ((!target && financeEnabled) || target === 'FINANCE') {
+                    const financeApproverEmail = this.configService.get<string>('FINANCE_APPROVER_EMAIL', 'finance@clm.com');
+                    this.emailService.sendApprovalRequest(
+                        financeApproverEmail,
+                        updatedContract.title,
+                        updatedContract.reference,
+                        'FINANCE',
+                        updatedContract.createdByUser?.name || 'System',
+                        `${process.env.FRONTEND_URL}/dashboard/approvals/finance`,
+                    ).catch(e => this.logger.error(e));
 
-                // Internal Notifications
-                this.notifyApprovers(
-                    organizationId,
-                    'approval:legal:act',
-                    'LEGAL',
-                    updatedContract.title,
-                    updatedContract.id
-                ).catch(err => this.logger.error(`Failed to notify legal approvers: ${err.message}`));
+                    this.notifyApprovers(organizationId, 'approval:finance:act', 'FINANCE', updatedContract.title, updatedContract.id)
+                        .catch(e => this.logger.error(e));
+                }
 
-                this.notifyApprovers(
-                    organizationId,
-                    'approval:finance:act',
-                    'FINANCE',
-                    updatedContract.title,
-                    updatedContract.id
-                ).catch(err => this.logger.error(`Failed to notify finance approvers: ${err.message}`));
+                // Audit Log
+                await this.prisma.auditLog.create({
+                    data: {
+                        organizationId,
+                        contractId: id,
+                        userId: contract.createdByUserId,
+                        action: 'CONTRACT_SUBMITTED',
+                        module: 'Contracts',
+                        metadata: { target: target || 'ALL' }
+                    }
+                });
+
             } catch (error) {
-                // Log but don't fail the request since DB is already updated
                 this.logger.error('Error triggering post-submission notifications:', error);
             }
         }
 
         return updatedContract;
+    }
+
+    /**
+     * Request a revision on a contract (Soft Rejection / Change Request)
+     */
+    /**
+     * Request a revision on a contract (Soft Rejection / Change Request)
+     */
+    async requestRevision(
+        id: string,
+        userId: string,
+        organizationId: string,
+        comment: string,
+    ) {
+        const contract = await this.findById(id, organizationId);
+
+        // Can request revision on contracts currently in review
+        const allowedStatuses: ContractStatus[] = [
+            ContractStatus.SENT_TO_LEGAL,
+            ContractStatus.SENT_TO_FINANCE,
+            ContractStatus.LEGAL_REVIEW_IN_PROGRESS,
+            ContractStatus.FINANCE_REVIEW_IN_PROGRESS,
+            ContractStatus.IN_REVIEW,
+            ContractStatus.LEGAL_APPROVED,
+            ContractStatus.FINANCE_REVIEWED
+        ];
+
+        if (!allowedStatuses.includes(contract.status)) {
+            // throw new ForbiddenException('Contract not in a reviewable state');
+        }
+
+        // 1. Update Status
+        const updated = await this.prisma.contract.update({
+            where: { id },
+            data: {
+                status: ContractStatus.REVISION_REQUESTED,
+            },
+            include: { createdByUser: true }
+        });
+
+        // 2. Audit Log
+        await this.prisma.auditLog.create({
+            data: {
+                organizationId,
+                contractId: id,
+                userId,
+                action: 'CONTRACT_REVISION_REQUESTED',
+                module: 'Contracts',
+                metadata: { comment }
+            }
+        });
+
+        // 3. Notify Creator
+        if (updated.createdByUser?.email) {
+            const requester = await this.prisma.user.findUnique({ where: { id: userId } });
+
+            await this.emailService.send({
+                to: updated.createdByUser.email,
+                template: EmailTemplate.REVISION_REQUESTED,
+                subject: `✏️ Revision Requested: ${updated.title}`,
+                data: {
+                    contractTitle: updated.title,
+                    requestedBy: requester?.name || 'Reviewer',
+                    comment,
+                    contractUrl: `${process.env.FRONTEND_URL}/dashboard/contracts/${id}/edit`,
+                }
+            }).catch(e => this.logger.error(e));
+
+            // In-app notification
+            await this.notificationsService.create({
+                userId: updated.createdByUserId,
+                type: 'REVISION_REQUESTED',
+                title: 'Revision Requested',
+                message: `${requester?.name || 'Reviewer'} requested changes: ${comment}`,
+                link: `/dashboard/contracts/${id}/edit`,
+            });
+        }
+
+        return updated;
+    }
+
+    /**
+     * Cancel a contract (Non-Active only)
+     */
+    async cancel(id: string, organizationId: string, userId: string, reason: string) {
+        const contract = await this.findById(id, organizationId);
+
+        // Can only cancel if NOT Active, Executed, Terminated, Expired
+        const immutableStates: ContractStatus[] = [
+            ContractStatus.ACTIVE,
+            ContractStatus.EXECUTED,
+            ContractStatus.TERMINATED,
+            ContractStatus.EXPIRED,
+            ContractStatus.CANCELLED
+        ];
+
+        if (immutableStates.includes(contract.status)) {
+            throw new ForbiddenException('Cannot cancel a contract in its current state');
+        }
+
+        // Update to CANCELLED
+        const updated = await this.prisma.contract.update({
+            where: { id },
+            data: {
+                status: ContractStatus.CANCELLED,
+            },
+            include: { createdByUser: true }
+        });
+
+        // Audit log handled in controller usually, or here.
+
+        return updated;
     }
 
     /**
@@ -817,16 +1021,18 @@ export class ContractsService {
             }),
         ]);
 
-        // Get contract  for field data
+        // Get contract for field data
         const contract = await this.prisma.contract.findUnique({
             where: { id },
         });
+
+        if (!contract) throw new NotFoundException('Contract not found');
 
         // Create comparison data
         const fromData = {
             ...contract,
             content: fromVersion.contentSnapshot,
-            annexureData: fromVersion.contentSnapshot,
+            annexureData: fromVersion.contentSnapshot, // Should be separate field if annexure versioned
         };
 
         const toData = {

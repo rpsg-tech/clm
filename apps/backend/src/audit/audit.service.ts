@@ -34,6 +34,8 @@ export class AuditService {
      */
     async log(entry: AuditLogEntry): Promise<void> {
         try {
+            console.log('AUDIT LOG ATTEMPT:', JSON.stringify(entry, null, 2));
+
             // Sanitize metadata before insertion
             const sanitizedEntry = {
                 ...entry,
@@ -45,9 +47,11 @@ export class AuditService {
             await this.prisma.auditLog.create({
                 data: sanitizedEntry,
             });
+            console.log('AUDIT LOG SUCCESS');
         } catch (error) {
             // Log to console but don't fail the main operation
             this.logger.error('Failed to create audit log', error);
+            console.error('Audit Log Error Details:', error);
         }
     }
 
@@ -123,18 +127,28 @@ export class AuditService {
             module?: string;
             action?: string;
             userId?: string;
+            targetId?: string;
             from?: Date;
             to?: Date;
             skip?: number;
             take?: number;
         },
     ) {
+        // Get child organizations to include in the list (Hierarchical view)
+        const childOrgs = await this.prisma.organization.findMany({
+            where: { parentId: organizationId },
+            select: { id: true }
+        });
+
+        const orgIds = [organizationId, ...childOrgs.map(o => o.id)];
+
         return this.prisma.auditLog.findMany({
             where: {
-                organizationId,
+                organizationId: { in: orgIds },
                 module: params?.module,
                 action: params?.action,
                 userId: params?.userId,
+                targetId: params?.targetId,
                 createdAt: {
                     gte: params?.from,
                     lte: params?.to,
@@ -163,6 +177,44 @@ export class AuditService {
     }
 
     /**
+     * Calculate granular difference between two objects
+     * Returns objects containing ONLY the changed fields.
+     */
+    static calculateDiff(oldObj: any, newObj: any): { old: any, new: any } {
+        const oldDiff: any = {};
+        const newDiff: any = {};
+
+        const allKeys = new Set([...Object.keys(oldObj || {}), ...Object.keys(newObj || {})]);
+
+        allKeys.forEach(key => {
+            const oldVal = oldObj?.[key];
+            const newVal = newObj?.[key];
+
+            // abstract equality check (loose mapping) or deep equality if needed
+            if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+                oldDiff[key] = oldVal;
+                newDiff[key] = newVal;
+            }
+        });
+
+        return { old: oldDiff, new: newDiff };
+    }
+
+    /**
+     * Audit Modules
+     */
+    static Modules = {
+        AUTH: 'AUTH',
+        USERS: 'USERS',
+        ROLES: 'ROLES',
+        CONTRACTS: 'CONTRACTS',
+        TEMPLATES: 'TEMPLATES',
+        SYSTEM: 'SYSTEM',
+        AI: 'AI',
+        ORGANIZATIONS: 'ORGANIZATIONS',
+    };
+
+    /**
      * Common audit actions
      */
     static Actions = {
@@ -179,6 +231,8 @@ export class AuditService {
         CONTRACT_REJECTED: 'CONTRACT_REJECTED',
         CONTRACT_SENT: 'CONTRACT_SENT',
         CONTRACT_SIGNED: 'CONTRACT_SIGNED',
+        CONTRACT_REVISION_REQUESTED: 'CONTRACT_REVISION_REQUESTED',
+        CONTRACT_CANCELLED: 'CONTRACT_CANCELLED',
 
         // Templates
         TEMPLATE_CREATED: 'TEMPLATE_CREATED',
@@ -190,6 +244,14 @@ export class AuditService {
         USER_DEACTIVATED: 'USER_DEACTIVATED',
         ROLE_ASSIGNED: 'ROLE_ASSIGNED',
         ROLE_REMOVED: 'ROLE_REMOVED',
+
+        // Roles
+        ROLE_CREATED: 'ROLE_CREATED',
+        ROLE_UPDATED: 'ROLE_UPDATED',
+        ROLE_DELETED: 'ROLE_DELETED',
+
+        // System
+        FEATURE_FLAG_UPDATED: 'FEATURE_FLAG_UPDATED',
 
         // AI
         AI_ANALYSIS_REQUESTED: 'AI_ANALYSIS_REQUESTED',

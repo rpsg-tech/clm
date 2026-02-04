@@ -84,4 +84,29 @@ export class StorageService {
             throw new InternalServerErrorException('Could not access file');
         }
     }
+
+    /**
+     * Get file content as Buffer (for internal processing like OCR)
+     */
+    async getFile(key: string): Promise<Buffer> {
+        try {
+            const command = new GetObjectCommand({
+                Bucket: this.bucketName,
+                Key: key,
+            });
+
+            const { Body } = await this.s3Client.send(command);
+
+            if (!Body) {
+                throw new Error('Empty body');
+            }
+
+            // Convert stream to buffer
+            const byteArray = await Body.transformToByteArray();
+            return Buffer.from(byteArray);
+        } catch (error) {
+            this.logger.error(`Failed to retrieve file content: ${(error as Error).message}`);
+            throw new InternalServerErrorException('Could not retrieve file content');
+        }
+    }
 }

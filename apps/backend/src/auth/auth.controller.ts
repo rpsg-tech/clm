@@ -17,6 +17,7 @@ import {
     Req,
     UnauthorizedException,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { Response, Request as ExpressRequest } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -76,6 +77,44 @@ export class AuthController {
 
         // Return user info only (no tokens in body)
         return { user: result.user };
+    }
+
+    /**
+     * Initiate Azure AD Login
+     */
+    @Get('login/azure')
+    @UseGuards(AuthGuard('azure-ad'))
+    async azureLogin() {
+        // Initiates the OAuth flow
+    }
+
+    /**
+     * Azure AD Callback
+     */
+    @Post('login/azure/callback')
+    @UseGuards(AuthGuard('azure-ad'))
+    async azureCallback(
+        @Req() req: { user: any },
+        @Res({ passthrough: true }) response: Response,
+    ) {
+        // User is already validated by the Strategy (Gatekeeper Check)
+        const result = await this.authService.generateAuthResponse(req.user);
+
+        // Set Cookies
+        this.setCookies(response, result.accessToken, result.refreshToken);
+
+        // Audit Log
+        await this.auditService.log({
+            userId: result.user.id,
+            action: 'USER_LOGIN_SSO',
+            module: 'auth',
+            targetType: 'User',
+            targetId: result.user.id,
+            metadata: { provider: 'azure-ad' } as Prisma.InputJsonValue
+        });
+
+        // Redirect to Frontend Dashboard
+        response.redirect(`${process.env.FRONTEND_URL}/dashboard`);
     }
 
     /**

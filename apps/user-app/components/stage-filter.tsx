@@ -12,8 +12,8 @@ const stages = [
     { value: '', label: 'All Contract Stages' },
     { value: 'DRAFT', label: 'Draft' }, // Mapping to system status but using user friendly labels where possible or adding new mappings if system supports 'Received from User' etc.
     // For now mapping strictly to what backend supports but updating labels to match screenshot style where applicable
-    { value: 'PENDING_LEGAL', label: 'Legal Review' },
-    { value: 'PENDING_FINANCE', label: 'Finance Review' },
+    { value: 'SENT_TO_LEGAL', label: 'Legal Review' },
+    { value: 'SENT_TO_FINANCE', label: 'Finance Review' },
     { value: 'APPROVED', label: 'Approved' },
     { value: 'SENT_TO_COUNTERPARTY', label: 'Sent to Counterparty' },
     { value: 'COUNTERSIGNED', label: 'Received from User' }, // Assuming this maps to countersigned or similar

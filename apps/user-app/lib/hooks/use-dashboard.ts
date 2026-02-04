@@ -7,13 +7,14 @@ export function useDashboardData(orgId?: string) {
         queryFn: async () => {
             if (!orgId) return null;
 
-            const [summary, contracts, expiring, approvalsLegal, approvalsFinance, logs] = await Promise.all([
+            const [summary, contracts, expiring, approvalsLegal, approvalsFinance, logs, rejected] = await Promise.all([
                 api.analytics.contractsSummary().catch(() => ({ total: 0, byStatus: {} })),
                 api.contracts.list({ limit: 5 }).catch(() => ({ data: [], meta: { total: 0 } })),
                 api.contracts.list({ limit: 5, expiringDays: 30 }).catch(() => ({ data: [], meta: { total: 0 } })),
                 api.approvals.pending('LEGAL').catch(() => []),
                 api.approvals.pending('FINANCE').catch(() => []),
                 api.audit.getLogs({ take: 5 }).catch(() => ({ logs: [], total: 0 })),
+                api.contracts.list({ status: 'REJECTED', limit: 5 }).catch(() => ({ data: [], meta: { total: 0 } })),
             ]);
 
             return {
@@ -27,6 +28,7 @@ export function useDashboardData(orgId?: string) {
                 },
                 recentContracts: ((contracts as any).data || []).slice(0, 5),
                 expiringContracts: ((expiring as any).data || []).slice(0, 5),
+                rejectedContracts: ((rejected as any).data || []).slice(0, 5),
                 pendingApprovals: [
                     ...(Array.isArray(approvalsLegal) ? approvalsLegal : []),
                     ...(Array.isArray(approvalsFinance) ? approvalsFinance : [])

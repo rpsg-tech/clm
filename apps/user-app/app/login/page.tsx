@@ -188,20 +188,7 @@ export default function LoginPage() {
                         </Button>
                     </form>
 
-                    {/* Demo Credentials Hint */}
-                    <div className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Demo Accounts</p>
-                        <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => { setEmail('admin@clm.com'); setPassword('Password123!'); }} className="text-left p-2 rounded-lg hover:bg-slate-50 transition-colors text-xs space-y-0.5 group">
-                                <div className="font-bold text-slate-700 group-hover:text-orange-600">Admin</div>
-                                <div className="text-slate-400 font-mono">admin@clm.com</div>
-                            </button>
-                            <button onClick={() => { setEmail('user@clm.com'); setPassword('Password123!'); }} className="text-left p-2 rounded-lg hover:bg-slate-50 transition-colors text-xs space-y-0.5 group">
-                                <div className="font-bold text-slate-700 group-hover:text-blue-600">User</div>
-                                <div className="text-slate-400 font-mono">user@clm.com</div>
-                            </button>
-                        </div>
-                    </div>
+
 
                     <div className="pt-8 text-center border-t border-neutral-200">
                         <p className="text-sm text-slate-500">

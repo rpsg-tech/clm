@@ -12,6 +12,8 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import * as nodemailer from 'nodemailer';
 
 // Email template types
@@ -34,7 +36,9 @@ export enum EmailTemplate {
     APPROVAL_ESCALATED = 'APPROVAL_ESCALATED',
 
     // Notifications
+    // Notifications
     GENERIC_NOTIFICATION = 'GENERIC_NOTIFICATION',
+    REVISION_REQUESTED = 'REVISION_REQUESTED',
 }
 
 // Email payload interface
@@ -42,6 +46,7 @@ export interface EmailPayload {
     to: string;
     cc?: string[];
     bcc?: string[];
+    from?: string; // override FROM address
     subject: string;
     template: EmailTemplate;
     data: Record<string, unknown>;
@@ -81,7 +86,10 @@ export class EmailService {
     private readonly retryDelayMs = 1000;
     private transporter: nodemailer.Transporter;
 
-    constructor(private configService: ConfigService) {
+    constructor(
+        private configService: ConfigService,
+        @InjectQueue('email') private emailQueue: Queue,
+    ) {
         this.isDevelopment = this.configService.get('NODE_ENV', 'development') !== 'production';
 
         this.config = {
@@ -143,15 +151,45 @@ export class EmailService {
      * Send email using template
      */
     async send(payload: EmailPayload): Promise<EmailResult> {
+        try {
+            await this.emailQueue.add('send', payload, {
+                priority: payload.priority === 'high' ? 1 : 2,
+                attempts: 3,
+                backoff: {
+                    type: 'exponential',
+                    delay: 1000,
+                },
+                removeOnComplete: true,
+            });
+
+            this.logger.log(`Queued email: ${payload.template} to ${payload.to}`);
+
+            return {
+                success: true,
+                messageId: 'queued',
+                timestamp: new Date(),
+            };
+        } catch (error) {
+            this.logger.error(`Failed to queue email: ${(error as Error).message}`);
+            // Fallback: Try sending directly if queue fails? 
+            // Or just throw. For now throw.
+            throw error;
+        }
+    }
+
+    /**
+     * Process email (called by worker)
+     */
+    async processEmail(payload: EmailPayload): Promise<EmailResult> {
         const startTime = Date.now();
 
-        this.logger.log(`📧 Sending email: ${payload.template} to ${payload.to}`);
+        this.logger.log(`📧 Processing email direct: ${payload.template} to ${payload.to}`);
 
         try {
             // Build email content from template
             const { subject, html, text } = this.buildEmailContent(payload);
 
-            // In development, just log the email
+            // In development check
             if (this.isDevelopment) {
                 return this.mockSend(payload, subject, html);
             }
@@ -161,12 +199,7 @@ export class EmailService {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             this.logger.error(`Failed to send email to ${payload.to}: ${errorMessage}`);
-
-            return {
-                success: false,
-                error: errorMessage,
-                timestamp: new Date(),
-            };
+            throw error; // Throw so BullMQ knows it failed
         }
     }
 
@@ -186,8 +219,21 @@ export class EmailService {
         try {
             this.logger.log(`Sending email via SMTP (attempt ${attempt}/${this.maxRetries})`);
 
+            // Use payload.from if provided, otherwise config default
+            // If payload.from is just email "foo@bar.com", wrap it: "Service Name <foo@bar.com>"
+            // Or assume caller provides full format if needed. 
+            // Better: use config.fromName with provided email if it's just an email.
+            let from = `"${this.config.fromName}" <${this.config.from}>`;
+
+            if (payload.from) {
+                // If payload.from contains name/angle brackets, use as is. 
+                // If simple email, wrap with Org Name if possible, or just use it.
+                // For now, trust the caller to format it or just pass the email.
+                from = payload.from.includes('<') ? payload.from : `"${this.config.fromName}" <${payload.from}>`;
+            }
+
             const result = await this.transporter.sendMail({
-                from: `"${this.config.fromName}" <${this.config.from}>`,
+                from: from,
                 to: payload.to,
                 cc: payload.cc,
                 bcc: payload.bcc,
@@ -447,6 +493,22 @@ export class EmailService {
                 `,
                 text: '{{title}}: {{message}}',
             },
+
+            // @ts-ignore - dynamic enum addition or missing in interface above (will fix if needed)
+            'REVISION_REQUESTED': {
+                subject: '✏️ Revision Requested: {{contractTitle}}',
+                html: `
+                    <h1>Revision Requested</h1>
+                    <p>A revision has been requested for your contract:</p>
+                    <div class="info-box warning">
+                        <p><strong>Title:</strong> {{contractTitle}}</p>
+                        <p><strong>Requested by:</strong> {{requestedBy}}</p>
+                        <p><strong>Comments:</strong> {{comment}}</p>
+                    </div>
+                    <p><a href="{{contractUrl}}" class="button">Edit Contract</a></p>
+                `,
+                text: 'Revision requested for: {{contractTitle}}. Comment: {{comment}}',
+            },
         };
     }
 
@@ -544,9 +606,11 @@ export class EmailService {
         approvalType: string,
         requestedBy: string,
         approvalUrl: string,
+        from?: string,
     ): Promise<EmailResult> {
         return this.send({
             to,
+            from,
             template: EmailTemplate.APPROVAL_REQUIRED,
             subject: `🔔 Approval Required: ${contractTitle}`,
             data: {
@@ -571,9 +635,11 @@ export class EmailService {
         organizationName: string,
         contractUrl: string,
         daysToRespond = 10,
+        from?: string,
     ): Promise<EmailResult> {
         return this.send({
             to,
+            from,
             template: EmailTemplate.CONTRACT_SENT_TO_COUNTERPARTY,
             subject: `Contract for Your Review: ${contractTitle}`,
             data: {
@@ -597,9 +663,11 @@ export class EmailService {
         approverName: string,
         comment: string,
         contractUrl: string,
+        from?: string,
     ): Promise<EmailResult> {
         return this.send({
             to,
+            from,
             template: approved ? EmailTemplate.APPROVAL_APPROVED : EmailTemplate.APPROVAL_REJECTED,
             subject: approved
                 ? `✅ Contract Approved: ${contractTitle}`

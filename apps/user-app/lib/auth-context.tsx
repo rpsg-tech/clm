@@ -31,6 +31,7 @@ interface AuthState {
     user: User | null;
     currentOrg: Organization | null;
     permissions: string[];
+    features: Record<string, boolean>; // Supported Features
     role: string | null;
     isLoading: boolean;
     isAuthenticated: boolean;
@@ -41,6 +42,7 @@ interface AuthContextType extends AuthState {
     logout: () => void;
     switchOrg: (organizationId: string) => Promise<void>;
     hasPermission: (permission: string) => boolean;
+    isFeatureEnabled: (featureCode: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -50,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: null,
         currentOrg: null,
         permissions: [],
+        features: {},
         role: null,
         isLoading: true,
         isAuthenticated: false,
@@ -70,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     currentOrg: data.currentOrg,
                     role: data.role,
                     permissions: data.permissions || [],
+                    features: data.features || {},
                     isAuthenticated: true,
                     isLoading: false,
                 }));
@@ -92,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             user: data.user,
             currentOrg: data.currentOrg,
             permissions: data.permissions || [],
+            features: data.features || {},
             role: data.role,
             isLoading: false,
             isAuthenticated: true,
@@ -113,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 user: null,
                 currentOrg: null,
                 permissions: [],
+                features: {},
                 role: null,
                 isLoading: false,
                 isAuthenticated: false,
@@ -127,6 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ...prev,
             currentOrg: response.organization,
             permissions: response.permissions,
+            features: response.features || {},
             role: response.role,
         }));
     }, []);
@@ -138,6 +145,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         [state.permissions],
     );
 
+    const isFeatureEnabled = useCallback(
+        (featureCode: string) => {
+            return !!state.features[featureCode];
+        },
+        [state.features]
+    );
+
     return (
         <AuthContext.Provider
             value={{
@@ -146,6 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 logout,
                 switchOrg,
                 hasPermission,
+                isFeatureEnabled,
             }}
         >
             {children}

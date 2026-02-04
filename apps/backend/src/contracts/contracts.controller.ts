@@ -110,13 +110,27 @@ export class ContractsController {
         return contract;
     }
 
+    @Get(':id/audit')
+    @Permissions('contract:view')
+    async getContractAuditLogs(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+    ) {
+        // Ensure user has access to contract
+        await this.contractsService.findById(id, user.orgId!);
+
+        // Fetch logs
+        return this.auditService.getByContract(id);
+    }
+
     @Post(':id/submit')
     @Permissions('contract:submit')
     async submitForApproval(
         @CurrentUser() user: AuthenticatedUser,
         @Param('id') id: string,
+        @Body('target') target?: 'LEGAL' | 'FINANCE',
     ) {
-        const contract = await this.contractsService.submitForApproval(id, user.orgId!);
+        const contract = await this.contractsService.submitForApproval(id, user.orgId!, target);
 
         // Audit log
         await this.auditService.log({
@@ -154,6 +168,30 @@ export class ContractsController {
                 counterparty: contract.counterpartyEmail,
                 sentAt: contract.sentAt,
             } as Prisma.InputJsonValue,
+        });
+
+        return contract;
+    }
+
+    @Post(':id/cancel')
+    @Permissions('contract:edit')
+    async cancel(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+        @Body('reason') reason: string,
+    ) {
+        const contract = await this.contractsService.cancel(id, user.orgId!, user.id, reason);
+
+        // Audit log
+        await this.auditService.log({
+            organizationId: user.orgId,
+            contractId: id,
+            userId: user.id,
+            action: AuditService.Actions.CONTRACT_CANCELLED,
+            module: 'contracts',
+            targetType: 'Contract',
+            targetId: id,
+            metadata: { reason } as Prisma.InputJsonValue,
         });
 
         return contract;

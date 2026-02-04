@@ -19,7 +19,24 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { SentryFilter } from './common/filters/sentry.filter';
 import { AppLogger } from './common/logger/logger.service';
+import * as Sentry from '@sentry/node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
+import { HttpAdapterHost } from '@nestjs/core';
+
+// Initialize Sentry early
+if (process.env.SENTRY_DSN) {
+    Sentry.init({
+        dsn: process.env.SENTRY_DSN,
+        integrations: [
+            nodeProfilingIntegration(),
+        ],
+        // Tracing
+        tracesSampleRate: 1.0,
+        profilesSampleRate: 1.0,
+    });
+}
 
 /**
  * Validate CORS origins at startup
@@ -102,7 +119,11 @@ async function bootstrap() {
 
     // ============ GLOBAL FILTERS ============
 
-    app.useGlobalFilters(new HttpExceptionFilter());
+    const { httpAdapter } = app.get(HttpAdapterHost);
+    app.useGlobalFilters(
+        new SentryFilter(httpAdapter),
+        new HttpExceptionFilter()
+    );
 
     // ============ GLOBAL MIDDLEWARE ============
 

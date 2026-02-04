@@ -11,10 +11,10 @@ import { FileText, Search, Filter, Plus, FileSignature, Calendar, ArrowUpRight, 
 
 const statusColors: Record<string, string> = {
     DRAFT: 'bg-slate-50 text-slate-500 border-slate-200',
-    PENDING_LEGAL: 'bg-amber-50 text-amber-600 border-amber-100',
-    PENDING_FINANCE: 'bg-amber-50 text-amber-600 border-amber-100',
+    SENT_TO_LEGAL: 'bg-amber-50 text-amber-600 border-amber-100',
+    SENT_TO_FINANCE: 'bg-amber-50 text-amber-600 border-amber-100',
     LEGAL_APPROVED: 'bg-indigo-50 text-indigo-600 border-indigo-100',
-    FINANCE_APPROVED: 'bg-indigo-50 text-indigo-600 border-indigo-100',
+    FINANCE_REVIEWED: 'bg-indigo-50 text-indigo-600 border-indigo-100',
     APPROVED: 'bg-emerald-50 text-emerald-600 border-emerald-100',
     SENT_TO_COUNTERPARTY: 'bg-blue-50 text-blue-600 border-blue-100',
     COUNTERSIGNED: 'bg-emerald-50 text-emerald-600 border-emerald-100',
@@ -108,10 +108,10 @@ export default function ContractsListPage() {
     const getStageLabel = (status: string) => {
         const map: Record<string, string> = {
             'DRAFT': 'Draft',
-            'PENDING_LEGAL': 'Legal Review',
-            'PENDING_FINANCE': 'Finance Review',
+            'SENT_TO_LEGAL': 'Legal Review',
+            'SENT_TO_FINANCE': 'Finance Review',
             'LEGAL_APPROVED': 'Legal Approved',
-            'FINANCE_APPROVED': 'Finance Approved',
+            'FINANCE_REVIEWED': 'Finance Approved',
             'APPROVED': 'Ready for Sign',
             'SENT_TO_COUNTERPARTY': 'Sent',
             'COUNTERSIGNED': 'Countersigned',

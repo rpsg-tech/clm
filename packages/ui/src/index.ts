@@ -20,5 +20,7 @@ export { Skeleton, SkeletonText, SkeletonAvatar, SkeletonCard, SkeletonTable } f
 export { Spinner, LoadingOverlay } from "./components/spinner";
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "./components/ui/tooltip";
 export { Switch } from "./components/ui/switch";
+export { Label } from "./components/ui/label";
+export { Select } from "./components/ui/select";
 export * from "./components/ui/sheet";
 export * from "./components/dropdown-menu";

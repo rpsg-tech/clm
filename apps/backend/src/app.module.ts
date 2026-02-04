@@ -5,10 +5,11 @@
  */
 
 import { Module, MiddlewareConsumer, RequestMethod, NestModule } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
+import { BullModule } from '@nestjs/bullmq';
 import { CorrelationMiddleware } from './common/middleware/correlation.middleware';
 import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { IdempotencyMiddleware } from './common/middleware/idempotency.middleware';
@@ -16,6 +17,7 @@ import { CsrfMiddleware } from './common/middleware/csrf.middleware';
 import { validateEnvironment } from './common/config/config.validation';
 import { RedisService } from './redis/redis.service';
 import { RedisThrottlerStorage } from './common/throttler/redis-throttler.storage';
+import { SentryModule } from '@sentry/nestjs/setup';
 
 // Core Modules
 import { PrismaModule } from './prisma/prisma.module';
@@ -35,6 +37,7 @@ import { HealthModule } from './health/health.module';
 import { AiModule } from './ai/ai.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { SearchModule } from './search/search.module';
+import { MetricsModule } from './metrics/metrics.module';
 import { RedisModule } from './redis/redis.module';
 import { StorageModule } from './common/storage/storage.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -53,25 +56,58 @@ import { OracleModule } from './oracle/oracle.module';
             },
         }),
         ScheduleModule.forRoot(),
+        SentryModule.forRoot(),
         RedisModule,
 
-        // Rate Limiting
-        // Rate Limiting
-        // Rate Limiting
+        // Queue System
+        BullModule.forRootAsync({
+            imports: [ConfigModule],
+            useFactory: async (configService: ConfigService) => {
+                const redisUrl = configService.get<string>('REDIS_URL');
+                if (redisUrl) {
+                    const url = new URL(redisUrl);
+                    return {
+                        connection: {
+                            host: url.hostname,
+                            port: Number(url.port),
+                            username: url.username,
+                            password: url.password,
+                            tls: url.protocol === 'rediss:' ? { rejectUnauthorized: false } : undefined,
+                        },
+                    };
+                }
+
+                return {
+                    connection: {
+                        host: configService.get('REDIS_HOST', 'localhost'),
+                        port: configService.get('REDIS_PORT', 6379),
+                        password: configService.get('REDIS_PASSWORD'),
+                    },
+                };
+            },
+            inject: [ConfigService],
+        }),
+
+        // Rate Limiting (Production-ready configuration)
         ThrottlerModule.forRootAsync({
             imports: [RedisModule],
             inject: [RedisService],
             useFactory: (redisService: RedisService) => ({
                 throttlers: [
                     {
-                        name: 'default',
-                        ttl: 60000,
-                        limit: 1000,
+                        name: 'short', // Burst protection
+                        ttl: 1000, // 1 second window
+                        limit: 10, // Max 10 requests per second
                     },
                     {
-                        name: 'strict',
-                        ttl: 60000,
-                        limit: 60,
+                        name: 'default', // Standard rate limit
+                        ttl: 60000, // 1 minute window
+                        limit: 30, // 30 requests per minute (was 1000)
+                    },
+                    {
+                        name: 'long', // Extended window
+                        ttl: 900000, // 15 minute window  
+                        limit: 300, // 300 requests per 15 minutes
                     },
                 ],
                 errorMessage: 'Too many requests, please try again later.',
@@ -97,6 +133,7 @@ import { OracleModule } from './oracle/oracle.module';
         AiModule,
         AnalyticsModule,
         SearchModule,
+        MetricsModule,
 
         NotificationsModule,
         StorageModule,

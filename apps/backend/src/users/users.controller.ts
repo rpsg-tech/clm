@@ -18,7 +18,7 @@ export class UsersController {
     @Permissions('user:view')
     async listUsers(
         @CurrentUser() user: AuthenticatedUser,
-        @Query() query: PaginationDto,
+        @Query() query: PaginationDto & { status?: 'active' | 'pending' | 'all' },
     ) {
         let result;
 
@@ -57,7 +57,7 @@ export class UsersController {
     @Permissions('user:manage')
     async inviteUser(
         @CurrentUser() user: AuthenticatedUser,
-        @Body() body: { email: string; roleId: string; organizationIds?: string[]; name?: string },
+        @Body() body: { email: string; roleId: string; organizationIds?: string[]; name?: string; password?: string },
     ) {
         // Use provided org IDs or default to current user's org if available
         const orgIds = body.organizationIds && body.organizationIds.length > 0
@@ -75,6 +75,8 @@ export class UsersController {
             body.roleId,
             user.email,
             body.name,
+            body.password,
+            user.id, // Audit
         );
     }
 
@@ -91,14 +93,16 @@ export class UsersController {
             organizationIds?: string[];
         },
     ) {
+
         // Update user basic info if provided
         if (body.name || body.email) {
             await this.usersService.update(userId, {
                 name: body.name,
                 email: body.email,
-            });
+            }, user.id);
         }
 
+        // Handle organization changes if provided
         // Handle organization changes if provided
         if (body.organizationIds && body.roleId) {
             // Get current user organizations
@@ -110,19 +114,29 @@ export class UsersController {
             // Add to new organizations
             const orgsToAdd = body.organizationIds.filter(id => !currentOrgIds.includes(id));
             for (const orgId of orgsToAdd) {
-                await this.usersService.updateUserInOrg(userId, orgId, {
-                    roleId: body.roleId,
-                    isActive: true,
-                });
+                await this.usersService.updateUserInOrg(
+                    userId,
+                    orgId,
+                    {
+                        roleId: body.roleId,
+                        isActive: true,
+                    },
+                    user.id // Actor ID for audit
+                );
             }
 
             // Remove from unselected organizations (only if admin manages those orgs)
             // Ideally we check if 'user' has permission for these orgs too
             const orgsToRemove = currentOrgIds.filter(id => !body.organizationIds!.includes(id));
             for (const orgId of orgsToRemove) {
-                await this.usersService.updateUserInOrg(userId, orgId, {
-                    isActive: false,
-                });
+                await this.usersService.updateUserInOrg(
+                    userId,
+                    orgId,
+                    {
+                        isActive: false,
+                    },
+                    user.id // Actor ID for audit
+                );
             }
         } else if (user.orgId && (body.roleId !== undefined || body.isActive !== undefined)) {
             // Legacy: Update role/status within current organization only
@@ -132,7 +146,8 @@ export class UsersController {
                 {
                     roleId: body.roleId,
                     isActive: body.isActive,
-                }
+                },
+                user.id // Actor ID for audit
             );
         }
 

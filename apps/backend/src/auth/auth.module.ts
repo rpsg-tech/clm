@@ -14,6 +14,8 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
 
+import { AzureAdStrategy } from './strategies/azure-ad.strategy';
+
 @Module({
     imports: [
         UsersModule,
@@ -36,7 +38,7 @@ import { UsersModule } from '../users/users.module';
         }),
     ],
     controllers: [AuthController, RolesController, PermissionsController],
-    providers: [AuthService, JwtStrategy],
+    providers: [AuthService, JwtStrategy, AzureAdStrategy],
     exports: [AuthService, JwtModule],
 })
 export class AuthModule { }

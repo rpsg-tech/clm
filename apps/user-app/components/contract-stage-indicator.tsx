@@ -14,7 +14,7 @@ const STAGES = [
         id: "REVIEW",
         label: "Review",
         description: "Internal Approval",
-        includedStatuses: ["PENDING_LEGAL", "PENDING_FINANCE", "LEGAL_APPROVED", "FINANCE_APPROVED", "APPROVED", "REJECTED"]
+        includedStatuses: ["SENT_TO_LEGAL", "SENT_TO_FINANCE", "LEGAL_APPROVED", "FINANCE_REVIEWED", "APPROVED", "REJECTED", "IN_REVIEW", "REVISION_REQUESTED"]
     },
     {
         id: "SIGN",

@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth.service';
 import { RedisService } from '../../redis/redis.service';
+import { UserStatus } from '@prisma/client';
 
 export interface AuthenticatedUser {
     id: string;
@@ -60,11 +61,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
         const user = await this.prisma.user.findUnique({
             where: { id: payload.sub },
-            select: { id: true, email: true, isActive: true },
+            select: { id: true, email: true, isActive: true, status: true },
         });
 
-        if (!user || !user.isActive) {
-            throw new UnauthorizedException('User not found or inactive');
+        if (!user || !user.isActive || user.status === UserStatus.INACTIVE || user.status === UserStatus.PENDING_APPROVAL) {
+            throw new UnauthorizedException('User not found, inactive, or pending approval');
         }
 
         return {

@@ -42,6 +42,7 @@ async function main() {
         { name: 'Legal Review: Act', code: 'approval:legal:act', module: 'Approvals', description: 'Approve or reject contracts as Legal.' },
         { name: 'Finance Review: View', code: 'approval:finance:view', module: 'Approvals', description: 'View contracts pending finance review.' },
         { name: 'Finance Review: Act', code: 'approval:finance:act', module: 'Approvals', description: 'Approve or reject contracts as Finance.' },
+        { name: 'Request Finance Review', code: 'approval:finance:request', module: 'Approvals', description: 'Manually trigger a finance review.' },
 
         // ============ INTELLIGENCE ============
 
@@ -67,7 +68,8 @@ async function main() {
 
         // System
         { name: 'View Audit Logs', code: 'system:audit', module: 'System', description: 'Access global system activity logs.' },
-        { name: 'Manage System Settings', code: 'system:settings', module: 'System', description: 'Configure feature flags and security.' },
+        { name: 'Manage System Settings', code: 'system:settings', module: 'System', description: 'Configure general system settings.' },
+        { name: 'Configure Modules', code: 'admin:config_modules', module: 'System', description: 'Enable/Disable AI, OCR, and other modules.' },
     ];
 
     // Extract codes for the "perfect" list
@@ -111,7 +113,7 @@ async function main() {
     // 2. Legal Manager
     const legalManagerPerms = [
         'contract:view', 'contract:edit', 'contract:send', 'contract:upload', 'contract:history', 'contract:download',
-        'approval:legal:view', 'approval:legal:act',
+        'approval:legal:view', 'approval:legal:act', 'approval:finance:request',
         'system:audit',
         'template:view', 'template:create', 'template:edit',
         'analytics:view'
@@ -131,7 +133,7 @@ async function main() {
         'user:view', 'user:manage',
         'role:view', 'role:manage',
         'template:view', 'template:create', 'template:edit', 'template:publish',
-        'system:audit', 'analytics:view', 'system:settings',
+        'system:audit', 'analytics:view', 'system:settings', 'admin:config_modules',
         // Can also view contracts to manage them
         'contract:view', 'contract:history'
     ];

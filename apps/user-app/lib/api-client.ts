@@ -144,7 +144,7 @@ async function refreshTokens(): Promise<boolean> {
 }
 
 // Cache for auth.me request to prevent redundant calls
-let mePromise: Promise<{ user: any; currentOrg: any; role: string; permissions: string[] }> | null = null;
+let mePromise: Promise<{ user: any; currentOrg: any; role: string; permissions: string[]; features: any }> | null = null;
 
 export const api = {
   // Auth
@@ -159,7 +159,7 @@ export const api = {
 
     me: () => {
       if (!mePromise) {
-        mePromise = authFetch<{ user: any; currentOrg: any; role: string; permissions: string[] }>('/auth/me')
+        mePromise = authFetch<{ user: any; currentOrg: any; role: string; permissions: string[]; features: any }>('/auth/me')
           .catch(err => {
             mePromise = null; // Clear cache on failure so retry works
             throw err;
@@ -174,6 +174,7 @@ export const api = {
         organization: { id: string; name: string; code: string };
         role: string;
         permissions: string[];
+        features: any;
       }>('/auth/switch-org', {
         method: 'POST',
         body: JSON.stringify({ organizationId }),
@@ -227,8 +228,22 @@ export const api = {
         body: JSON.stringify(data),
       }),
 
-    submit: (id: string) =>
-      authFetch(`/contracts/${id}/submit`, { method: 'POST' }),
+
+    getAuditLogs: (id: string) => {
+      return authFetch<any[]>(`/contracts/${id}/audit`)
+    },
+
+    submit: (id: string, payload?: { target: 'LEGAL' | 'FINANCE' }) =>
+      authFetch(`/contracts/${id}/submit`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      }),
+
+    cancel: (id: string, reason: string) =>
+      authFetch(`/contracts/${id}/cancel`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      }),
 
     send: (id: string) =>
       authFetch(`/contracts/${id}/send`, { method: 'POST' }),
@@ -368,6 +383,24 @@ export const api = {
 
     getClauseTypes: () =>
       authFetch<any>('/ai/clause-types'),
+
+    extractDate: (content: string) =>
+      authFetch<{ expiryDate: string | null; confidence: number; explanation: string }>('/ai/extract-date', {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+      }),
+
+    getUploadUrl: (filename: string, contentType: string) =>
+      authFetch<{ uploadUrl: string; key: string; publicUrl: string }>('/ai/upload-url', {
+        method: 'POST',
+        body: JSON.stringify({ filename, contentType }),
+      }),
+
+    analyzeFile: (key: string) =>
+      authFetch<{ expiryDate: string | null; confidence: number; explanation: string }>('/ai/analyze-file', {
+        method: 'POST',
+        body: JSON.stringify({ key }),
+      }),
   },
 
   analytics: {
@@ -395,6 +428,7 @@ export const api = {
       module?: string;
       action?: string;
       userId?: string;
+      targetId?: string;
       from?: string;
       to?: string;
       skip?: number;
@@ -404,6 +438,7 @@ export const api = {
       if (params?.module) searchParams.set('module', params.module);
       if (params?.action) searchParams.set('action', params.action);
       if (params?.userId) searchParams.set('userId', params.userId);
+      if (params?.targetId) searchParams.set('targetId', params.targetId);
       if (params?.from) searchParams.set('from', params.from);
       if (params?.to) searchParams.set('to', params.to);
       if (params?.skip !== undefined) searchParams.set('skip', params.skip.toString());
@@ -457,18 +492,19 @@ export const api = {
 
   // Users (Admin Context)
   users: {
-    list: (params?: { page?: number; limit?: number; search?: string }) => {
+    list: (params?: { page?: number; limit?: number; search?: string; status?: string }) => {
       const query = new URLSearchParams();
       if (params?.page) query.set('page', params.page.toString());
       if (params?.limit) query.set('limit', params.limit.toString());
       if (params?.search) query.set('search', params.search);
+      if (params?.status) query.set('status', params.status);
       const queryStr = query.toString();
       return authFetch<{
         data: any[];
         meta: { total: number; lastPage: number; currentPage: number; perPage: number; prev: number | null; next: number | null };
       }>(`/users${queryStr ? `?${queryStr}` : ''}`);
     },
-    invite: (data: { email: string; roleId: string; organizationIds?: string[]; name?: string }) =>
+    invite: (data: { email: string; roleId: string; organizationIds?: string[]; name?: string; password?: string }) =>
       authFetch('/users/invite', {
         method: 'POST',
         body: JSON.stringify(data)
