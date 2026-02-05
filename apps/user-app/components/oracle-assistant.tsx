@@ -517,7 +517,7 @@ export function OracleAssistant() {
             {/* LAUNCHER BUTTON */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`pointer-events-auto mt-4 group relative flex items-center justify-center w-14 h-14 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-4 border-white transition-all duration-300 hover:scale-105 active:scale-95 ${isOpen ? 'bg-slate-800 rotate-90' : 'bg-gradient-to-tr from-orange-600 to-orange-400'}`}
+                className={`pointer-events-auto mt-4 group relative flex items-center justify-center w-14 h-14 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-4 border-white transition-all duration-300 hover:scale-105 active:scale-95 focus:outline-none focus:ring-0 ${isOpen ? 'bg-slate-800 rotate-90' : 'bg-gradient-to-tr from-orange-600 to-orange-400'}`}
             >
                 {/* Ping Animation */}
                 {!isOpen && (

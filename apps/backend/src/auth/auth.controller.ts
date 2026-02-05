@@ -45,7 +45,9 @@ export class AuthController {
     @Get('me')
     @UseGuards(JwtAuthGuard)
     @HttpCode(HttpStatus.OK)
-    @Header('Cache-Control', 'private, max-age=300') // 5 minutes browser cache
+    @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    @Header('Pragma', 'no-cache')
+    @Header('Expires', '0')
     async getProfile(@Request() req: { user: AuthenticatedUser }) {
         // Return current user context
         return this.authService.getProfile(req.user.id, req.user.orgId);
@@ -58,7 +60,9 @@ export class AuthController {
     @Get('session')
     @UseGuards(JwtAuthGuard)
     @HttpCode(HttpStatus.OK)
-    @Header('Cache-Control', 'private, max-age=300') // 5 minutes browser cache
+    @Header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    @Header('Pragma', 'no-cache')
+    @Header('Expires', '0')
     async getSession(@Request() req: { user: AuthenticatedUser }) {
         const [profile, unreadNotifications] = await Promise.all([
             this.authService.getProfile(req.user.id, req.user.orgId),
