@@ -29,16 +29,29 @@ export class CsrfMiddleware implements NestMiddleware {
     private readonly logger = new Logger(CsrfMiddleware.name);
 
     use(req: Request, res: Response, next: NextFunction) {
-        // Skip CSRF for safe methods (idempotent, no state change)
-        if (SAFE_METHODS.includes(req.method)) {
+        const method = req.method;
+        const path = req.path;
+
+        // Skip CSRF for safe methods
+        if (['GET', 'HEAD', 'OPTIONS'].includes(method)) {
             // Ensure CSRF token cookie is set for future requests
             this.ensureCsrfCookie(req, res);
             return next();
         }
 
-        // Skip for specific paths that don't need CSRF (e.g., public webhooks)
-        const skipPaths = ['/api/v1/health', '/api/v1/webhooks'];
-        if (skipPaths.some(path => req.path.startsWith(path))) {
+        // Skip CSRF for public routes and API endpoints
+        const exemptedPaths = [
+            '/api/v1/auth/login',
+            '/api/v1/auth/logout',
+            '/api/v1/auth/refresh',
+            '/api/v1/auth/magic/verify',
+            '/api/v1/webhooks',
+            '/api/v1/oracle/chat',      // API-only, JWT protected
+            '/api/v1/oracle/usage',     // API-only, JWT protected
+            '/api/v1/health' // Health check should also be exempted
+        ];
+
+        if (exemptedPaths.some(p => path.startsWith(p))) {
             return next();
         }
 

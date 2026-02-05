@@ -33,6 +33,7 @@ model Organization {
   templateAccess TemplateOrganization[]
   featureFlags   FeatureFlag[]
   auditLogs      AuditLog[]
+  oracleConversations OracleConversation[]
 
   @@index([parentId])
   @@index([code])
@@ -77,6 +78,7 @@ model User {
   auditLogs         AuditLog[]
   notifications     Notification[]
   savedSearches     SavedSearch[]
+  oracleConversations OracleConversation[]
 
   @@index([email])
   @@index([isActive])
@@ -484,4 +486,52 @@ model ContractAttachment {
 
   @@index([contractId])
   @@index([category])
+}
+
+// ============ ORACLE AI CHAT ============
+
+model OracleConversation {
+  id             String   @id @default(uuid())
+  userId         String
+  organizationId String
+  
+  title          String?  // Optional: First query or summary
+  isActive       Boolean  @default(true)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  messages       OracleMessage[]
+  
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([isActive])
+}
+
+model OracleMessage {
+  id              String   @id @default(uuid())
+  conversationId  String
+  
+  role            String   // 'user' | 'assistant' | 'system'
+  content         String   @db.Text
+  
+  // Tier and cost tracking
+  tier            Int?     // 1, 2, or 3 (null for user messages)
+  tokensUsed      Int?
+  cached          Boolean  @default(false)
+  
+  // Audit and security
+  functionCalled  String?  // Which function was invoked (if any)
+  dataScope       String?  // 'org_wide' | 'user_only'
+  contractsAccessed Int?   // Count of contracts in response
+  
+  createdAt       DateTime @default(now())
+  
+  conversation    OracleConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  @@index([conversationId, createdAt])
+  @@index([tier])
 }

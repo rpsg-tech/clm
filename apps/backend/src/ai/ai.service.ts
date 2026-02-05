@@ -148,6 +148,65 @@ export class AiService {
         return "I am running in MOCK mode. Please configure a valid AI provider to chat.";
     }
 
+    /**
+     * Chat with OpenAI Function Calling
+     * Returns either a text response OR a function call request
+     */
+    async chatWithFunctions(
+        systemPrompt: string,
+        userQuery: string,
+        functions: any[],
+        config?: AiConfig
+    ): Promise<{ type: 'text' | 'function_call'; content: string; functionCall?: { name: string; arguments: any } }> {
+        this.logger.log(`Chat with functions: ${userQuery.substring(0, 30)}...`);
+        const provider = config?.provider || 'openai';
+        const modelName = config?.model || 'gpt-3.5-turbo';
+
+        if (provider !== 'openai' || !this.openai) {
+            throw new Error('Function calling requires OpenAI provider');
+        }
+
+        try {
+            const completion = await this.openai.chat.completions.create({
+                model: modelName,
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userQuery }
+                ],
+                tools: functions,
+                tool_choice: "auto"
+            });
+
+            const message = completion.choices[0].message;
+
+            // Check if AI wants to call a function
+            if (message.tool_calls && message.tool_calls.length > 0) {
+                const toolCall = message.tool_calls[0];
+                const functionData = toolCall.type === 'function' ? toolCall.function : null;
+
+                if (functionData) {
+                    return {
+                        type: 'function_call',
+                        content: '',
+                        functionCall: {
+                            name: functionData.name,
+                            arguments: JSON.parse(functionData.arguments)
+                        }
+                    };
+                }
+            }
+
+            // Regular text response
+            return {
+                type: 'text',
+                content: message.content || ''
+            };
+        } catch (error) {
+            this.logger.error(`OpenAI function calling failed: ${error}`);
+            throw error;
+        }
+    }
+
     // ============ GEMINI IMPLEMENTATION ============
 
     private async chatWithGemini(systemPrompt: string, userQuery: string, modelName: string): Promise<string> {

@@ -26,24 +26,42 @@ export interface AuthenticatedUser {
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(
-        configService: ConfigService,
+        private configService: ConfigService,
         private prisma: PrismaService,
         private redisService: RedisService,
     ) {
         const secret = configService.get<string>('JWT_SECRET');
         if (!secret) {
-            throw new Error('JWT_SECRET must be defined');
+            throw new Error('JWT_SECRET must be defined in environment variables');
         }
 
+        const jwtFromRequest = ExtractJwt.fromExtractors([
+            // 1. From Authorization Bearer header
+            ExtractJwt.fromAuthHeaderAsBearerToken(),
+            // 2. From cookie (direct or forwarded from proxy)
+            (request: any) => {
+                let token = null;
+                if (request && request.cookies) {
+                    // Direct cookie access (when client sends directly to backend)
+                    token = request.cookies['token'] || request.cookies['access_token'];
+                }
+                if (!token && request && request.headers && request.headers.cookie) {
+                    // Parse forwarded Cookie header from Next.js proxy
+                    const cookies = request.headers.cookie.split(';');
+                    const tokenCookie = cookies.find(c => c.trim().startsWith('token=') || c.trim().startsWith('access_token='));
+                    if (tokenCookie) {
+                        token = tokenCookie.split('=')[1];
+                    }
+                }
+                return token;
+            },
+        ]);
+
         super({
-            jwtFromRequest: ExtractJwt.fromExtractors([
-                (request: any) => {
-                    return request?.cookies?.access_token;
-                },
-                ExtractJwt.fromAuthHeaderAsBearerToken(),
-            ]),
+            jwtFromRequest,
             ignoreExpiration: false,
             secretOrKey: secret,
+            passReqToCallback: false,
         });
     }
 

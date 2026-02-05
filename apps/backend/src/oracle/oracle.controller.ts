@@ -1,29 +1,39 @@
-import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Request, UseGuards, BadRequestException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OracleService } from './oracle.service';
 import { OracleChatRequestDto } from './dto/oracle-chat.dto';
+import { OracleRateLimiterService } from './services/oracle-rate-limiter.service';
 
 
 @Controller('oracle')
 @UseGuards(JwtAuthGuard)
 export class OracleController {
-    constructor(private readonly oracleService: OracleService) { }
+    constructor(
+        private readonly oracleService: OracleService,
+        private readonly rateLimiter: OracleRateLimiterService
+    ) { }
 
     @Post('chat')
-    // We strictly rely on JWT User context here.
-    // We might add a permission like 'ai:interact' later.
     async chat(@Request() req, @Body() dto: OracleChatRequestDto) {
         const user = req.user;
-        // user contains { id, email, role, organizational... } from JwtStrategy
+        const userId = user.id;
 
-        // We assume 'role' and 'organizationId' are available in the user object attached by guard
-        // If not, we fetch them via UserService (omitted for scaffolding speed, relying on JWT payload or basic user obj)
+        // Use organizationId from DTO, or from user object
+        const orgId = dto.organizationId || user.orgId;
 
-        // Fallback if role is not directly on user (depends on Auth implementation)
-        const role = user.role || 'viewer';
-        // Prioritize client-provided Org ID (context-aware), fallback to user default
-        const orgId = dto.organizationId || user.organizationId || 'org-default';
+        if (!orgId) {
+            throw new BadRequestException('Organization ID is required');
+        }
 
-        return this.oracleService.handleChat(user.id, orgId, role, dto);
+        // Get permissions from user object (should be populated by JWT strategy)
+        const permissions: string[] = user.permissions || [];
+
+        return this.oracleService.handleChat(userId, orgId, permissions, dto);
+    }
+
+    @Get('usage')
+    async getUsage(@Request() req) {
+        const { id: userId } = req.user;
+        return this.rateLimiter.getUsage(userId);
     }
 }

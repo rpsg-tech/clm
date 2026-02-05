@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Spinner } from '@repo/ui';
 import { useAuth } from '@/lib/auth-context';
@@ -16,6 +16,12 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const router = useRouter();
     const { currentOrg, isLoading, isAuthenticated } = useAuth();
+    const [mounted, setMounted] = useState(false);
+
+    // Set mounted on client
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Redirect if not authenticated or no org selected
     useEffect(() => {
@@ -28,7 +34,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         }
     }, [isLoading, isAuthenticated, currentOrg, router]);
 
-    if (isLoading) {
+    // Prevent hydration mismatch by not rendering until mounted
+    if (!mounted || isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#FDFDFF]">
                 <Spinner size="lg" color="orange" />

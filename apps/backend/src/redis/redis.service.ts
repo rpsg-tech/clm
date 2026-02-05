@@ -242,6 +242,26 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     /**
+     * Delete all cache keys matching a specific pattern
+     * @param pattern - Pattern to match (e.g., 'user:123:*')
+     * @returns Number of keys deleted
+     */
+    async deleteCachePattern(pattern: string): Promise<number> {
+        if (!this.isConnected) return 0;
+
+        const cachePattern = `${this.KEY_PREFIX.CACHE}${pattern}`;
+
+        // Find keys matching the pattern
+        const keys = await this.client.keys(cachePattern);
+
+        if (keys.length > 0) {
+            return this.client.del(...keys);
+        }
+
+        return 0;
+    }
+
+    /**
      * Get raw Redis client for advanced operations
      */
     getClient(): Redis {
