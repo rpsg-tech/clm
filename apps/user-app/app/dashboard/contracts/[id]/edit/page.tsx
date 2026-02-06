@@ -5,12 +5,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button, Spinner, Badge } from '@repo/ui';
 import { api } from '@/lib/api-client';
 import { useToast } from '@/lib/toast-context';
-import { ArrowLeft, Save, Send, Wand2, Maximize2, Minimize2, Check } from 'lucide-react';
+import { MaterialIcon } from '@/components/ui/material-icon';
 import { AnnexureItem, AnnexuresView } from '@/components/annexures-view';
 import { PageErrorBoundary } from '@/components/error-boundary';
 import { ContractAssistantSidebar } from '@/components/contract-assistant-sidebar';
 import { ContractEditorView, ContractEditorRef } from '@/components/contract-editor-view';
 import { ContractNavigationSidebar } from '@/components/contract-navigation-sidebar';
+import { DualPaneLayout } from '@/components/layout/dual-pane-layout';
 import { AiClauseAssistant } from '@/components/ai-clause-assistant';
 
 interface Contract {
@@ -111,6 +112,17 @@ function EditContractContent() {
     useEffect(() => {
         loadData();
     }, [contractId]);
+
+    // --- NEW: User Role State (Dev Toggle) ---
+    const [userRole, setUserRole] = useState<'LEGAL' | 'BUSINESS'>('LEGAL');
+
+    // Derived: Is Editable?
+    // Legal User: Can edit EVERYTHING (Main + Annexures)
+    // Business User: Can edit ONLY Annexures (if allowed), Main is Read-Only
+    const isMainDocEditable = userRole === 'LEGAL' && !filePreviewUrl;
+
+    // --- Upload Version Logic (Business Flow) ---
+    const [showUploadModal, setShowUploadModal] = useState(false);
 
     const loadData = async () => {
         try {
@@ -225,97 +237,157 @@ function EditContractContent() {
         ...annexures.map(a => ({ id: a.id, title: a.title, type: 'annexure' as const }))
     ];
 
-    return (
-        <div className={`flex flex-col h-[calc(100vh-2rem)] -m-4 bg-slate-50 overflow-hidden relative ${focusMode ? 'fixed inset-0 z-50 m-0' : ''}`}>
+    // Header Content
+    const headerContent = (
+        <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-4">
+                <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-md hover:bg-slate-100 text-slate-500">
+                    <MaterialIcon name="arrow_back" className="w-5 h-5" />
+                </Button>
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-3">
+                        {isEditingTitle ? (
+                            <input
+                                autoFocus
+                                className="font-bold text-slate-900 border-b-2 border-indigo-500 outline-none bg-transparent min-w-[200px] text-lg leading-tight"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                onBlur={() => setIsEditingTitle(false)}
+                            />
+                        ) : (
+                            <h1
+                                className="font-bold text-slate-900 cursor-pointer hover:text-indigo-600 transition-colors text-lg leading-tight truncate max-w-[300px]"
+                                onClick={() => setIsEditingTitle(true)}
+                            >
+                                {title}
+                            </h1>
+                        )}
+                        <Badge variant="outline" className={`text-[10px] font-bold tracking-wider px-2 py-0.5 border ${contract.status === 'DRAFT' ? 'bg-slate-50 text-slate-500 border-slate-200' : 'bg-indigo-50 text-indigo-600 border-indigo-200'}`}>
+                            {contract.status}
+                        </Badge>
 
-            {/* Header */}
-            <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shrink-0 shadow-sm z-20 h-[72px]">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => focusMode ? setFocusMode(false) : router.back()} className="rounded-xl hover:bg-slate-100 text-slate-500">
-                        <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                    <div className="flex flex-col">
-                        <div className="flex items-center gap-3">
-                            {isEditingTitle ? (
-                                <input
-                                    autoFocus
-                                    className="font-bold text-slate-900 border-b-2 border-orange-500 outline-none bg-transparent min-w-[200px] text-lg leading-tight"
-                                    value={title}
-                                    onChange={(e) => setTitle(e.target.value)}
-                                    onBlur={() => setIsEditingTitle(false)}
-                                    onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
-                                />
-                            ) : (
-                                <h1
-                                    className="font-bold text-slate-900 cursor-pointer hover:text-orange-600 transition-colors text-lg leading-tight truncate max-w-[300px]"
-                                    onClick={() => setIsEditingTitle(true)}
-                                    title="Click to edit title"
-                                >
-                                    {title}
-                                </h1>
-                            )}
-                            <Badge variant="outline" className={`text-[10px] font-bold tracking-wider px-2 py-0.5 border ${contract.status === 'DRAFT' ? 'bg-slate-50 text-slate-500 border-slate-200' : 'bg-orange-50 text-orange-600 border-orange-200'}`}>
-                                {contract.status}
-                            </Badge>
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-1">
-                            <span>{contract.reference}</span>
-                            <span className="text-slate-300">•</span>
-                            <span>{contract.template?.name || 'Template'}</span>
-                            <span className="text-slate-300">•</span>
-                            <span className={isSaving ? 'text-orange-500' : ''}>{isSaving ? 'Saving...' : 'Saved'}</span>
+                        {/* Role Toggle for Demo */}
+                        <div className="flex border border-slate-200 rounded-md overflow-hidden h-6">
+                            <button
+                                onClick={() => setUserRole('LEGAL')}
+                                className={`px-2 text-[10px] font-bold uppercase ${userRole === 'LEGAL' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                            >
+                                Legal
+                            </button>
+                            <button
+                                onClick={() => setUserRole('BUSINESS')}
+                                className={`px-2 text-[10px] font-bold uppercase ${userRole === 'BUSINESS' ? 'bg-indigo-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+                            >
+                                Biz
+                            </button>
                         </div>
                     </div>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-1">
+                        <span>{contract.reference}</span>
+                        <span className="text-slate-300">•</span>
+                        <span>{contract.template?.name || 'Template'}</span>
+                        <span className="text-slate-300">•</span>
+                        <span className={isSaving ? 'text-indigo-500' : ''}>{isSaving ? 'Saving...' : 'Saved'}</span>
+                    </div>
                 </div>
+            </div>
 
-                {/* Right Actions (No Segmented Control anymore) */}
-                <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
+                {userRole === 'BUSINESS' && (
                     <Button
-                        variant="secondary"
+                        variant="outline"
                         size="sm"
-                        onClick={() => setShowAiPanel(!showAiPanel)}
-                        className={`hidden lg:flex gap-2 h-9 font-semibold ${showAiPanel ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                        onClick={() => setShowUploadModal(true)}
+                        className="bg-white border-dashed border-indigo-200 text-indigo-600 hover:bg-indigo-50"
                     >
-                        <Wand2 size={14} className={showAiPanel ? 'text-orange-500' : 'text-slate-400'} />
-                        <span className="hidden xl:inline">AI Assistant</span>
+                        <MaterialIcon name="upload_file" className="w-4 h-4 mr-2" />
+                        Upload Version
                     </Button>
+                )}
 
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setFocusMode(!focusMode)}
-                        className="hidden lg:flex text-slate-400 hover:text-slate-900"
-                        title="Toggle Focus Mode"
-                    >
-                        {focusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-                    </Button>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSave(false)}
+                    disabled={isSaving}
+                    className="hidden sm:flex text-slate-600 font-semibold hover:bg-slate-50"
+                >
+                    <MaterialIcon name="save" className="w-4 h-4 mr-2 text-slate-400" />
+                    Save
+                </Button>
 
-                    <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block" />
+                <Button onClick={handleDone} disabled={isApproveLoading || isSaving} className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wide h-9 px-5 shadow-md active:scale-95 transition-all">
+                    <MaterialIcon name="check" className="w-3.5 h-3.5 mr-2" />
+                    Done
+                </Button>
+            </div>
+        </div>
+    );
 
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleSave(false)}
-                        disabled={isSaving}
-                        className="hidden sm:flex text-slate-600 font-semibold hover:bg-slate-50"
-                    >
-                        <Save className="w-4 h-4 mr-2 text-slate-400" />
-                        Save
-                    </Button>
-
-                    <Button onClick={handleDone} disabled={isApproveLoading || isSaving} className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wide h-9 px-5 shadow-md active:scale-95 transition-all">
-                        <Check className="w-3.5 h-3.5 mr-2" />
-                        Done
-                    </Button>
+    // Left Pane Content (Editor)
+    const leftPaneContent = (
+        <div className="h-full bg-white flex flex-col">
+            {filePreviewUrl ? (
+                /* Uploaded File Preview */
+                <iframe
+                    src={filePreviewUrl}
+                    className="w-full h-full border-none"
+                    title="Contract Preview"
+                />
+            ) : activeDocId === 'main' ? (
+                /* Main Agreement */
+                <div className="flex flex-col h-full">
+                    {!isMainDocEditable && (
+                        <div className="bg-slate-50 border-b border-slate-200 px-4 py-2 flex items-center gap-2 text-xs text-slate-500">
+                            <MaterialIcon name="lock" className="w-3 h-3" />
+                            Read-Only View (Locked by Template)
+                        </div>
+                    )}
+                    < ContractEditorView
+                        ref={editorRef}
+                        content={contract.content || '<p class="text-slate-400 italic text-center py-10">No content available.</p>'}
+                        onChange={() => { }}
+                        onSelectionChange={setSelectedText}
+                        readOnly={!isMainDocEditable}
+                        className="h-full border-none shadow-none rounded-none"
+                    />
                 </div>
-            </header>
+            ) : activeAnnexure ? (
+                /* Editable Annexure */
+                <div className="h-full flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                    <div className="px-6 py-4 border-b border-slate-100 bg-white flex items-center gap-4">
+                        <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Annexure Title</label>
+                            <input
+                                type="text"
+                                value={activeAnnexure.title}
+                                onChange={(e) => handleTitleChange(activeAnnexure.id, e.target.value)}
+                                className="text-xl font-bold text-slate-900 placeholder-slate-300 border-none p-0 w-full focus:ring-0 bg-transparent"
+                            />
+                        </div>
+                    </div>
+                    <ContractEditorView
+                        ref={editorRef}
+                        content={activeAnnexure.content}
+                        onChange={(val) => handleAnnexureChange(activeAnnexure.id, val)}
+                        onSelectionChange={setSelectedText}
+                        readOnly={false}
+                        className="h-full border-none shadow-none rounded-none"
+                        toolbarSimple={true}
+                    />
+                </div>
+            ) : (
+                <div className="flex items-center justify-center h-full text-slate-400">Document not found</div>
+            )}
+        </div>
+    );
 
-            {/* Main Workspace */}
-            <div className="flex-1 flex overflow-hidden relative">
-
-                {/* Unified Sidebar - Hide if uploaded file */}
-                {!filePreviewUrl && (
-                    <div className="w-[300px] border-r border-slate-200 hidden md:block z-10">
+    return (
+        <PageErrorBoundary>
+            <DualPaneLayout
+                header={headerContent}
+                sidebar={
+                    !filePreviewUrl && (
                         <ContractNavigationSidebar
                             items={navItems}
                             activeId={activeDocId}
@@ -324,89 +396,49 @@ function EditContractContent() {
                             onRemoveAnnexure={handleRemoveAnnexure}
                             className="h-full"
                         />
-                    </div>
-                )}
-
-                {/* Main Content Area */}
-                <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50 overflow-hidden relative">
-                    <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-white md:p-0">
-                        {filePreviewUrl ? (
-                            /* Uploaded File Preview */
-                            <div className="w-full h-full bg-slate-100 p-4">
-                                <iframe
-                                    src={filePreviewUrl}
-                                    className="w-full h-full border border-slate-200 shadow-sm rounded-lg bg-white"
-                                    title="Contract Preview"
-                                />
-                            </div>
-                        ) : activeDocId === 'main' ? (
-                            /* Read Only Main Agreement */
-                            <ContractEditorView
-                                ref={editorRef}
-                                content={contract.content || '<p class="text-slate-400 italic text-center py-10">No main content available.</p>'}
-                                onChange={() => { }}
-                                onSelectionChange={setSelectedText}
-                                readOnly={true}
-                                className="h-full border-none shadow-none rounded-none"
-                            />
-                        ) : activeAnnexure ? (
-                            /* Editable Annexure */
-                            <div className="h-full flex flex-col animate-in fade-in zoom-in-95 duration-200">
-                                <div className="px-6 py-4 border-b border-slate-100 bg-white flex items-center gap-4">
-                                    <div className="flex-1">
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Annexure Title</label>
-                                        <input
-                                            type="text"
-                                            value={activeAnnexure.title}
-                                            onChange={(e) => handleTitleChange(activeAnnexure.id, e.target.value)}
-                                            className="text-xl font-bold text-slate-900 placeholder-slate-300 border-none p-0 w-full focus:ring-0 bg-transparent"
-                                            placeholder="Enter Title..."
-                                        />
-                                    </div>
-                                </div>
-                                <ContractEditorView
-                                    ref={editorRef}
-                                    content={activeAnnexure.content}
-                                    onChange={(val) => handleAnnexureChange(activeAnnexure.id, val)}
-                                    onSelectionChange={setSelectedText}
-                                    readOnly={false}
-                                    className="h-full border-none shadow-none rounded-none"
-                                    toolbarSimple={true}
-                                />
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center h-full text-slate-400">Document not found</div>
-                        )}
-                    </div>
-                </main>
-
-                {/* AI Sidebar */}
-                <div className={`
-                    border-l border-slate-200 bg-white transition-all duration-300 ease-in-out flex flex-col z-30 shadow-xl
-                        ${showAiPanel ? 'w-[350px] translate-x-0' : 'w-0 translate-x-full opacity-0 overflow-hidden'}
-                `}>
-                    <div className="h-full flex flex-col min-w-[350px]">
+                    )
+                }
+                leftPane={leftPaneContent}
+                rightPane={
+                    <div className="h-full flex flex-col">
                         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-white">
                             <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-                                <Wand2 className="w-4 h-4 text-orange-600" />
+                                <MaterialIcon name="auto_fix_high" className="w-4 h-4 text-indigo-600" />
                                 Contract Assistant
                             </div>
-                            <Button variant="ghost" size="icon" onClick={() => setShowAiPanel(false)} className="h-7 w-7 text-slate-400 hover:text-slate-700">
-                                <ArrowLeft className="w-4 h-4" />
-                            </Button>
                         </div>
                         <div className="flex-1 overflow-hidden">
                             <AiClauseAssistant
-                                isOpen={showAiPanel}
-                                onClose={() => setShowAiPanel(false)}
+                                isOpen={true}
+                                onClose={() => { }}
                                 onInsertClause={(text) => editorRef.current?.insertContent(text)}
                                 selectedText={selectedText}
                                 embedded={true}
                             />
                         </div>
                     </div>
+                }
+            />
+
+            {/* Business Upload Modal (Placeholder for now, reusing Alert style) */}
+            {showUploadModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-lg p-6 max-w-md w-full">
+                        <h3 className="text-lg font-bold mb-4">Upload New Version</h3>
+                        <p className="text-sm text-slate-500 mb-4">
+                            Drag and drop your updated file here. This will create v{contract?.versions?.length ? contract.versions.length + 1 : 1}.
+                        </p>
+                        <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center text-slate-400 mb-4">
+                            Drop PDF/Word file here
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="ghost" onClick={() => setShowUploadModal(false)}>Cancel</Button>
+                            <Button onClick={() => setShowUploadModal(false)}>Upload</Button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+            )}
+        </PageErrorBoundary>
     );
 }
+
