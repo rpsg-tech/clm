@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
     const token = request.cookies.get('access_token')?.value || request.cookies.get('token')?.value;
 
     // Define paths
-    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/forgot-password');
+    const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password');
     const isDashboardPage = pathname.startsWith('/dashboard') || pathname.startsWith('/select-org');
     const isRoot = pathname === '/';
 
@@ -34,14 +34,9 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(loginUrl);
     }
 
-    // 3. Root path handling
-    if (isRoot) {
-        if (token) {
-            return NextResponse.redirect(new URL('/dashboard', request.url));
-        } else {
-            // Optional: Redirect root to login for enterprise apps
-            return NextResponse.redirect(new URL('/login', request.url));
-        }
+    // 3. Root path handling — authenticated users go to dashboard, others see landing page
+    if (isRoot && token) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
     return NextResponse.next();

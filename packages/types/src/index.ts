@@ -15,7 +15,11 @@ export enum OrgType {
 export enum ContractStatus {
     DRAFT = 'DRAFT',
     SENT_TO_LEGAL = 'SENT_TO_LEGAL',
+    LEGAL_REVIEW_IN_PROGRESS = 'LEGAL_REVIEW_IN_PROGRESS',
     SENT_TO_FINANCE = 'SENT_TO_FINANCE',
+    FINANCE_REVIEW_IN_PROGRESS = 'FINANCE_REVIEW_IN_PROGRESS',
+    IN_REVIEW = 'IN_REVIEW',
+    REVISION_REQUESTED = 'REVISION_REQUESTED',
     LEGAL_APPROVED = 'LEGAL_APPROVED',
     FINANCE_REVIEWED = 'FINANCE_REVIEWED',
     APPROVED = 'APPROVED',
@@ -25,6 +29,8 @@ export enum ContractStatus {
     EXPIRED = 'EXPIRED',
     TERMINATED = 'TERMINATED',
     REJECTED = 'REJECTED',
+    CANCELLED = 'CANCELLED',
+    EXECUTED = 'EXECUTED',
 }
 
 export enum ApprovalType {
@@ -56,32 +62,47 @@ export enum PermissionCode {
     CONTRACT_EDIT = 'contract:edit',
     CONTRACT_DELETE = 'contract:delete',
     CONTRACT_SUBMIT = 'contract:submit',
-    CONTRACT_SEND_COUNTERPARTY = 'contract:send_counterparty',
-    CONTRACT_UPLOAD_SIGNED = 'contract:upload_signed',
-
-    // Approvals
-    APPROVAL_LEGAL_VIEW = 'approval:legal:view',
-    APPROVAL_LEGAL_ACT = 'approval:legal:act',
-    APPROVAL_LEGAL_ESCALATE = 'approval:legal:escalate',
-    APPROVAL_FINANCE_VIEW = 'approval:finance:view',
-    APPROVAL_FINANCE_ACT = 'approval:finance:act',
+    CONTRACT_SEND = 'contract:send',
+    CONTRACT_UPLOAD = 'contract:upload',
+    CONTRACT_DOWNLOAD = 'contract:download',
+    CONTRACT_HISTORY = 'contract:history',
 
     // Templates
     TEMPLATE_VIEW = 'template:view',
     TEMPLATE_CREATE = 'template:create',
     TEMPLATE_EDIT = 'template:edit',
+    TEMPLATE_DELETE = 'template:delete',
+    TEMPLATE_PUBLISH = 'template:publish',
 
-    // AI
+    // Approvals
+    APPROVAL_LEGAL_VIEW = 'approval:legal:view',
+    APPROVAL_LEGAL_ACT = 'approval:legal:act',
+    APPROVAL_FINANCE_VIEW = 'approval:finance:view',
+    APPROVAL_FINANCE_ACT = 'approval:finance:act',
+    APPROVAL_FINANCE_REQUEST = 'approval:finance:request',
+
+    // Intelligence
     AI_ANALYZE = 'ai:analyze',
     AI_CHAT = 'ai:chat',
+    ANALYTICS_VIEW = 'analytics:view',
 
-    // Admin
-    ADMIN_ORG_MANAGE = 'admin:org:manage',
-    ADMIN_USER_MANAGE = 'admin:user:manage',
-    ADMIN_ROLE_MANAGE = 'admin:role:manage',
-    ADMIN_TEMPLATE_GOVERN = 'admin:template:govern',
-    ADMIN_FEATURE_TOGGLE = 'admin:feature:toggle',
-    ADMIN_AUDIT_VIEW = 'admin:audit:view',
+    // Identity Management
+    USER_VIEW = 'user:view',
+    USER_MANAGE = 'user:manage',
+    ROLE_VIEW = 'role:view',
+    ROLE_MANAGE = 'role:manage',
+
+    // Organization
+    ORG_VIEW = 'org:view',
+    ORG_CREATE = 'org:create',
+    ORG_EDIT = 'org:edit',
+    ORG_DELETE = 'org:delete',
+    ORG_MANAGE = 'org:manage',
+
+    // System
+    SYSTEM_AUDIT = 'system:audit',
+    SYSTEM_SETTINGS = 'system:settings',
+    ADMIN_CONFIG_MODULES = 'admin:config_modules',
 }
 
 export enum RoleCode {
@@ -203,6 +224,12 @@ export interface Contract extends BaseEntity {
     status: ContractStatus;
     counterpartyName?: string;
     counterpartyEmail?: string;
+    startDate?: Date;
+    endDate?: Date;
+    amount?: number;
+    description?: string;
+    content: string;
+    contentHash?: string;
     annexureData: string;
     fieldData: Record<string, unknown>;
     createdByUserId: string;
