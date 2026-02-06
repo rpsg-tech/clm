@@ -2,9 +2,13 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button, Badge, Spinner, Skeleton } from '@repo/ui';
+import { Button, Spinner, Badge } from '@repo/ui';
 import { api } from '@/lib/api-client';
+import { MaterialIcon } from '@/components/ui/material-icon';
+import { DualPaneLayout } from '@/components/layout/dual-pane-layout';
+import { VersionTimelinePanel } from '@/components/version-timeline-panel';
+import { VersionIntelligencePanel } from '@/components/version-intelligence-panel';
+import { PageErrorBoundary } from '@/components/error-boundary';
 
 interface ContractVersion {
     id: string;
@@ -21,6 +25,9 @@ interface Contract {
     title: string;
     reference: string;
     versions: ContractVersion[];
+    status: string;
+    template?: { name: string };
+    content?: string;
 }
 
 function VersionHistoryContent() {
@@ -30,19 +37,27 @@ function VersionHistoryContent() {
 
     const [contract, setContract] = useState<Contract | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedVersions, setSelectedVersions] = useState<[string | null, string | null]>([null, null]);
+    const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchVersions = async () => {
             try {
+                // Fetch basic contract data + versions
                 const [contractData, versionsData] = await Promise.all([
                     api.contracts.get(contractId),
                     api.contracts.getVersions(contractId),
                 ]);
+                const sortedVersions = (versionsData as ContractVersion[]).sort((a, b) => b.version - a.version);
+
                 setContract({
                     ...(contractData as Contract),
-                    versions: versionsData as ContractVersion[],
+                    versions: sortedVersions,
                 });
+
+                // Select latest version by default
+                if (sortedVersions.length > 0) {
+                    setSelectedVersionId(sortedVersions[0].id);
+                }
             } catch (err) {
                 console.error('Failed to fetch versions:', err);
             } finally {
@@ -53,152 +68,88 @@ function VersionHistoryContent() {
         fetchVersions();
     }, [contractId]);
 
-    const toggleVersionSelect = (versionId: string) => {
-        setSelectedVersions((prev) => {
-            if (prev[0] === versionId) return [null, prev[1]];
-            if (prev[1] === versionId) return [prev[0], null];
-            if (!prev[0]) return [versionId, prev[1]];
-            if (!prev[1]) return [prev[0], versionId];
-            return [versionId, null];
-        });
+    const handleRestore = (versionId: string) => {
+        if (confirm('Are you sure you want to restore this version? This will create a new version with this content.')) {
+            // restoration logic (mocked)
+            alert('Restoration initiated (Demo)');
+        }
+    };
+
+    const handleDownload = (versionId: string) => {
+        alert('Download started (Demo)');
     };
 
     if (isLoading) {
-        return (
-            <div className="space-y-6">
-                <Skeleton className="h-12 w-1/3" />
-                <Skeleton className="h-64 w-full" />
-            </div>
-        );
+        return <div className="flex h-screen items-center justify-center"><Spinner size="lg" /></div>;
     }
 
     if (!contract) {
-        return (
-            <div className="text-center py-12">
-                <p className="text-xl text-neutral-600">Contract not found</p>
-                <Link href="/dashboard/contracts">
-                    <Button variant="outline" className="mt-4">← Back to Contracts</Button>
-                </Link>
-            </div>
-        );
+        return <div className="text-center py-12">Contract not found</div>;
     }
 
-    return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <Link
-                        href={`/dashboard/contracts/${contractId}`}
-                        className="text-sm text-primary-600 hover:underline"
-                    >
-                        ← Back to Contract
-                    </Link>
-                    <h1 className="text-3xl font-bold text-neutral-900 mt-2">
+    // Header Content
+    const headerContent = (
+        <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-4">
+                <Button variant="ghost" size="icon" onClick={() => router.push(`/dashboard/contracts/${contractId}`)} className="rounded-md hover:bg-slate-100 text-slate-500">
+                    <MaterialIcon name="arrow_back" className="w-5 h-5" />
+                </Button>
+                <div className="flex flex-col">
+                    <h1 className="font-bold text-slate-900 text-lg leading-tight truncate max-w-[300px]">
                         Version History
                     </h1>
-                    <p className="mt-1 text-neutral-500">
-                        {contract.title} ({contract.reference})
-                    </p>
+                    <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-1">
+                        <span>{contract.reference}</span>
+                        <span className="text-slate-300">•</span>
+                        <span>{contract.title}</span>
+                    </div>
                 </div>
-                {selectedVersions[0] && selectedVersions[1] && (
-                    <Link
-                        href={`/dashboard/contracts/${contractId}/compare?v1=${selectedVersions[0]}&v2=${selectedVersions[1]}`}
-                    >
-                        <Button>Compare Selected</Button>
-                    </Link>
-                )}
             </div>
 
-            {/* Selection Hint */}
-            {(selectedVersions[0] || selectedVersions[1]) && (
-                <div className="p-3 bg-primary-50 border border-primary-200 rounded-lg text-sm text-primary-700">
-                    Select {selectedVersions[0] && selectedVersions[1] ? '' : 'another'} version to compare
-                    {selectedVersions[0] && <Badge className="ml-2">v{contract.versions.find(v => v.id === selectedVersions[0])?.version}</Badge>}
-                    {selectedVersions[1] && <Badge className="ml-2">v{contract.versions.find(v => v.id === selectedVersions[1])?.version}</Badge>}
-                </div>
-            )}
-
-            {/* Version Timeline */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>All Versions</CardTitle>
-                    <CardDescription>Click on versions to select for comparison</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {contract.versions.length === 0 ? (
-                        <p className="text-neutral-500 py-8 text-center">No versions recorded yet</p>
-                    ) : (
-                        <div className="relative">
-                            {/* Timeline line */}
-                            <div className="absolute left-6 top-4 bottom-4 w-0.5 bg-neutral-200" />
-
-                            <div className="space-y-4">
-                                {contract.versions.map((version, index) => {
-                                    const isSelected = selectedVersions.includes(version.id);
-                                    const isLatest = index === 0;
-
-                                    return (
-                                        <div
-                                            key={version.id}
-                                            onClick={() => toggleVersionSelect(version.id)}
-                                            className={`relative flex gap-4 cursor-pointer rounded-xl p-4 transition-all ${isSelected
-                                                ? 'bg-primary-50 ring-2 ring-primary-500'
-                                                : 'hover:bg-neutral-50'
-                                                }`}
-                                        >
-                                            {/* Timeline dot */}
-                                            <div className="relative z-10 w-12 flex items-center justify-center">
-                                                <div
-                                                    className={`w-5 h-5 rounded-full ring-4 ring-white ${isLatest ? 'bg-success' : 'bg-neutral-400'
-                                                        }`}
-                                                />
-                                            </div>
-
-                                            {/* Content */}
-                                            <div className="flex-1">
-                                                <div className="flex items-start justify-between">
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-lg">v{version.version}</span>
-                                                            {isLatest && (
-                                                                <Badge variant="success">Latest</Badge>
-                                                            )}
-                                                            {isSelected && (
-                                                                <Badge variant="default">Selected</Badge>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-sm text-neutral-500 mt-1">
-                                                            by <span className="font-medium">{version.changedBy?.name || 'Unknown'}</span>
-                                                        </p>
-                                                        {version.changeReason && (
-                                                            <p className="text-sm text-neutral-600 mt-2 italic">
-                                                                &quot;{version.changeReason}&quot;
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-right text-sm text-neutral-400">
-                                                        <p>{new Date(version.createdAt).toLocaleDateString()}</p>
-                                                        <p>{new Date(version.createdAt).toLocaleTimeString()}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+            <Button onClick={() => router.push(`/dashboard/contracts/${contractId}`)} className="bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs uppercase tracking-wide h-9 px-5 shadow-sm">
+                Return to Editor
+            </Button>
         </div>
+    );
+
+    const selectedVersion = contract.versions.find(v => v.id === selectedVersionId) || null;
+
+    // Find previous version relative to selected
+    const selectedIndex = contract.versions.findIndex(v => v.id === selectedVersionId);
+    // Versions are sorted desc (newest first). Previous is index + 1.
+    const previousVersion = selectedIndex >= 0 && selectedIndex < contract.versions.length - 1
+        ? contract.versions[selectedIndex + 1]
+        : null;
+
+    return (
+        <DualPaneLayout
+            header={headerContent}
+            leftPane={
+                <VersionTimelinePanel
+                    versions={contract.versions}
+                    selectedVersionId={selectedVersionId}
+                    onSelectVersion={setSelectedVersionId}
+                    currentVersionId={contract.versions[0]?.id}
+                />
+            }
+            rightPane={
+                <VersionIntelligencePanel
+                    version={selectedVersion}
+                    previousVersion={previousVersion}
+                    onRestore={handleRestore}
+                    onDownload={handleDownload}
+                />
+            }
+        />
     );
 }
 
 export default function VersionHistoryPage() {
     return (
-        <Suspense fallback={<div className="flex justify-center py-12"><Spinner size="lg" /></div>}>
-            <VersionHistoryContent />
-        </Suspense>
+        <PageErrorBoundary>
+            <Suspense fallback={<div className="flex justify-center py-12"><Spinner size="lg" /></div>}>
+                <VersionHistoryContent />
+            </Suspense>
+        </PageErrorBoundary>
     );
 }
