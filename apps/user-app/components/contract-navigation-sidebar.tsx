@@ -35,7 +35,7 @@ export function ContractNavigationSidebar({
                 </h3>
                 <button
                     onClick={onAddAnnexure}
-                    className="p-1.5 hover:bg-orange-50 text-slate-400 hover:text-orange-600 rounded-lg transition-colors"
+                    className="p-1.5 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg transition-colors"
                     title="Add New Annexure"
                 >
                     <Plus size={16} />
@@ -55,7 +55,7 @@ export function ContractNavigationSidebar({
                             className={`
                                 group flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all duration-200 relative
                                 ${isActive
-                                    ? 'bg-white border-orange-200 shadow-sm ring-1 ring-orange-100/50 z-10'
+                                    ? 'bg-white border-indigo-200 shadow-sm ring-1 ring-indigo-100/50 z-10'
                                     : 'bg-transparent border-transparent hover:bg-white hover:border-slate-200 hover:shadow-sm'}
                             `}
                         >
@@ -63,7 +63,7 @@ export function ContractNavigationSidebar({
                             <span className={`
                                 flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold border transition-colors
                                 ${isActive
-                                    ? 'bg-orange-50 border-orange-100 text-orange-700'
+                                    ? 'bg-indigo-50 border-indigo-100 text-indigo-700'
                                     : 'bg-white border-slate-200 text-slate-400 group-hover:border-slate-300'}
                             `}>
                                 {isMain ? <FileText size={14} /> : (index)}
@@ -99,7 +99,7 @@ export function ContractNavigationSidebar({
 
                             {/* Active Indicator Arrow */}
                             {isActive && (
-                                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-orange-500 rounded-l-full" />
+                                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-indigo-500 rounded-l-full" />
                             )}
                         </div>
                     );
@@ -108,7 +108,7 @@ export function ContractNavigationSidebar({
                 {/* Add Button at bottom of list */}
                 <button
                     onClick={onAddAnnexure}
-                    className="w-full py-3 border border-dashed border-slate-200 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-orange-600 hover:border-orange-200 hover:bg-orange-50/50 transition-all mt-4"
+                    className="w-full py-3 border border-dashed border-slate-200 rounded-xl flex items-center justify-center gap-2 text-xs font-bold text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50/50 transition-all mt-4"
                 >
                     <Plus size={14} /> Add Annexure
                 </button>
