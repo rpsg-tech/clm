@@ -30,7 +30,7 @@ export class AnalyticsController {
             'org:view', 'org:manage',
             'approval:legal:view', 'approval:finance:view',
             'system:audit',
-            'contract:create', 'contract:view' // Allow creators/viewers to see org stats
+            // 'contract:create', 'contract:view' // Allow creators/viewers to see org stats
         ];
         const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
 
@@ -49,7 +49,7 @@ export class AnalyticsController {
     @Get('contracts/by-status')
     @Permissions('analytics:view')
     async getContractsByStatus(@CurrentUser() user: AuthenticatedUser) {
-        const globalPermissions = ['org:view', 'org:manage', 'approval:legal:view', 'approval:finance:view', 'system:audit', 'contract:create', 'contract:view'];
+        const globalPermissions = ['org:view', 'org:manage', 'approval:legal:view', 'approval:finance:view', 'system:audit'];
         const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
         return this.analyticsService.getContractsByStatus(user.orgId!, hasGlobalAccess ? undefined : user.id);
     }
@@ -60,7 +60,7 @@ export class AnalyticsController {
     @Get('contracts/trend')
     @Permissions('analytics:view')
     async getContractTrend(@CurrentUser() user: AuthenticatedUser) {
-        const globalPermissions = ['org:view', 'org:manage', 'approval:legal:view', 'approval:finance:view', 'system:audit', 'contract:create', 'contract:view'];
+        const globalPermissions = ['org:view', 'org:manage', 'approval:legal:view', 'approval:finance:view', 'system:audit'];
         const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
         return this.analyticsService.getContractTrend(user.orgId!, hasGlobalAccess ? undefined : user.id);
     }
@@ -71,7 +71,7 @@ export class AnalyticsController {
     @Get('approvals/metrics')
     @Permissions('analytics:view')
     async getApprovalMetrics(@CurrentUser() user: AuthenticatedUser) {
-        const globalPermissions = ['org:view', 'org:manage', 'approval:legal:view', 'approval:finance:view', 'system:audit', 'contract:create', 'contract:view'];
+        const globalPermissions = ['org:view', 'org:manage', 'approval:legal:view', 'approval:finance:view', 'system:audit'];
         const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
         return this.analyticsService.getApprovalMetrics(user.orgId!, hasGlobalAccess ? undefined : user.id);
     }
@@ -85,7 +85,7 @@ export class AnalyticsController {
         @CurrentUser() user: AuthenticatedUser,
         @Query('limit') limit = '10',
     ) {
-        const globalPermissions = ['org:view', 'org:manage', 'approval:legal:view', 'approval:finance:view', 'system:audit', 'contract:create', 'contract:view'];
+        const globalPermissions = ['org:view', 'org:manage', 'approval:legal:view', 'approval:finance:view', 'system:audit'];
         const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
         return this.analyticsService.getRecentActivity(user.orgId!, parseInt(limit), hasGlobalAccess ? undefined : user.id);
     }
@@ -99,5 +99,17 @@ export class AnalyticsController {
         return this.analyticsService.getAdminStats();
     }
 
-    // No longer need formatStatus - it's in the service
+    /**
+     * [PERFORMANCE] Get aggregated dashboard snapshot
+     */
+    @Get('dashboard-snapshot')
+    @Permissions('analytics:view', 'contract:view') // Basic access
+    async getDashboardSnapshot(@CurrentUser() user: AuthenticatedUser) {
+        // Pass all permissions to service for granular checks (legal/finance visibility)
+        return this.analyticsService.getDashboardSnapshot(
+            user.orgId!,
+            user.id,
+            user.permissions
+        );
+    }
 }

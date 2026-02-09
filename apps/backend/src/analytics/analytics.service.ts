@@ -286,4 +286,150 @@ export class AnalyticsService {
             .replace(/_/g, ' ')
             .replace(/\b\w/g, c => c.toUpperCase());
     }
+
+    /**
+     * [PERFORMANCE] Aggregated Dashboard Snapshot
+     * Single optimized query to fetch all dashboard data
+     */
+    async getDashboardSnapshot(
+        organizationId: string,
+        userId: string,
+        permissions: string[]
+    ) {
+        // [Debug] Cache key specific to user due to RBAC
+        const cacheKey = `analytics:snapshot:${organizationId}:${userId}`;
+
+        return this.cache.wrap(cacheKey, async () => {
+            const hasGlobalView = permissions.includes('org:view') ||
+                permissions.includes('approval:legal:view') ||
+                permissions.includes('approval:finance:view');
+            const canViewLegal = permissions.includes('approval:legal:view');
+            const canViewFinance = permissions.includes('approval:finance:view');
+
+            const whereClause: any = { organizationId };
+            // Business Users see only their own contracts
+            if (!hasGlobalView) {
+                whereClause.createdByUserId = userId;
+            }
+
+            // Parallel Execution of Independent Queries
+            const [
+                contractCounts,
+                activeValueResult,
+                recentContracts,
+                expiringContracts,
+                rejectedContracts,
+                pendingLegal,
+                pendingFinance
+            ] = await Promise.all([
+                // 1. Status Counts
+                this.prisma.contract.groupBy({
+                    by: ['status'],
+                    where: whereClause,
+                    _count: true,
+                }),
+
+                // 2. Active Value
+                this.prisma.contract.aggregate({
+                    _sum: { amount: true },
+                    where: {
+                        ...whereClause,
+                        status: { in: ['ACTIVE', 'COUNTERSIGNED', 'APPROVED', 'SENT_TO_COUNTERPARTY'] as any[] }
+                    }
+                }),
+
+                // 3. Recent Contracts (Lightweight Select)
+                this.prisma.contract.findMany({
+                    where: whereClause,
+                    orderBy: { createdAt: 'desc' },
+                    take: 5,
+                    select: {
+                        id: true,
+                        title: true,
+                        status: true,
+                        createdAt: true,
+                        counterpartyName: true,
+                        reference: true, // For UI display
+                        template: {
+                            select: { name: true }
+                        }
+                    }
+                }),
+
+                // 4. Expiring Soon (30 Days)
+                this.prisma.contract.findMany({
+                    where: {
+                        ...whereClause,
+                        endDate: {
+                            gte: new Date(),
+                            lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                        },
+                        status: 'ACTIVE'
+                    },
+                    orderBy: { endDate: 'asc' },
+                    take: 5,
+                    select: { id: true, title: true, endDate: true, status: true }
+                }),
+
+                // 5. Rejected / Revision Needed
+                this.prisma.contract.findMany({
+                    where: {
+                        ...whereClause,
+                        status: { in: ['REJECTED', 'REVISION_REQUESTED'] }
+                    },
+                    orderBy: { updatedAt: 'desc' },
+                    take: 5,
+                    select: { id: true, title: true, status: true, updatedAt: true }
+                }),
+
+                // 6. Pending Legal (Conditional)
+                canViewLegal ? this.prisma.approval.count({
+                    where: {
+                        type: 'LEGAL',
+                        status: 'PENDING',
+                        contract: { organizationId } // Approvers see ALL org pending items
+                    }
+                }) : Promise.resolve(0),
+
+                // 7. Pending Finance (Conditional)
+                canViewFinance ? this.prisma.approval.count({
+                    where: {
+                        type: 'FINANCE',
+                        status: 'PENDING',
+                        contract: { organizationId }
+                    }
+                }) : Promise.resolve(0),
+            ]);
+
+            // Process Counts
+            const statusMap: Record<string, number> = {};
+            contractCounts.forEach(c => statusMap[c.status] = c._count);
+
+            return {
+                stats: {
+                    total: contractCounts.reduce((acc, c) => acc + c._count, 0),
+                    active: (statusMap['ACTIVE'] || 0) + (statusMap['COUNTERSIGNED'] || 0) + (statusMap['APPROVED'] || 0),
+                    draft: statusMap['DRAFT'] || 0,
+                    pending: (statusMap['SENT_TO_LEGAL'] || 0) + (statusMap['SENT_TO_FINANCE'] || 0),
+                    value: activeValueResult._sum.amount || 0,
+                    // Granular status map for frontend specific needs
+                    byStatus: statusMap
+                },
+                recent: recentContracts,
+                attention: {
+                    expiring: expiringContracts,
+                    rejected: rejectedContracts,
+                    approvals: {
+                        legal: pendingLegal,
+                        finance: pendingFinance
+                    }
+                },
+                meta: {
+                    lastUpdated: new Date().toISOString(),
+                    source: 'snapshot'
+                }
+            };
+
+        }, 30); // 30s TTL - Dashboard needs to be relatively fresh but not realtime
+    }
 }

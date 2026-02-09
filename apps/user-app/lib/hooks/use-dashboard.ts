@@ -3,40 +3,38 @@ import { api } from '@/lib/api-client';
 
 export function useDashboardData(orgId?: string) {
     return useQuery({
-        queryKey: ['dashboard', orgId],
+        queryKey: ['dashboard', 'snapshot', orgId],
         queryFn: async () => {
             if (!orgId) return null;
 
-            const [summary, contracts, expiring, approvalsLegal, approvalsFinance, logs, rejected] = await Promise.all([
-                api.analytics.contractsSummary().catch(() => ({ total: 0, byStatus: {} })),
-                api.contracts.list({ limit: 5 }).catch(() => ({ data: [], meta: { total: 0 } })),
-                api.contracts.list({ limit: 5, expiringDays: 30 }).catch(() => ({ data: [], meta: { total: 0 } })),
-                api.approvals.pending('LEGAL').catch(() => []),
-                api.approvals.pending('FINANCE').catch(() => []),
-                api.audit.getLogs({ take: 5 }).catch(() => ({ logs: [], total: 0 })),
-                api.contracts.list({ status: 'REJECTED', limit: 5 }).catch(() => ({ data: [], meta: { total: 0 } })),
-            ]);
+            // [PERFORMANCE] Single Aggregated Call (Reduced from 7 requests)
+            const snapshot = await api.analytics.dashboardSnapshot();
 
+            // Map Snapshot to Component Props Structure
             return {
                 stats: {
-                    totalContracts: (summary as any).total || 0,
-                    activeContracts: (summary as any).active || 0,
-                    activeValue: (summary as any).activeValue || 0,
-                    draftContracts: (summary as any).draft || 0,
-                    pendingApprovals: (Array.isArray(approvalsLegal) ? approvalsLegal.length : 0) +
-                        (Array.isArray(approvalsFinance) ? approvalsFinance.length : 0),
+                    totalContracts: snapshot.stats.total || 0,
+                    activeContracts: snapshot.stats.active || 0,
+                    activeValue: snapshot.stats.value || 0,
+                    draftContracts: snapshot.stats.draft || 0,
+                    pendingApprovals: snapshot.stats.pending || 0,
                 },
-                recentContracts: ((contracts as any).data || []).slice(0, 5),
-                expiringContracts: ((expiring as any).data || []).slice(0, 5),
-                rejectedContracts: ((rejected as any).data || []).slice(0, 5),
+                recentContracts: snapshot.recent || [],
+                expiringContracts: snapshot.attention.expiring || [],
+                rejectedContracts: snapshot.attention.rejected || [],
+
+                // Flatten Approvals for Attention Banner
                 pendingApprovals: [
-                    ...(Array.isArray(approvalsLegal) ? approvalsLegal : []),
-                    ...(Array.isArray(approvalsFinance) ? approvalsFinance : [])
+                    ...(Array.isArray(snapshot.attention.approvals.legal) ? snapshot.attention.approvals.legal : []),
+                    ...(Array.isArray(snapshot.attention.approvals.finance) ? snapshot.attention.approvals.finance : [])
                 ].slice(0, 5),
-                auditLogs: (logs as any).logs || [],
+
+                // Audit logs removed from UI as per optimization plan
+                auditLogs: [],
             };
         },
         enabled: !!orgId,
-        staleTime: 30000, // 30 seconds
+        staleTime: 60000, // 1 minute cache
+        refetchOnWindowFocus: false, // Prevent aggressive refetching
     });
 }

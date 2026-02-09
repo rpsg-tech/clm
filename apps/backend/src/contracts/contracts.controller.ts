@@ -75,7 +75,7 @@ export class ContractsController {
             'org:view', 'org:manage',
             'approval:legal:view', 'approval:finance:view',
             'system:audit',
-            'contract:create', 'contract:view' // Allow creators/viewers to see all org contracts by default
+            // 'contract:create', 'contract:view' // Standard users have these but should be scoped to own data
         ];
 
         const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
@@ -157,12 +157,13 @@ export class ContractsController {
     async getContractAuditLogs(
         @CurrentUser() user: AuthenticatedUser,
         @Param('id') id: string,
+        @Query('limit') limit?: number,
     ) {
         // Ensure user has access to contract
         await this.contractsService.findById(id, user.orgId!);
 
-        // Fetch logs
-        return this.auditService.getByContract(id);
+        // Fetch logs (default 20 for performance)
+        return this.auditService.getByContract(id, limit ? Number(limit) : 20);
     }
 
     @Post(':id/submit')

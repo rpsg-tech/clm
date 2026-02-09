@@ -84,12 +84,12 @@ interface ActivityItem {
 const TabButton = ({ active, onClick, icon: Icon, label }: any) => (
     <button
         onClick={onClick}
-        className={`flex items-center gap-2 px-4 py-3 text-sm font-bold border-b-2 transition-all ${active
-            ? 'border-orange-500 text-orange-600 bg-orange-50/50'
-            : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+        className={`flex items-center gap-2 pb-4 text-sm font-bold border-b-2 transition-all relative top-[1px] ${active
+            ? 'border-slate-900 text-slate-900'
+            : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
             }`}
     >
-        <Icon className="w-4 h-4" />
+        <Icon className={`w-4 h-4 ${active ? 'text-indigo-600' : 'text-slate-400'}`} />
         {label}
     </button>
 );
@@ -342,25 +342,35 @@ function ContractDetailContent() {
             <div className="bg-white border-b border-slate-200">
                 <div className="max-w-[1600px] mx-auto px-6 lg:px-12 py-8 space-y-6">
                     {/* 1. Breadcrumbs & Actions */}
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                        <div className="max-w-full">
-                            <nav className="flex flex-wrap items-center text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider gap-y-1">
-                                <Link href="/dashboard/contracts" className="hover:text-slate-800 transition-colors">Contracts</Link>
-                                <ChevronRight className="w-3.5 h-3.5 mx-2 text-slate-300" />
-                                <span className="text-orange-500 break-all">{contract.reference || 'New Contract'}</span>
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                        <div className="max-w-3xl">
+                            <nav className="flex items-center text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest">
+                                <Link href="/dashboard/contracts" className="hover:text-slate-800 transition-colors flex items-center gap-2">
+                                    <div className="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center">
+                                        <ArrowLeft className="w-3 h-3" />
+                                    </div>
+                                    Contracts
+                                </Link>
+                                <ChevronRight className="w-3 h-3 mx-2 text-slate-300" />
+                                <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-mono">{contract.reference || 'REF-???'}</span>
                             </nav>
-                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight break-words">
+
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">
                                 {contract.title}
                             </h1>
-                            <div className="flex flex-wrap items-center gap-2 mt-3 text-sm font-medium text-slate-500">
-                                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide border border-slate-200">{contract.template?.name || 'Service Agreement'}</span>
-                                <span className="text-slate-300">•</span>
-                                <span className="flex items-center gap-1.5">
-                                    <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-700">
+
+                            <div className="flex flex-wrap items-center gap-3">
+                                <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider shadow-sm">
+                                    {contract.template?.name || 'Service Agreement'}
+                                </Badge>
+                                <div className="h-4 w-px bg-slate-200" />
+                                <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
+                                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-50 leading-none to-purple-50 flex items-center justify-center text-[10px] font-bold text-indigo-700 border border-indigo-100 shadow-sm">
                                         {(contract.createdByUser?.name || 'S').charAt(0)}
                                     </div>
-                                    Created by {contract.createdByUser?.name || 'System'}
-                                </span>
+                                    Created by <span className="text-slate-900 font-semibold">{contract.createdByUser?.name || 'System'}</span>
+                                    <span className="text-slate-400 text-xs">on {new Date(contract.createdAt).toLocaleDateString()}</span>
+                                </div>
                             </div>
                         </div>
 
@@ -383,25 +393,28 @@ function ContractDetailContent() {
 
                     {/* REVISION BANNER */}
                     {contract.status === 'REVISION_REQUESTED' && (
-                        <div className="group bg-amber-50/50 hover:bg-amber-50 border border-amber-200 hover:border-amber-300 rounded-xl p-4 sm:p-5 flex items-start gap-4 animate-in fade-in slide-in-from-top-2 shadow-sm hover:shadow-md transition-all duration-300">
-                            <div className="p-2 bg-amber-100 text-amber-600 rounded-lg shrink-0 group-hover:scale-110 transition-transform">
-                                <AlertTriangle className="w-5 h-5" />
+                        <div className="relative overflow-hidden bg-rose-50 border border-rose-100 rounded-2xl p-6 flex flex-col sm:flex-row items-start gap-5 shadow-sm">
+                            <div className="absolute top-0 right-0 p-4 opacity-5">
+                                <AlertTriangle className="w-32 h-32" />
                             </div>
-                            <div className="flex-1">
-                                <h3 className="text-sm font-bold text-amber-900 mb-1 flex items-center gap-2">
-                                    Changes Requested
-                                    <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">Action Required</span>
-                                </h3>
-                                <p className="text-sm text-amber-800 leading-relaxed">
-                                    {(() => {
-                                        // Find the relevant rejection comment
-                                        const rejection = contract.approvals
-                                            ?.filter(a => a.status === 'REJECTED')
-                                            .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime())[0];
-
-                                        return rejection?.comment?.replace('REVISION REQUESTED: ', '') || 'A reviewer has requested changes to this contract.';
-                                    })()}
-                                </p>
+                            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-rose-600 shadow-sm border border-rose-100 shrink-0">
+                                <AlertCircle className="w-6 h-6" />
+                            </div>
+                            <div className="flex-1 relative z-10">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="text-base font-bold text-slate-900">Changes Requested</h3>
+                                    <Badge variant="error" className="bg-rose-600 text-white hover:bg-rose-700 font-bold uppercase tracking-wide text-[10px]">Action Required</Badge>
+                                </div>
+                                <div className="bg-white/60 rounded-lg p-4 border border-rose-100/50 backdrop-blur-sm">
+                                    <p className="text-sm text-slate-700 leading-relaxed font-medium">
+                                        &ldquo;{(() => {
+                                            const rejection = contract.approvals
+                                                ?.filter(a => a.status === 'REJECTED')
+                                                .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime())[0];
+                                            return rejection?.comment?.replace('REVISION REQUESTED: ', '') || 'A reviewer has requested changes to this contract.';
+                                        })()}&rdquo;
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -414,8 +427,8 @@ function ContractDetailContent() {
                         onAction={handleAction}
                     />
 
-                    {/* 3. Tabs Navigation (Scrollable on mobile) */}
-                    <div className="flex items-center gap-1 pt-4 border-t border-slate-100 overflow-x-auto no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
+                    {/* 3. Tabs Navigation */}
+                    <div className="flex items-center gap-8 pt-6 border-b border-slate-200">
                         <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" icon={Briefcase} />
                         <TabButton active={activeTab === 'document'} onClick={() => setActiveTab('document')} label="Document" icon={FileText} />
                         <TabButton active={activeTab === 'history'} onClick={() => setActiveTab('history')} label="Version History" icon={History} />
@@ -429,21 +442,24 @@ function ContractDetailContent() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
                         {/* CONSOLIDATED INFORMATION CARD */}
-                        <Card className="shadow-sm border-slate-200 md:col-span-2 hover:shadow-md transition-shadow duration-300 group">
-                            <CardHeader className="pb-4 border-b border-slate-50">
-                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wide flex items-center gap-3">
-                                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
+                        <Card className="shadow-sm border-slate-200 md:col-span-2 hover:shadow-md transition-all duration-300 group overflow-hidden">
+                            <CardHeader className="pb-4 border-b border-slate-50 bg-slate-50/30">
+                                <CardTitle className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-3">
+                                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100">
                                         <Info className="w-4 h-4" />
                                     </div>
                                     Contract Information
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="pt-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+                            <CardContent className="pt-8 pb-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                                     {/* Left: General Details */}
                                     <div className="space-y-6">
-                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">General Details</h4>
-                                        <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+                                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                                            General Values
+                                        </h4>
+                                        <div className="grid grid-cols-2 gap-y-8 gap-x-4">
                                             <DetailItem
                                                 label="Contract Value"
                                                 value={contract.amount ? formatCurrency(contract.amount) : 'N/A'}
@@ -470,22 +486,30 @@ function ContractDetailContent() {
 
                                     {/* Right: Counterparty */}
                                     <div className="space-y-6">
-                                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Counterparty Details</h4>
-                                        <div className="flex items-start gap-4">
-                                            <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold shrink-0 border border-indigo-100 text-lg">
-                                                {contract.counterpartyName?.charAt(0) || 'C'}
+                                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                                            Counterparty
+                                        </h4>
+                                        <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 relative group/card hover:bg-slate-100/80 transition-colors">
+                                            <div className="absolute top-4 right-4 text-slate-300">
+                                                <Building2 className="w-8 h-8 opacity-20" />
                                             </div>
-                                            <div className="grid gap-1.5 flex-1">
-                                                <span className="text-lg font-bold text-slate-900 leading-tight">{contract.counterpartyName}</span>
-                                                <div className="flex items-center gap-2 text-xs text-slate-500">
-                                                    <Mail className="w-3.5 h-3.5" />
-                                                    {contract.counterpartyEmail || 'No email provided'}
+                                            <div className="flex flex-col gap-4">
+                                                <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center text-slate-800 font-bold shrink-0 border border-slate-200 text-xl shadow-sm">
+                                                    {contract.counterpartyName?.charAt(0) || 'C'}
                                                 </div>
-                                                <div className="mt-2">
-                                                    <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded font-mono border border-slate-200 inline-flex items-center gap-1.5">
-                                                        <Building2 className="w-3 h-3" />
-                                                        Tax ID: {contract.fieldData?.taxId as string || 'N/A'}
-                                                    </span>
+                                                <div>
+                                                    <span className="text-lg font-bold text-slate-900 leading-tight block mb-1">{contract.counterpartyName}</span>
+                                                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+                                                        <Mail className="w-3.5 h-3.5" />
+                                                        {contract.counterpartyEmail || 'No email provided'}
+                                                    </div>
+                                                </div>
+                                                <div className="pt-4 border-t border-slate-200 mt-2">
+                                                    <div className="flex justify-between items-center text-xs">
+                                                        <span className="text-slate-400 font-medium">Tax ID</span>
+                                                        <span className="font-mono font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">{contract.fieldData?.taxId as string || 'N/A'}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -494,42 +518,41 @@ function ContractDetailContent() {
                             </CardContent>
                         </Card>
 
-                        {/* Recent Activity Mini with TIMELINE (UPDATED) */}
-                        <Card className="shadow-sm border-slate-200 md:col-span-2 lg:col-span-1 hover:shadow-md transition-shadow duration-300">
-                            <CardHeader className="pb-3">
-                                <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-wide flex items-center gap-3">
-                                    <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
+                        {/* Recent Activity Mini with TIMELINE */}
+                        <Card className="shadow-sm border-slate-200 md:col-span-2 lg:col-span-1 hover:shadow-md transition-all duration-300 flex flex-col">
+                            <CardHeader className="pb-3 border-b border-slate-50 bg-slate-50/30">
+                                <CardTitle className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-3">
+                                    <div className="p-2 bg-orange-50 text-orange-600 rounded-lg border border-orange-100">
                                         <History className="w-4 h-4" />
                                     </div>
-                                    Activity Trail
+                                    Activity Timeline
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="pl-2">
+                            <CardContent className="flex-1 overflow-y-auto max-h-[500px] pt-6 pl-4">
                                 <div className="space-y-0 relative">
-                                    {activityStream.slice(0, 8).map((item, i, arr) => (
-                                        <div key={item.id} className="flex gap-4 relative pb-6 last:pb-0 group">
-                                            {/* Connector Line */}
-                                            {i !== arr.length - 1 && (
-                                                <div className="absolute left-[15px] top-8 bottom-0 w-px bg-slate-200 group-hover:bg-orange-200 transition-colors" />
-                                            )}
+                                    {/* Timeline Line */}
+                                    <div className="absolute left-[19px] top-2 bottom-6 w-0.5 bg-slate-100" />
 
+                                    {activityStream.slice(0, 10).map((item, i) => (
+                                        <div key={item.id} className="flex gap-4 relative pb-8 last:pb-0 group">
                                             <div className={`
-                                                w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 z-10 transition-colors shadow-sm
+                                                w-10 h-10 rounded-xl border-2 flex items-center justify-center text-xs font-bold shrink-0 z-10 transition-all shadow-sm
+                                                bg-white group-hover:scale-105
                                                 ${item.type === 'VERSION'
-                                                    ? 'bg-slate-50 border-slate-200 text-slate-500 group-hover:border-orange-200 group-hover:text-orange-600'
-                                                    : 'bg-indigo-50 border-indigo-100 text-indigo-600 group-hover:border-indigo-300'
+                                                    ? 'border-slate-100 text-slate-500'
+                                                    : 'border-white ring-2 ring-indigo-50 text-indigo-600'
                                                 }
                                             `}>
-                                                {item.type === 'VERSION' ? 'V' : <CheckCircle2 className="w-4 h-4" />}
+                                                {item.type === 'VERSION' ? <FileText className="w-4 h-4" /> : <CheckCircle2 className="w-5 h-5" />}
                                             </div>
-                                            <div className="pt-1">
-                                                <p className="text-sm font-medium text-slate-900 leading-none mb-1">
-                                                    <span className="font-bold">{item.user}</span> {item.title}
+                                            <div className="pt-1.5 flex-1">
+                                                <p className="text-sm font-medium text-slate-900 leading-snug mb-1">
+                                                    <span className="font-bold text-indigo-900">{item.user}</span> {item.title.replace(item.user, '')}
                                                     {item.type === 'VERSION' && (
-                                                        <span className="font-mono text-xs text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded ml-1">v{item.meta?.version}</span>
+                                                        <span className="inline-block align-middle font-mono text-[10px] text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded ml-2">v{item.meta?.version}</span>
                                                     )}
                                                 </p>
-                                                <p className="text-[10px] text-slate-400 font-medium">{item.date.toLocaleString()}</p>
+                                                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wide">{item.date.toLocaleDateString()} &bull; {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                             </div>
                                         </div>
                                     ))}

@@ -442,6 +442,7 @@ export const api = {
     contractsTrend: () => authFetch<any>('/analytics/contracts/trend'),
     approvalsMetrics: () => authFetch<any>('/analytics/approvals/metrics'),
     recentActivity: (limit = 10) => authFetch<any>(`/analytics/activity?limit=${limit}`),
+    dashboardSnapshot: () => authFetch<any>('/analytics/dashboard-snapshot'), // [PERFORMANCE] Aggregated Endpoint
   },
 
   // Notifications

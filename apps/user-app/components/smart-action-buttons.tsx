@@ -173,9 +173,9 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
 
     return (
         <>
-            <div className="w-full bg-white/80 backdrop-blur-md border border-slate-200/60 rounded-xl p-3 md:p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500 sticky top-4 z-20">
+            <div className="w-full bg-white/90 backdrop-blur-xl border-y md:border border-slate-200/80 md:rounded-2xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-sm shadow-slate-200/50 sticky top-0 md:top-6 z-30 transition-all duration-300">
                 {/* Left: Status */}
-                <div className="flex items-center gap-6 w-full lg:w-auto justify-between lg:justify-start border-b lg:border-none border-slate-100 pb-3 lg:pb-0">
+                <div className="flex items-center gap-6 w-full lg:w-auto justify-between lg:justify-start border-b lg:border-none border-slate-100 pb-4 lg:pb-0">
                     <StatusIndicator />
                 </div>
 

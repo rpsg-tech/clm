@@ -166,13 +166,14 @@ export class AuditService {
     /**
      * Get audit logs for a specific contract
      */
-    async getByContract(contractId: string) {
+    async getByContract(contractId: string, limit = 20) {
         return this.prisma.auditLog.findMany({
             where: { contractId },
             include: {
                 user: { select: { name: true, email: true } },
             },
             orderBy: { createdAt: 'desc' },
+            take: limit,
         });
     }
 

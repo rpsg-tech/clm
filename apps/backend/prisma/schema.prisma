@@ -264,6 +264,10 @@ model Contract {
   @@index([updatedAt])
   @@index([templateId, status]) // Compound: Filter contracts by template type and status
   @@index([status, updatedAt]) // Compound: List contracts by status sorted by last update
+
+  // [PERFORMANCE] New indexes for Dashboard & RBAC
+  @@index([organizationId, createdByUserId]) // For "My Contracts" filtering
+  @@index([organizationId, endDate]) // For "Expiring Soon" widget
 }
 
 enum ContractStatus {
@@ -332,6 +336,9 @@ model Approval {
   @@index([contractId, status]) // Compound: Get approvals for contract by status
   @@index([type, status]) // Compound: Filter approvals by type and status (e.g. pending legal)
   @@index([status, createdAt]) // Compound: List pending approvals sorted by date
+  
+  // [PERFORMANCE] New index for Legal/Finance Queues
+  @@index([type, status, contractId]) 
 }
 
 enum ApprovalType {
