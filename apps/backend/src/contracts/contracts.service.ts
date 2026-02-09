@@ -710,10 +710,10 @@ export class ContractsService {
                 },
             });
 
-            // Clean up old PENDING approvals of the requested types
+            // Clean up ANY old approvals of the requested types (whether PENDING, REJECTED/REVISION, or even APPROVED if re-triggering)
             const typesToDelete = target ? [target] : (financeEnabled ? ['LEGAL', 'FINANCE'] : ['LEGAL']);
             await tx.approval.deleteMany({
-                where: { contractId: id, status: 'PENDING', type: { in: typesToDelete as any } }
+                where: { contractId: id, type: { in: typesToDelete as any } }
             });
 
             await tx.approval.createMany({

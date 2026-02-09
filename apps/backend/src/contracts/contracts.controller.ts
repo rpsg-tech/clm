@@ -74,7 +74,8 @@ export class ContractsController {
         const globalPermissions = [
             'org:view', 'org:manage',
             'approval:legal:view', 'approval:finance:view',
-            'system:audit'
+            'system:audit',
+            'contract:create', 'contract:view' // Allow creators/viewers to see all org contracts by default
         ];
 
         const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
