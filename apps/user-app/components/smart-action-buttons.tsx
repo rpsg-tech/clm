@@ -89,16 +89,17 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                     disabled={disabled}
                     className={`
                         relative overflow-hidden group bg-slate-900 hover:bg-black text-white 
-                        border border-transparent rounded-lg pl-3 pr-4 py-2 sm:py-2.5 flex items-center gap-3 transition-all duration-300
+                        border border-transparent rounded-lg pl-3 pr-4 py-2.5 sm:py-2.5 flex items-center justify-center sm:justify-start gap-3 transition-all duration-300
                         shadow-md hover:shadow-xl hover:-translate-y-0.5 ring-offset-2 focus:ring-2 ring-indigo-500/30
                         disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none
+                        w-full sm:w-auto
                         ${className}
                     `}
                 >
                     <IconWrapper>
                         {loading ? <Spinner size="sm" className="text-white" /> : <Icon className="w-4 h-4 text-white" />}
                     </IconWrapper>
-                    <div className="text-left hidden sm:block">
+                    <div className="text-left block">
                         <div className="text-sm font-bold leading-none mb-1">{label}</div>
                         {subLabel && <div className="text-[10px] text-slate-300 font-medium leading-none opacity-80">{subLabel}</div>}
                     </div>
@@ -114,9 +115,10 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                 disabled={disabled}
                 className={`
                     group relative bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 
-                    text-slate-600 hover:text-slate-900 rounded-lg pl-3 pr-4 py-2 sm:py-2.5 flex items-center gap-2.5 transition-all duration-200
+                    text-slate-600 hover:text-slate-900 rounded-lg pl-3 pr-4 py-2.5 sm:py-2.5 flex items-center justify-center sm:justify-start gap-2.5 transition-all duration-200
                     shadow-sm hover:shadow-md hover:-translate-y-0.5
                     disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
+                    w-full sm:w-auto
                     ${className}
                 `}
             >
@@ -171,14 +173,14 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
 
     return (
         <>
-            <div className="w-full bg-white/80 backdrop-blur-md border border-slate-200/60 rounded-xl p-3 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500 sticky top-4 z-20">
+            <div className="w-full bg-white/80 backdrop-blur-md border border-slate-200/60 rounded-xl p-3 md:p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500 sticky top-4 z-20">
                 {/* Left: Status */}
-                <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-start">
+                <div className="flex items-center gap-6 w-full lg:w-auto justify-between lg:justify-start border-b lg:border-none border-slate-100 pb-3 lg:pb-0">
                     <StatusIndicator />
                 </div>
 
                 {/* Right: Actions Toolbar */}
-                <div className="flex items-center gap-2 flex-wrap justify-end w-full md:w-auto">
+                <div className="flex items-center gap-2 flex-wrap justify-end w-full lg:w-auto">
 
 
                     {/* Secondary Actions (Appears in Draft & Review now) */}

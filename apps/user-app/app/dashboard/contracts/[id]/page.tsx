@@ -36,7 +36,11 @@ import {
     Shield,
     PenTool,
     Info,
-    Send
+    Send,
+    ExternalLink,
+    Check,
+    Share2,
+    AlertTriangle
 } from 'lucide-react';
 import { SmartActionButtons } from '@/components/smart-action-buttons';
 import { ContractDiffView } from '@/components/contract-diff-view';
@@ -339,30 +343,35 @@ function ContractDetailContent() {
                 <div className="max-w-[1600px] mx-auto px-6 lg:px-12 py-8 space-y-6">
                     {/* 1. Breadcrumbs & Actions */}
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                        <div>
-                            <nav className="flex items-center text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">
+                        <div className="max-w-full">
+                            <nav className="flex flex-wrap items-center text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider gap-y-1">
                                 <Link href="/dashboard/contracts" className="hover:text-slate-800 transition-colors">Contracts</Link>
-                                <ChevronRight className="w-3.5 h-3.5 mx-2" />
-                                <span className="text-orange-500">{contract.reference || 'New Contract'}</span>
+                                <ChevronRight className="w-3.5 h-3.5 mx-2 text-slate-300" />
+                                <span className="text-orange-500 break-all">{contract.reference || 'New Contract'}</span>
                             </nav>
-                            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight leading-none">
+                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight break-words">
                                 {contract.title}
                             </h1>
-                            <div className="flex items-center gap-2 mt-2 text-sm font-medium text-slate-500">
-                                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold uppercase">{contract.template?.name || 'Service Agreement'}</span>
-                                <span>•</span>
-                                <span>Created by {contract.createdByUser?.name || 'System'}</span>
+                            <div className="flex flex-wrap items-center gap-2 mt-3 text-sm font-medium text-slate-500">
+                                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wide border border-slate-200">{contract.template?.name || 'Service Agreement'}</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="flex items-center gap-1.5">
+                                    <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-700">
+                                        {(contract.createdByUser?.name || 'S').charAt(0)}
+                                    </div>
+                                    Created by {contract.createdByUser?.name || 'System'}
+                                </span>
                             </div>
                         </div>
 
                         {/* Top Right Actions */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                             <FeatureGuard feature="AI_CONTRACT_REVIEW">
                                 <Button
                                     onClick={() => setIsAnalysisOpen(true)}
                                     variant="outline"
                                     size="sm"
-                                    className="h-9 bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors font-bold text-xs uppercase tracking-wide"
+                                    className="h-9 bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors font-bold text-xs uppercase tracking-wide shadow-sm"
                                 >
                                     <Wand2 className="w-3.5 h-3.5 mr-2 text-indigo-500" />
                                     AI Risk Analysis
@@ -374,11 +383,16 @@ function ContractDetailContent() {
 
                     {/* REVISION BANNER */}
                     {contract.status === 'REVISION_REQUESTED' && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-                            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                            <div>
-                                <h3 className="text-sm font-bold text-amber-800 mb-1">Changes Requested</h3>
-                                <p className="text-sm text-amber-700">
+                        <div className="group bg-amber-50/50 hover:bg-amber-50 border border-amber-200 hover:border-amber-300 rounded-xl p-4 sm:p-5 flex items-start gap-4 animate-in fade-in slide-in-from-top-2 shadow-sm hover:shadow-md transition-all duration-300">
+                            <div className="p-2 bg-amber-100 text-amber-600 rounded-lg shrink-0 group-hover:scale-110 transition-transform">
+                                <AlertTriangle className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-sm font-bold text-amber-900 mb-1 flex items-center gap-2">
+                                    Changes Requested
+                                    <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">Action Required</span>
+                                </h3>
+                                <p className="text-sm text-amber-800 leading-relaxed">
                                     {(() => {
                                         // Find the relevant rejection comment
                                         const rejection = contract.approvals
@@ -400,8 +414,8 @@ function ContractDetailContent() {
                         onAction={handleAction}
                     />
 
-                    {/* 3. Tabs Navigation (Full width now) */}
-                    <div className="flex items-center gap-1 pt-4 border-t border-slate-100">
+                    {/* 3. Tabs Navigation (Scrollable on mobile) */}
+                    <div className="flex items-center gap-1 pt-4 border-t border-slate-100 overflow-x-auto no-scrollbar -mx-6 px-6 lg:mx-0 lg:px-0">
                         <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" icon={Briefcase} />
                         <TabButton active={activeTab === 'document'} onClick={() => setActiveTab('document')} label="Document" icon={FileText} />
                         <TabButton active={activeTab === 'history'} onClick={() => setActiveTab('history')} label="Version History" icon={History} />
