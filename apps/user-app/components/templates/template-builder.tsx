@@ -10,6 +10,9 @@ import { api } from '@/lib/api-client';
 import { useToast } from '@/lib/toast-context';
 import * as mammoth from 'mammoth';
 
+import { useAuth } from '@/lib/auth-context';
+import { useEffect } from 'react';
+
 /* Simple Label Component since it's missing in exports */
 const Label = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
     <label className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`}>
@@ -32,8 +35,42 @@ interface TemplateBuilderProps {
 export function TemplateBuilder({ mode = 'create', initialData }: TemplateBuilderProps) {
     const router = useRouter();
     const { success, error } = useToast();
+    const { permissions, user } = useAuth(); // [Auth] Get permissions
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+
+    // [New] Organizations Logic
+    const [organizations, setOrganizations] = useState<any[]>([]);
+    const [loadingOrgs, setLoadingOrgs] = useState(false);
+    const [targetOrgIds, setTargetOrgIds] = useState<string[]>([]); // [State] Selected Org IDs
+
+    // Fetch Orgs if user has global/manage permission or just generally for assignment
+    useEffect(() => {
+        // Only fetch if creating new or editing, and user has permission to see orgs
+        // Usually 'org:view' but let's assume if they can create templates they might want to assign
+        const fetchOrgs = async () => {
+            try {
+                setLoadingOrgs(true);
+                // Assumption: API supports listing orgs. Fetching all (pagination limit 100 for dropdown)
+                const res = await api.organizations.list({ limit: 100 });
+                setOrganizations(res.data);
+
+                // If Editing, we need to pre-fill targetOrgIds from initialData
+                // Assumption: initialData includes organizationAccess relation
+                if (mode === 'edit' && initialData?.organizationAccess) {
+                    const ids = initialData.organizationAccess.map((oa: any) => oa.organizationId);
+                    setTargetOrgIds(ids);
+                }
+
+            } catch (err) {
+                console.warn('Failed to fetch orgs for assignment selector', err);
+            } finally {
+                setLoadingOrgs(false);
+            }
+        };
+
+        fetchOrgs();
+    }, [mode, initialData]);
 
     // File Import Refs
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -120,6 +157,7 @@ export function TemplateBuilder({ mode = 'create', initialData }: TemplateBuilde
             const payload = {
                 ...meta,
                 baseContent: mainContent,
+                targetOrgIds: targetOrgIds.length > 0 ? targetOrgIds : undefined, // [New] Include in payload
                 annexures: annexures.map(({ name, title, content }) => ({ name, title, content }))
             };
 
@@ -210,6 +248,65 @@ export function TemplateBuilder({ mode = 'create', initialData }: TemplateBuilde
                                 <Label>Description</Label>
                                 <Textarea value={meta.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMeta({ ...meta, description: e.target.value })} />
                             </div>
+
+                            <div className="pt-4 border-t space-y-4">
+                                <Label>Visibility & Assignment</Label>
+
+                                <div className={`flex items-center justify-between p-3 bg-slate-50 rounded-lg border ${!permissions?.includes('template:publish') ? 'opacity-70' : ''}`}>
+                                    <div>
+                                        <div className="text-sm font-semibold">Global Template</div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {permissions?.includes('template:publish')
+                                                ? "Visible to all organizations?"
+                                                : "Requires 'Publish Templates' permission"}
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        className="w-4 h-4 rounded border-slate-300"
+                                        checked={meta.isGlobal}
+                                        disabled={!permissions?.includes('template:publish')}
+                                        onChange={(e) => setMeta({ ...meta, isGlobal: e.target.checked })}
+                                    />
+                                </div>
+
+                                {meta.isGlobal ? (
+                                    <div className="text-xs text-blue-600 bg-blue-50 p-3 rounded-md border border-blue-100 flex items-center gap-2">
+                                        <span className="font-semibold">Note:</span>
+                                        This template is available to ALL organizations.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <Label>Assign to Organizations</Label>
+                                        <div className="text-xs text-muted-foreground mb-2">
+                                            Select specific organizations that can use this template.
+                                        </div>
+                                        <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-2 bg-white">
+                                            {loadingOrgs ? (
+                                                <div className="text-xs text-slate-400 p-2">Loading organizations...</div>
+                                            ) : organizations.length > 0 ? (
+                                                organizations.map(org => (
+                                                    <div key={org.id} className="flex items-center gap-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={targetOrgIds.includes(org.id)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) setTargetOrgIds([...targetOrgIds, org.id]);
+                                                                else setTargetOrgIds(targetOrgIds.filter(id => id !== org.id));
+                                                            }}
+                                                            className="rounded border-slate-300"
+                                                        />
+                                                        <span className="text-sm">{org.name}</span>
+                                                        {org.type === 'PARENT' && <Badge variant="outline" className="text-[10px]">Parent</Badge>}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-xs text-slate-400 p-2">No other organizations found.</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </Card>
                     </div>
                     <div className="col-span-9 h-full flex flex-col min-h-0">
@@ -222,118 +319,123 @@ export function TemplateBuilder({ mode = 'create', initialData }: TemplateBuilde
                         <TipTapEditor content={mainContent} onChange={setMainContent} className="flex-1 h-full" />
                     </div>
                 </div>
-            )}
+            )
+            }
 
             {/* STEP 2: Annexures */}
-            {step === 2 && (
-                <div className="grid grid-cols-12 gap-6 h-full overflow-hidden">
-                    <div className="col-span-3 flex flex-col gap-4">
-                        <Card className="flex-1 flex flex-col p-4 overflow-hidden">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-semibold">Annexures</h3>
-                                <Button size="sm" variant="outline" onClick={() => {
-                                    const newId = Date.now().toString();
-                                    setAnnexures([...annexures, { id: newId, name: 'New Annexure', title: '', content: '' }]);
-                                    setActiveAnnexureId(newId);
-                                }}>
-                                    <Plus className="w-4 h-4 mr-1" /> Add
-                                </Button>
-                            </div>
-                            <div className="flex-1 overflow-y-auto space-y-2">
-                                {annexures.map((annexure, idx) => (
-                                    <div
-                                        key={annexure.id}
-                                        className={`p-3 rounded-lg border cursor-pointer hover:bg-slate-50 transition-colors ${activeAnnexureId === annexure.id ? 'border-primary ring-1 ring-primary bg-slate-50' : 'border-slate-200'}`}
-                                        onClick={() => setActiveAnnexureId(annexure.id)}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <div className="font-medium text-sm flex items-center gap-2">
-                                                    <Badge variant="outline" className="text-[10px] h-5 px-1">{idx + 1}</Badge>
-                                                    {annexure.name || 'Untitled'}
-                                                </div>
-                                                <div className="text-xs text-muted-foreground mt-1 truncate max-w-[150px]">
-                                                    {annexure.title || 'No Title'}
-                                                </div>
-                                            </div>
-                                            <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-400 hover:text-red-500" onClick={(e: React.MouseEvent) => {
-                                                e.stopPropagation();
-                                                setAnnexures(annexures.filter(a => a.id !== annexure.id));
-                                                if (activeAnnexureId === annexure.id) setActiveAnnexureId(null);
-                                            }}>
-                                                <Trash2 className="w-3 h-3" />
-                                            </Button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-                    </div>
-                    <div className="col-span-9 h-full flex flex-col min-h-0">
-                        {currentAnnexure ? (
-                            <div className="flex flex-col h-full gap-4">
-                                <div className="flex items-end justify-end mb-1">
-                                    <Button size="sm" variant="outline" onClick={() => triggerImport('annexure')} className="h-7 text-xs gap-1">
-                                        <Upload className="w-3 h-3" /> Import File
+            {
+                step === 2 && (
+                    <div className="grid grid-cols-12 gap-6 h-full overflow-hidden">
+                        <div className="col-span-3 flex flex-col gap-4">
+                            <Card className="flex-1 flex flex-col p-4 overflow-hidden">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="font-semibold">Annexures</h3>
+                                    <Button size="sm" variant="outline" onClick={() => {
+                                        const newId = Date.now().toString();
+                                        setAnnexures([...annexures, { id: newId, name: 'New Annexure', title: '', content: '' }]);
+                                        setActiveAnnexureId(newId);
+                                    }}>
+                                        <Plus className="w-4 h-4 mr-1" /> Add
                                     </Button>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label>Annexure Name (Key)</Label>
-                                        <Input
-                                            value={currentAnnexure.name}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAnnexures(annexures.map(a => a.id === currentAnnexure.id ? { ...a, name: e.target.value } : a))}
-                                            placeholder="e.g. Annexure A"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label>Title (Display)</Label>
-                                        <Input
-                                            value={currentAnnexure.title}
-                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAnnexures(annexures.map(a => a.id === currentAnnexure.id ? { ...a, title: e.target.value } : a))}
-                                            placeholder="e.g. Scope of Services"
-                                        />
-                                    </div>
+                                <div className="flex-1 overflow-y-auto space-y-2">
+                                    {annexures.map((annexure, idx) => (
+                                        <div
+                                            key={annexure.id}
+                                            className={`p-3 rounded-lg border cursor-pointer hover:bg-slate-50 transition-colors ${activeAnnexureId === annexure.id ? 'border-primary ring-1 ring-primary bg-slate-50' : 'border-slate-200'}`}
+                                            onClick={() => setActiveAnnexureId(annexure.id)}
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="font-medium text-sm flex items-center gap-2">
+                                                        <Badge variant="outline" className="text-[10px] h-5 px-1">{idx + 1}</Badge>
+                                                        {annexure.name || 'Untitled'}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground mt-1 truncate max-w-[150px]">
+                                                        {annexure.title || 'No Title'}
+                                                    </div>
+                                                </div>
+                                                <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-400 hover:text-red-500" onClick={(e: React.MouseEvent) => {
+                                                    e.stopPropagation();
+                                                    setAnnexures(annexures.filter(a => a.id !== annexure.id));
+                                                    if (activeAnnexureId === annexure.id) setActiveAnnexureId(null);
+                                                }}>
+                                                    <Trash2 className="w-3 h-3" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                                <TipTapEditor
-                                    key={currentAnnexure.id} // Force re-mount on switch to update content
-                                    content={currentAnnexure.content}
-                                    onChange={(html) => setAnnexures(annexures.map(a => a.id === currentAnnexure.id ? { ...a, content: html } : a))}
-                                    className="flex-1 h-full"
-                                />
-                            </div>
-                        ) : (
-                            <div className="h-full flex items-center justify-center text-slate-400 border-2 border-dashed rounded-xl">
-                                Select an annexure to edit or create a new one
-                            </div>
-                        )}
+                            </Card>
+                        </div>
+                        <div className="col-span-9 h-full flex flex-col min-h-0">
+                            {currentAnnexure ? (
+                                <div className="flex flex-col h-full gap-4">
+                                    <div className="flex items-end justify-end mb-1">
+                                        <Button size="sm" variant="outline" onClick={() => triggerImport('annexure')} className="h-7 text-xs gap-1">
+                                            <Upload className="w-3 h-3" /> Import File
+                                        </Button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label>Annexure Name (Key)</Label>
+                                            <Input
+                                                value={currentAnnexure.name}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAnnexures(annexures.map(a => a.id === currentAnnexure.id ? { ...a, name: e.target.value } : a))}
+                                                placeholder="e.g. Annexure A"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Title (Display)</Label>
+                                            <Input
+                                                value={currentAnnexure.title}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAnnexures(annexures.map(a => a.id === currentAnnexure.id ? { ...a, title: e.target.value } : a))}
+                                                placeholder="e.g. Scope of Services"
+                                            />
+                                        </div>
+                                    </div>
+                                    <TipTapEditor
+                                        key={currentAnnexure.id} // Force re-mount on switch to update content
+                                        content={currentAnnexure.content}
+                                        onChange={(html) => setAnnexures(annexures.map(a => a.id === currentAnnexure.id ? { ...a, content: html } : a))}
+                                        className="flex-1 h-full"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-slate-400 border-2 border-dashed rounded-xl">
+                                    Select an annexure to edit or create a new one
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* STEP 3: Review */}
-            {step === 3 && (
-                <div className="flex-1 overflow-y-auto bg-slate-100 p-8 rounded-lg border">
-                    <div className="max-w-4xl mx-auto bg-white shadow-lg p-12 min-h-[1000px]">
-                        <div className="mb-8 border-b pb-4">
-                            <h2 className="text-3xl font-bold text-slate-900">{meta.name}</h2>
-                            <p className="text-slate-500">{meta.description}</p>
-                        </div>
-
-                        <div className="prose max-w-none mb-12" dangerouslySetInnerHTML={{ __html: mainContent }} />
-
-                        {annexures.map((annexure, i) => (
-                            <div key={annexure.id} className="mt-8 border-t-2 border-slate-900 pt-8 break-before-page">
-                                <div className="mb-6">
-                                    <h3 className="text-xl font-bold uppercase tracking-wider text-slate-700">{annexure.name}</h3>
-                                    <h2 className="text-2xl font-bold text-slate-900 mt-1">{annexure.title}</h2>
-                                </div>
-                                <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: annexure.content }} />
+            {
+                step === 3 && (
+                    <div className="flex-1 overflow-y-auto bg-slate-100 p-8 rounded-lg border">
+                        <div className="max-w-4xl mx-auto bg-white shadow-lg p-12 min-h-[1000px]">
+                            <div className="mb-8 border-b pb-4">
+                                <h2 className="text-3xl font-bold text-slate-900">{meta.name}</h2>
+                                <p className="text-slate-500">{meta.description}</p>
                             </div>
-                        ))}
+
+                            <div className="prose max-w-none mb-12" dangerouslySetInnerHTML={{ __html: mainContent }} />
+
+                            {annexures.map((annexure, i) => (
+                                <div key={annexure.id} className="mt-8 border-t-2 border-slate-900 pt-8 break-before-page">
+                                    <div className="mb-6">
+                                        <h3 className="text-xl font-bold uppercase tracking-wider text-slate-700">{annexure.name}</h3>
+                                        <h2 className="text-2xl font-bold text-slate-900 mt-1">{annexure.title}</h2>
+                                    </div>
+                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: annexure.content }} />
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

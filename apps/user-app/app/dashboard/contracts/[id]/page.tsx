@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Spinner, Skeleton } from '@repo/ui';
 import { SafeHtml } from '@/components/SafeHtml';
+import { VersionHistoryView } from '@/components/version-history-view';
+import { VersionDiffViewer } from '@/components/version-diff-viewer';
 import { useAuth, usePermission } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
 import { api } from '@/lib/api-client';
@@ -40,6 +42,7 @@ import { SmartActionButtons } from '@/components/smart-action-buttons';
 import { ContractDiffView } from '@/components/contract-diff-view';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FeatureGuard } from '@/components/feature-guard';
+import { FinalChecksSidebar } from '@/components/contracts/final-checks-sidebar';
 
 interface Contract {
     id: string;
@@ -169,7 +172,7 @@ const VersionCard = ({ version, index, total, onPreview, isLatest }: any) => (
 function ContractDetailContent() {
     const params = useParams();
     const router = useRouter();
-    const { success, error: toastError } = useToast();
+    const toast = useToast();
 
     // Permissions
     const permissions = {
@@ -178,6 +181,7 @@ function ContractDetailContent() {
         canSend: usePermission('contract:send'),
         canApproveLegal: usePermission('approval:legal:act'),
         canApproveFinance: usePermission('approval:finance:act'),
+        canRestore: usePermission('contract:restore'),
     };
 
     const [contract, setContract] = useState<Contract | null>(null);
@@ -187,9 +191,13 @@ function ContractDetailContent() {
     const [activeTab, setActiveTab] = useState<'overview' | 'document' | 'history'>('overview');
 
     // Preview Modal State
+    // Preview Modal State
     const [previewVersion, setPreviewVersion] = useState<any | null>(null);
     const [isDiffMode, setIsDiffMode] = useState(false);
     const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+    const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
+    const [comparisonMode, setComparisonMode] = useState(false);
+    const [comparisonVersions, setComparisonVersions] = useState<string[]>([]);
 
     // Initial Fetch
     useEffect(() => {
@@ -213,13 +221,13 @@ function ContractDetailContent() {
                 }
             } catch (err) {
                 console.error('Failed to fetch contract:', err);
-                toastError('Error', 'Failed to load contract');
+                toast.error('Error', 'Failed to load contract');
             } finally {
                 setIsLoading(false);
             }
         };
         fetchContract();
-    }, [params.id, toastError]);
+    }, [params.id]);
 
     const handleAction = async (action: string, payload?: any) => {
         if (!contract) return;
@@ -227,17 +235,17 @@ function ContractDetailContent() {
         try {
             if (action === 'submit') {
                 await api.contracts.submit(contract.id, payload);
-                success('Submitted', 'Contract submitted for approval');
+                toast.success('Submitted', 'Contract submitted for approval');
             } else if (action === 'send') {
                 await api.contracts.send(contract.id);
-                success('Sent', 'Contract sent to counterparty');
+                toast.success('Sent', 'Contract sent to counterparty');
             } else if (action === 'upload_signed' && payload) {
                 await api.contracts.uploadSigned(contract.id, payload);
-                success('Active', 'Contract signed and activated');
+                toast.success('Active', 'Contract signed and activated');
             } else if (action === 'cancel') {
                 const reason = payload?.reason || 'No reason provided';
                 await api.contracts.cancel(contract.id, reason);
-                success('Cancelled', 'Contract has been cancelled');
+                toast.success('Cancelled', 'Contract has been cancelled');
             }
 
             // Refresh data
@@ -248,7 +256,7 @@ function ContractDetailContent() {
             setContract(data as any);
             setAuditLogs(logs);
         } catch (err: unknown) {
-            toastError('Error', err instanceof Error ? err.message : 'Action failed');
+            toast.error('Error', err instanceof Error ? err.message : 'Action failed');
         } finally {
             setActionLoading(false);
         }
@@ -347,12 +355,15 @@ function ContractDetailContent() {
                         {/* Top Right Actions */}
                         <div className="flex items-center gap-2">
                             <FeatureGuard feature="AI_CONTRACT_REVIEW">
-                                <Link href={`/dashboard/contracts/${contract.id}/analysis`}>
-                                    <Button variant="outline" size="sm" className="h-9 bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors font-bold text-xs uppercase tracking-wide">
-                                        <Wand2 className="w-3.5 h-3.5 mr-2 text-indigo-500" />
-                                        AI Risk Analysis
-                                    </Button>
-                                </Link>
+                                <Button
+                                    onClick={() => setIsAnalysisOpen(true)}
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors font-bold text-xs uppercase tracking-wide"
+                                >
+                                    <Wand2 className="w-3.5 h-3.5 mr-2 text-indigo-500" />
+                                    AI Risk Analysis
+                                </Button>
                             </FeatureGuard>
                         </div>
                     </div>
@@ -516,19 +527,37 @@ function ContractDetailContent() {
 
                 {activeTab === 'history' && (
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                        {/* We can use the same VersionCard for versions */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {displayVersions.map((v, i) => (
-                                <VersionCard
-                                    key={v.id}
-                                    version={v}
-                                    index={i}
-                                    total={displayVersions.length}
-                                    isLatest={i === 0}
-                                    onPreview={handlePreview}
-                                />
-                            ))}
-                        </div>
+                        {comparisonMode && comparisonVersions.length === 2 ? (
+                            <VersionDiffViewer
+                                contractId={contract.id}
+                                fromVersionId={comparisonVersions[0]}
+                                toVersionId={comparisonVersions[1]}
+                                onBack={() => {
+                                    setComparisonMode(false);
+                                    setComparisonVersions([]);
+                                }}
+                            />
+                        ) : (
+                            <VersionHistoryView
+                                contractId={contract.id}
+                                onCompare={(v1, v2) => {
+                                    setComparisonVersions([v1, v2]);
+                                    setComparisonMode(true);
+                                }}
+                                onRestore={async (id) => {
+                                    try {
+                                        toast.info('Restoring contract version...');
+                                        await api.contracts.restoreVersion(contract.id, id);
+                                        toast.success('Contract restored successfully!');
+                                        // Ideally refresh data here
+                                        window.location.reload();
+                                    } catch (err) {
+                                        toast.error('Failed to restore version');
+                                    }
+                                }}
+                                canRestore={permissions.canRestore}
+                            />
+                        )}
                     </div>
                 )}
             </div>
@@ -576,6 +605,12 @@ function ContractDetailContent() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <FinalChecksSidebar
+                contractId={contract.id}
+                isOpen={isAnalysisOpen}
+                onClose={() => setIsAnalysisOpen(false)}
+            />
         </div>
     );
 }

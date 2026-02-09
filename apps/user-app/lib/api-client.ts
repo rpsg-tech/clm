@@ -244,6 +244,9 @@ export const api = {
       }),
 
 
+    analyze: (id: string) =>
+      authFetch<any>(`/contracts/${id}/analyze`, { method: 'POST' }),
+
     getAuditLogs: (id: string) => {
       return authFetch<any[]>(`/contracts/${id}/audit`)
     },
@@ -317,6 +320,9 @@ export const api = {
 
     compare: (id: string, from: string, to: string) =>
       authFetch<any>(`/contracts/${id}/compare?from=${from}&to=${to}`),
+
+    restoreVersion: (id: string, versionId: string) =>
+      authFetch<any>(`/contracts/${id}/versions/${versionId}/restore`, { method: 'POST' }),
   },
 
   // Templates
@@ -415,6 +421,12 @@ export const api = {
       authFetch<{ expiryDate: string | null; confidence: number; explanation: string }>('/ai/analyze-file', {
         method: 'POST',
         body: JSON.stringify({ key }),
+      }),
+
+    chatDocument: (data: { query: string; content: string }) =>
+      authFetch<{ content: string }>('/ai/chat-document', {
+        method: 'POST',
+        body: JSON.stringify(data),
       }),
   },
 
@@ -575,8 +587,8 @@ export const api = {
 
   // Oracle AI
   oracle: {
-    chat: (data: { query: string; contextUrl?: string; organizationId?: string }) =>
-      authFetch<{ response: string; context?: any; meta?: any }>('/oracle/chat', {
+    chat: (data: { query: string; contextUrl?: string; organizationId?: string; contextContent?: string }) =>
+      authFetch<{ content: string; context?: any; meta?: any }>('/oracle/chat', {
         method: 'POST',
         body: JSON.stringify(data)
       }),

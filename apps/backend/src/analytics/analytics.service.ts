@@ -18,22 +18,40 @@ export class AnalyticsService {
     /**
      * Get contract summary with caching (5 min TTL)
      */
-    async getContractsSummary(organizationId: string) {
-        const cacheKey = `analytics:contracts:summary:${organizationId}`;
+    async getContractsSummary(organizationId: string, userId?: string) {
+        // [Debug] Cache Buster V2
+        const cacheKey = userId
+            ? `analytics:v2:contracts:summary:${organizationId}:${userId}`
+            : `analytics:v2:contracts:summary:${organizationId}`;
+
+        // [Debug] Log to file
+        const fs = require('fs');
+        const path = require('path');
+        const logFile = path.join(process.cwd(), 'analytics_debug.log');
+        const log = (msg: string) => fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
+
+        log(`Request: Org=${organizationId}, User=${userId}`);
 
         return this.cache.wrap(cacheKey, async () => {
-            this.logger.debug(`Fetching contract summary for org ${organizationId}`);
+            log(`Cache Miss - Fetching from DB for ${cacheKey}`);
+
+            const whereClause: any = { organizationId };
+            if (userId) {
+                whereClause.createdByUserId = userId;
+            }
+
+            log(`Query Filter: ${JSON.stringify(whereClause)}`);
 
             const [total, byStatus, activeValueResult] = await Promise.all([
                 // Total contracts
                 this.prisma.contract.count({
-                    where: { organizationId },
+                    where: whereClause,
                 }),
 
                 // Count by status
                 this.prisma.contract.groupBy({
                     by: ['status'],
-                    where: { organizationId },
+                    where: whereClause,
                     _count: true,
                 }),
 
@@ -41,11 +59,13 @@ export class AnalyticsService {
                 this.prisma.contract.aggregate({
                     _sum: { amount: true },
                     where: {
-                        organizationId,
+                        ...whereClause,
                         status: { in: ['ACTIVE', 'COUNTERSIGNED', 'APPROVED', 'SENT_TO_COUNTERPARTY'] as any[] }
                     }
                 })
             ]);
+
+            log(`Result: Total=${total}, Value=${activeValueResult._sum.amount}`);
 
             // Convert groupBy to object
             const statusCounts: Record<string, number> = {};
@@ -63,19 +83,26 @@ export class AnalyticsService {
                 rejected: statusCounts['REJECTED'] || 0,
                 expired: (statusCounts['EXPIRED'] || 0) + (statusCounts['TERMINATED'] || 0),
             };
-        }, 300); // 5 minutes TTL
+        }, 10); // [Debug] Short TTL 10s
     }
 
     /**
      * Get contracts by status with caching (5 min TTL)
      */
-    async getContractsByStatus(organizationId: string) {
-        const cacheKey = `analytics:contracts:by-status:${organizationId}`;
+    async getContractsByStatus(organizationId: string, userId?: string) {
+        const cacheKey = userId
+            ? `analytics:contracts:by-status:${organizationId}:${userId}`
+            : `analytics:contracts:by-status:${organizationId}`;
 
         return this.cache.wrap(cacheKey, async () => {
+            const whereClause: any = { organizationId };
+            if (userId) {
+                whereClause.createdByUserId = userId;
+            }
+
             const result = await this.prisma.contract.groupBy({
                 by: ['status'],
-                where: { organizationId },
+                where: whereClause,
                 _count: true,
             });
 
@@ -90,18 +117,25 @@ export class AnalyticsService {
     /**
      * Get monthly contract creation trend with caching (5 min TTL)
      */
-    async getContractTrend(organizationId: string) {
-        const cacheKey = `analytics:contracts:trend:${organizationId}`;
+    async getContractTrend(organizationId: string, userId?: string) {
+        const cacheKey = userId
+            ? `analytics:contracts:trend:${organizationId}:${userId}`
+            : `analytics:contracts:trend:${organizationId}`;
 
         return this.cache.wrap(cacheKey, async () => {
             const sixMonthsAgo = new Date();
             sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
+            const whereClause: any = {
+                organizationId,
+                createdAt: { gte: sixMonthsAgo },
+            };
+            if (userId) {
+                whereClause.createdByUserId = userId;
+            }
+
             const contracts = await this.prisma.contract.findMany({
-                where: {
-                    organizationId,
-                    createdAt: { gte: sixMonthsAgo },
-                },
+                where: whereClause,
                 select: { createdAt: true },
             });
 
@@ -133,15 +167,25 @@ export class AnalyticsService {
     /**
      * Get approval metrics with caching (5 min TTL)
      */
-    async getApprovalMetrics(organizationId: string) {
-        const cacheKey = `analytics:approvals:metrics:${organizationId}`;
+    async getApprovalMetrics(organizationId: string, userId?: string) {
+        const cacheKey = userId
+            ? `analytics:approvals:metrics:${organizationId}:${userId}`
+            : `analytics:approvals:metrics:${organizationId}`;
 
         return this.cache.wrap(cacheKey, async () => {
+            const whereClause: any = { organizationId };
+            if (userId) {
+                // If restricting by user, we only count approvals for THEIR contracts
+                // Alternatively, we could count approvals where THEY are the approver?
+                // For Dashboard context ("My Operational Snapshot"), it usually means "My Contracts' Approvals"
+                whereClause.createdByUserId = userId;
+            }
+
             const [pending, completed] = await Promise.all([
                 // Pending approvals
                 this.prisma.approval.count({
                     where: {
-                        contract: { organizationId },
+                        contract: whereClause,
                         status: 'PENDING',
                     },
                 }),
@@ -149,7 +193,7 @@ export class AnalyticsService {
                 // Completed approvals (all time)
                 this.prisma.approval.count({
                     where: {
-                        contract: { organizationId },
+                        contract: whereClause,
                         status: { in: ['APPROVED', 'REJECTED'] },
                     },
                 }),
@@ -167,9 +211,14 @@ export class AnalyticsService {
     /**
      * Get recent activity (no caching - usually fresh data needed)
      */
-    async getRecentActivity(organizationId: string, limit: number = 10) {
+    async getRecentActivity(organizationId: string, limit: number = 10, userId?: string) {
+        const whereClause: any = { organizationId };
+        if (userId) {
+            whereClause.createdByUserId = userId;
+        }
+
         const recentContracts = await this.prisma.contract.findMany({
-            where: { organizationId },
+            where: whereClause,
             orderBy: { updatedAt: 'desc' },
             take: limit,
             select: {

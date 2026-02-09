@@ -231,6 +231,27 @@ export const ORACLE_FUNCTIONS = [
                 required: ["reference", "versionNumber"]
             }
         }
+    },
+    {
+        type: "function" as const,
+        function: {
+            name: "search_contracts",
+            description: "Semantic search across contract content. Use for 'find contracts about...', 'clauses regarding...', etc.",
+            parameters: {
+                type: "object",
+                properties: {
+                    query: {
+                        type: "string",
+                        description: "The search query (natural language)"
+                    },
+                    limit: {
+                        type: "number",
+                        description: "Maximum results (default: 5)"
+                    }
+                },
+                required: ["query"]
+            }
+        }
     }
 ];
 
@@ -247,4 +268,5 @@ export type OracleFunctionName =
     | 'list_users'
     | 'count_contract_versions'
     | 'list_contract_versions'
-    | 'get_version_changelog';
+    | 'get_version_changelog'
+    | 'search_contracts';

@@ -23,11 +23,15 @@ import { AuditModule } from '../audit/audit.module';
 import { ConfigModule } from '@nestjs/config';
 import { FeatureFlagService } from '../config/feature-flag.service';
 
+import { AiModule } from '../ai/ai.module';
+import { ContractAnalysisService } from './analysis/contract-analysis.service';
+
 @Module({
-    imports: [PrismaModule, CommonModule, NotificationsModule, AuditModule, ConfigModule], // Added PrismaModule to imports
+    imports: [PrismaModule, CommonModule, NotificationsModule, AuditModule, ConfigModule, AiModule],
     controllers: [ContractsController, ExpiryController],
     providers: [
         ContractsService,
+        ContractAnalysisService,
         ExpiryScheduler,
         FeatureFlagService,
         // Specialized services

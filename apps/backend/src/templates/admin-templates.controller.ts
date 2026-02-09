@@ -76,6 +76,7 @@ export class AdminTemplatesController {
             description?: string;
             baseContent: string;
             isGlobal?: boolean;
+            targetOrgIds?: string[];
         }
     ) {
         // Enforce Global Permission
@@ -100,6 +101,7 @@ export class AdminTemplatesController {
             baseContent?: string;
             isGlobal?: boolean;
             isActive?: boolean;
+            targetOrgIds?: string[];
             annexures?: {
                 name: string;
                 title: string;

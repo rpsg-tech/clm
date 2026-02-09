@@ -236,7 +236,7 @@ function AiAssistantContent({ onInsertClause, selectedText, onClose }: { onInser
                                         <div className="flex justify-between items-center mb-2">
                                             <h4 className="font-bold text-sm text-slate-900">{s.title}</h4>
                                             <Badge variant="secondary" className="text-[10px] font-bold bg-green-50 text-green-700 border-green-100">
-                                                {Math.round(s.confidence * 100)}% MATCH
+                                                {s.confidence ? Math.round(s.confidence * 100) : 0}% MATCH
                                             </Badge>
                                         </div>
                                         <p className="text-xs text-slate-600 mb-3 leading-relaxed line-clamp-4 group-hover:line-clamp-none transition-all">
@@ -282,7 +282,7 @@ function AiAssistantContent({ onInsertClause, selectedText, onClose }: { onInser
                                     Replace Original
                                 </Button>
 
-                                {improvement.changes.length > 0 && (
+                                {improvement.changes && improvement.changes.length > 0 && (
                                     <div className="mt-4 pt-3 border-t border-slate-100">
                                         <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Key Improvements</p>
                                         <ul className="space-y-1.5">

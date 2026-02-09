@@ -48,10 +48,21 @@ export class SearchController {
         const limitNum = Math.min(parseInt(limit), 100);
         const skip = (pageNum - 1) * limitNum;
 
-        // Build where clause
+        // [Security Fix] Restrict Business Users to see ONLY their own contracts
+        const globalPermissions = [
+            'org:view', 'org:manage',
+            'approval:legal:view', 'approval:finance:view',
+            'system:audit'
+        ];
+        const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
+
         const where: Record<string, unknown> = {
             organizationId: orgId,
         };
+
+        if (!hasGlobalAccess) {
+            where.createdByUserId = user.id;
+        }
 
         // Full-text search on title and reference
         if (query && query.trim()) {

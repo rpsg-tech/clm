@@ -24,7 +24,18 @@ export class AnalyticsController {
     @Get('contracts/summary')
     @Permissions('analytics:view')
     async getContractSummary(@CurrentUser() user: AuthenticatedUser) {
-        return this.analyticsService.getContractsSummary(user.orgId!);
+        // [Security Fix] Restrict stats for Business Users
+        const globalPermissions = [
+            'org:view', 'org:manage',
+            'approval:legal:view', 'approval:finance:view',
+            'system:audit'
+        ];
+        const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
+
+        return this.analyticsService.getContractsSummary(
+            user.orgId!,
+            hasGlobalAccess ? undefined : user.id
+        );
     }
 
     /**
@@ -33,7 +44,9 @@ export class AnalyticsController {
     @Get('contracts/by-status')
     @Permissions('analytics:view')
     async getContractsByStatus(@CurrentUser() user: AuthenticatedUser) {
-        return this.analyticsService.getContractsByStatus(user.orgId!);
+        const globalPermissions = ['org:view', 'org:manage', 'approval:legal:view', 'approval:finance:view', 'system:audit'];
+        const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
+        return this.analyticsService.getContractsByStatus(user.orgId!, hasGlobalAccess ? undefined : user.id);
     }
 
     /**
@@ -42,7 +55,9 @@ export class AnalyticsController {
     @Get('contracts/trend')
     @Permissions('analytics:view')
     async getContractTrend(@CurrentUser() user: AuthenticatedUser) {
-        return this.analyticsService.getContractTrend(user.orgId!);
+        const globalPermissions = ['org:view', 'org:manage', 'approval:legal:view', 'approval:finance:view', 'system:audit'];
+        const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
+        return this.analyticsService.getContractTrend(user.orgId!, hasGlobalAccess ? undefined : user.id);
     }
 
     /**
@@ -51,7 +66,9 @@ export class AnalyticsController {
     @Get('approvals/metrics')
     @Permissions('analytics:view')
     async getApprovalMetrics(@CurrentUser() user: AuthenticatedUser) {
-        return this.analyticsService.getApprovalMetrics(user.orgId!);
+        const globalPermissions = ['org:view', 'org:manage', 'approval:legal:view', 'approval:finance:view', 'system:audit'];
+        const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
+        return this.analyticsService.getApprovalMetrics(user.orgId!, hasGlobalAccess ? undefined : user.id);
     }
 
     /**
@@ -63,7 +80,9 @@ export class AnalyticsController {
         @CurrentUser() user: AuthenticatedUser,
         @Query('limit') limit = '10',
     ) {
-        return this.analyticsService.getRecentActivity(user.orgId!, parseInt(limit));
+        const globalPermissions = ['org:view', 'org:manage', 'approval:legal:view', 'approval:finance:view', 'system:audit'];
+        const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
+        return this.analyticsService.getRecentActivity(user.orgId!, parseInt(limit), hasGlobalAccess ? undefined : user.id);
     }
 
     /**

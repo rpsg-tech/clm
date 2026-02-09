@@ -94,13 +94,28 @@ export class DiffService {
 
                 changes.push(...fieldChanges);
 
-                // Check content changes
-                const oldContent = previousData.annexureData || previousData.content || '';
-                const newContent = currentData.annexureData || currentData.content || '';
+                // Check main content changes
+                const oldMain = previousData.content || '';
+                const newMain = currentData.content || '';
 
-                if (oldContent !== newContent) {
-                    const contentDiff = this.calculateContentDiff(oldContent, newContent);
-                    changes.push(contentDiff);
+                if (oldMain !== newMain) {
+                    const mainDiff = this.calculateContentDiff(oldMain, newMain);
+                    changes.push({
+                        ...mainDiff,
+                        changeType: 'content_modified',
+                    } as any); // Type cast for simplicity or update interface
+                }
+
+                // Check annexure changes
+                const oldAnnexures = previousData.annexureData || '';
+                const newAnnexures = currentData.annexureData || '';
+
+                if (oldAnnexures !== newAnnexures) {
+                    const annexureDiff = this.calculateContentDiff(oldAnnexures, newAnnexures);
+                    changes.push({
+                        ...annexureDiff,
+                        changeType: 'content_modified',
+                    } as any);
                 }
 
                 // Generate summary
@@ -128,16 +143,17 @@ export class DiffService {
             return { changeType: 'no_change' };
         }
 
-        const diff = Diff.diffChars(oldText, newText);
+        const diff = Diff.diffLines(oldText, newText);
 
         let additions = 0;
         let deletions = 0;
 
         diff.forEach((part) => {
+            const lines = part.value.split('\n').filter(l => l.length > 0).length;
             if (part.added) {
-                additions += part.value.length;
+                additions += lines;
             } else if (part.removed) {
-                deletions += part.value.length;
+                deletions += lines;
             }
         });
 
@@ -182,7 +198,8 @@ export class DiffService {
         toVersion: Record<string, any>,
     ): {
         fieldChanges: FieldChange[];
-        contentDiff: ContentDiff & { htmlDiff?: string };
+        mainDiff: ContentDiff & { htmlDiff?: string };
+        annexureDiff: ContentDiff & { htmlDiff?: string };
     } {
         const fieldChanges: FieldChange[] = [];
 
@@ -220,18 +237,27 @@ export class DiffService {
             }
         }
 
-        // Content diff with HTML
-        const fromContent = fromVersion.annexureData || fromVersion.content || '';
-        const toContent = toVersion.annexureData || toVersion.content || '';
+        // Content diff for Main Agreement
+        const fromMain = fromVersion.content || '';
+        const toMain = toVersion.content || '';
+        const mainDiff = this.calculateContentDiff(fromMain, toMain);
+        const mainHtml = this.generateHtmlDiff(fromMain, toMain);
 
-        const contentDiff = this.calculateContentDiff(fromContent, toContent);
-        const htmlDiff = this.generateHtmlDiff(fromContent, toContent);
+        // Content diff for Annexures
+        const fromAnnex = fromVersion.annexureData || '';
+        const toAnnex = toVersion.annexureData || '';
+        const annexureDiff = this.calculateContentDiff(fromAnnex, toAnnex);
+        const annexureHtml = this.generateHtmlDiff(fromAnnex, toAnnex);
 
         return {
             fieldChanges,
-            contentDiff: {
-                ...contentDiff,
-                htmlDiff,
+            mainDiff: {
+                ...mainDiff,
+                htmlDiff: mainHtml,
+            },
+            annexureDiff: {
+                ...annexureDiff,
+                htmlDiff: annexureHtml,
             },
         };
     }
@@ -290,7 +316,13 @@ export class DiffService {
      * Strip HTML tags
      */
     private stripHtml(html: string): string {
-        return html.replace(/<[^>]*>/g, '').trim();
+        if (!html) return '';
+        let text = html.replace(/<br\s*\/?>/gi, '\n');
+        text = text.replace(/<\/p>/gi, '\n');
+        text = text.replace(/<\/div>/gi, '\n');
+        text = text.replace(/<\/h[1-6]>/gi, '\n');
+        text = text.replace(/<[^>]*>/g, '');
+        return text.trim();
     }
 
     /**

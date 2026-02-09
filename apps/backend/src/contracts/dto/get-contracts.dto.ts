@@ -12,4 +12,7 @@ export class GetContractsDto extends PaginationDto {
     @Type(() => Number)
     @IsNumber()
     expiringDays?: number;
+
+    @IsOptional()
+    createdByUserId?: string;
 }

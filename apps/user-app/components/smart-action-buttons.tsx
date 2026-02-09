@@ -210,56 +210,69 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
 
                     {/* REVIEW ACTIONS - Strict Context Visibility */}
                     {['IN_REVIEW', 'SENT_TO_LEGAL', 'SENT_TO_FINANCE', 'LEGAL_REVIEW_IN_PROGRESS', 'FINANCE_REVIEW_IN_PROGRESS'].includes(contract.status) && (
-                        <>
-                            {/* Allow adding missing reviewers (Parallel/Sequential option) */}
-                            {permissions.canSubmit && (
+                        (() => {
+                            // Check existence of specific approvals
+                            const legalApproval = contract.approvals?.find((a: any) => a.type === 'LEGAL');
+                            const financeApproval = contract.approvals?.find((a: any) => a.type === 'FINANCE');
+
+                            const isLegalPending = legalApproval?.status === 'PENDING';
+                            const isFinancePending = financeApproval?.status === 'PENDING';
+                            const isLegalApproved = legalApproval?.status === 'APPROVED';
+                            const isFinanceApproved = financeApproval?.status === 'APPROVED';
+
+                            return (
                                 <>
-                                    {!['SENT_TO_FINANCE', 'FINANCE_REVIEW_IN_PROGRESS', 'FINANCE_REVIEWED'].includes(contract.status) && (
+                                    {/* Allow adding missing reviewers (Parallel/Sequential option) */}
+                                    {permissions.canSubmit && (
+                                        <>
+                                            {!financeApproval && !isFinanceApproved && (
+                                                <ActionButton
+                                                    icon={FileCheck}
+                                                    label="Send to Finance"
+                                                    onClick={() => onAction('submit', { target: 'FINANCE' })}
+                                                />
+                                            )}
+                                            {!legalApproval && !isLegalApproved && (
+                                                <ActionButton
+                                                    icon={Shield}
+                                                    label="Send to Legal"
+                                                    subLabel="Add Reviewer"
+                                                    variant="primary"
+                                                    onClick={() => onAction('submit', { target: 'LEGAL' })}
+                                                />
+                                            )}
+                                        </>
+                                    )}
+
+                                    {/* Show Finance Approve ONLY if Sent to Finance OR Generic Review */}
+                                    {permissions.canApproveFinance && isFinancePending && (
                                         <ActionButton
-                                            icon={FileCheck}
-                                            label="Send to Finance"
-                                            onClick={() => onAction('submit', { target: 'FINANCE' })}
+                                            icon={CheckCircle}
+                                            label="Approve (Finance)"
+                                            variant="primary"
+                                            onClick={() => router.push(`/dashboard/approvals/finance?id=${contract.id}&action=approve`)}
                                         />
                                     )}
-                                    {!['SENT_TO_LEGAL', 'LEGAL_REVIEW_IN_PROGRESS', 'LEGAL_APPROVED'].includes(contract.status) && (
+
+                                    {/* Show Legal Approve ONLY if Sent to Legal OR Generic Review */}
+                                    {permissions.canApproveLegal && isLegalPending && (
                                         <ActionButton
-                                            icon={Shield}
-                                            label="Send to Legal"
-                                            subLabel="Add Reviewer"
+                                            icon={CheckCircle}
+                                            label="Approve (Legal)"
                                             variant="primary"
-                                            onClick={() => onAction('submit', { target: 'LEGAL' })}
+                                            onClick={() => router.push(`/dashboard/approvals/legal?id=${contract.id}&action=approve`)}
                                         />
+                                    )}
+
+                                    {!permissions.canApproveFinance && !permissions.canApproveLegal && (
+                                        <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-900 rounded-lg text-xs font-bold border border-amber-100 shadow-sm">
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                                            Internal Review in Progress
+                                        </div>
                                     )}
                                 </>
-                            )}
-
-                            {/* Show Finance Approve ONLY if Sent to Finance OR Generic Review */}
-                            {permissions.canApproveFinance && ['IN_REVIEW', 'SENT_TO_FINANCE', 'FINANCE_REVIEW_IN_PROGRESS'].includes(contract.status) && (
-                                <ActionButton
-                                    icon={CheckCircle}
-                                    label="Approve (Finance)"
-                                    variant="primary"
-                                    onClick={() => router.push(`/dashboard/approvals/finance?id=${contract.id}&action=approve`)}
-                                />
-                            )}
-
-                            {/* Show Legal Approve ONLY if Sent to Legal OR Generic Review */}
-                            {permissions.canApproveLegal && ['IN_REVIEW', 'SENT_TO_LEGAL', 'LEGAL_REVIEW_IN_PROGRESS'].includes(contract.status) && (
-                                <ActionButton
-                                    icon={CheckCircle}
-                                    label="Approve (Legal)"
-                                    variant="primary"
-                                    onClick={() => router.push(`/dashboard/approvals/legal?id=${contract.id}&action=approve`)}
-                                />
-                            )}
-
-                            {!permissions.canApproveFinance && !permissions.canApproveLegal && (
-                                <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-900 rounded-lg text-xs font-bold border border-amber-100 shadow-sm">
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-600" />
-                                    Internal Review in Progress
-                                </div>
-                            )}
-                        </>
+                            );
+                        })()
                     )}
 
                     {/* APPROVED ACTIONS */}

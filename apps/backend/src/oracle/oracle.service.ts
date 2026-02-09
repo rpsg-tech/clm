@@ -35,6 +35,7 @@ export interface OracleResponse {
         executionTime?: number;
         tokensUsed?: number;      // Added for AI cost tracking
         functionCalled?: string;  // Added for debugging
+        sources?: any[];          // Added for RAG citations
     };
 }
 
@@ -80,7 +81,7 @@ export class OracleService {
             // TIER 2: AI Function Calling (gpt-3.5-turbo)
             if (route.tier === 2) {
                 await this.rateLimiter.enforceLimit(userId, 2);
-                const result = await this.handleTier2(userId, orgId, permissions, sanitizedQuery);
+                const result = await this.handleTier2(userId, orgId, permissions, sanitizedQuery, dto.contextContent);
 
                 await this.saveConversation(
                     userId,
@@ -96,7 +97,7 @@ export class OracleService {
 
             // TIER 3: Conversational AI (gpt-4-turbo)
             await this.rateLimiter.enforceLimit(userId, 3);
-            const result = await this.handleTier3(userId, orgId, permissions, sanitizedQuery);
+            const result = await this.handleTier3(userId, orgId, permissions, sanitizedQuery, dto.contextContent);
 
             await this.saveConversation(userId, orgId, dto.query, result.content, 3, null);
 
@@ -496,21 +497,6 @@ export class OracleService {
                 }
             }
 
-            case 'LIST_RECENT': {
-                const result = await this.executor.execute(
-                    'list_contracts',
-                    { limit: 10 },
-                    userId,
-                    orgId,
-                    permissions
-                );
-                return {
-                    type: 'list',
-                    content: `Here are your ${result.contracts.length} most recent contracts.`,
-                    data: { contracts: result.contracts },
-                    meta: { tier: 1, scope: result.scope }
-                };
-            }
 
             default:
                 throw new Error(`Unknown Tier 1 intent: ${intent}`);
@@ -524,12 +510,17 @@ export class OracleService {
         userId: string,
         orgId: string,
         permissions: string[],
-        query: string
+        query: string,
+        contextContent?: string
     ): Promise<OracleResponse> {
         this.logger.log(`Tier 2 handling with AI function calling`);
 
+        const systemPrompt = contextContent
+            ? `${ORACLE_SYSTEM_PROMPT}\n\nACTIVE DOCUMENT CONTEXT:\n${contextContent}`
+            : ORACLE_SYSTEM_PROMPT;
+
         const aiResponse = await this.aiService.chatWithFunctions(
-            ORACLE_SYSTEM_PROMPT,
+            systemPrompt,
             query,
             ORACLE_FUNCTIONS,
             { provider: 'openai', model: 'gpt-3.5-turbo' }
@@ -555,6 +546,13 @@ export class OracleService {
                 content = `Found ${result.contracts?.length || result.count || 0} result(s).`;
             }
 
+            // [RAG] Attach sources for semantic search results
+            let sources = undefined;
+            if (name === 'search_contracts' && result.results) {
+                content = `Here are the relevant contract excerpts I found matching "${args.query}".`;
+                sources = result.results;
+            }
+
             return {
                 type: name.includes('count') ? 'count' : name.includes('list') ? 'list' : 'detail',
                 content,
@@ -563,7 +561,8 @@ export class OracleService {
                     tier: 2,
                     functionCalled: name,
                     scope: result.scope,
-                    tokensUsed: 500 // Estimate for gpt-3.5
+                    tokensUsed: 500, // Estimate for gpt-3.5
+                    sources: sources
                 }
             };
         }
@@ -583,7 +582,8 @@ export class OracleService {
         userId: string,
         orgId: string,
         permissions: string[],
-        query: string
+        query: string,
+        contextContent?: string
     ): Promise<OracleResponse> {
         this.logger.log(`Tier 3 handling with conversational AI`);
 
@@ -595,9 +595,13 @@ export class OracleService {
             { limit: 20 }
         );
 
-        const contextPrompt = `${ORACLE_SYSTEM_PROMPT}
+        let contextPrompt = `${ORACLE_SYSTEM_PROMPT}\n\nUSER CONTEXT:\n${JSON.stringify(context, null, 2)}`;
 
-USER CONTEXT:
+        if (contextContent) {
+            contextPrompt += `\n\nACTIVE DOCUMENT (Priority Context):\n${contextContent}`;
+        }
+
+        contextPrompt += `
 - Role: ${context.scope === 'ORG_WIDE' ? 'Organization-wide access' : 'Own contracts only'}
 - Available contracts: ${context.count}
 

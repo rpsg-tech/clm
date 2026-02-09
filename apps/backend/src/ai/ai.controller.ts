@@ -90,6 +90,24 @@ export class AiController {
     }
 
     /**
+     * Document Chat (Sidebar Co-pilot)
+     */
+    @Post('chat-document')
+    @Permissions('ai:chat')
+    async chatDocument(
+        @CurrentUser() user: AuthenticatedUser,
+        @Body() body: { query: string; content: string }
+    ) {
+        if (!body.query) throw new BadRequestException('Query is required');
+        if (!body.content) throw new BadRequestException('Document content is required');
+
+        const config = await this.getAiConfig(user.orgId!);
+        const response = await this.aiService.chatDocument(body.query, body.content, config);
+
+        return { content: response };
+    }
+
+    /**
      * Extract expiry date from text
      */
     @Post('extract-date')

@@ -23,6 +23,7 @@ interface OracleMessage {
         cached?: boolean;
         functionCalled?: string;
         scope?: string;
+        sources?: any[];
     };
     timestamp: Date;
 }

@@ -565,7 +565,7 @@ export default function NewContractPage() {
                                             </Button>
                                         </div>
                                         <div className="flex-1 overflow-hidden">
-                                            <ContractAssistantSidebar embedded className="h-full" />
+                                            <ContractAssistantSidebar embedded className="h-full" content={getFinalDocumentContent()} />
                                         </div>
                                     </div>
                                 </div>

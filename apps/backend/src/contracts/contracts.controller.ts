@@ -26,6 +26,7 @@ import { UpdateContractDto } from './dto/update-contract.dto';
 import { GetContractsDto } from './dto/get-contracts.dto';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { ContractAnalysisService } from './analysis/contract-analysis.service';
 
 @Controller('contracts')
 @UseGuards(JwtAuthGuard, OrgContextGuard, PermissionsGuard)
@@ -33,6 +34,7 @@ export class ContractsController {
     constructor(
         private readonly contractsService: ContractsService,
         private readonly auditService: AuditService,
+        private readonly contractAnalysisService: ContractAnalysisService,
     ) { }
 
     @Post()
@@ -67,6 +69,20 @@ export class ContractsController {
         @CurrentUser() user: AuthenticatedUser,
         @Query() query: GetContractsDto,
     ) {
+        // [Security Fix] Restrict Business Users to see ONLY their own contracts.
+        // Admins, Legal, Finance can see all organization contracts.
+        const globalPermissions = [
+            'org:view', 'org:manage',
+            'approval:legal:view', 'approval:finance:view',
+            'system:audit'
+        ];
+
+        const hasGlobalAccess = user.permissions.some(p => globalPermissions.includes(p));
+
+        if (!hasGlobalAccess) {
+            query.createdByUserId = user.id;
+        }
+
         return this.contractsService.findByOrganization(user.orgId!, query);
     }
 
@@ -108,6 +124,31 @@ export class ContractsController {
         });
 
         return contract;
+    }
+
+    @Post(':id/analyze')
+    @Permissions('contract:view')
+    async analyze(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+    ) {
+        // Ensure user has access to this contract via service lookup
+        await this.contractsService.findById(id, user.orgId!);
+
+        const analysis = await this.contractAnalysisService.analyzeContract(id, user.id);
+
+        // Audit Log
+        await this.auditService.log({
+            organizationId: user.orgId,
+            contractId: id,
+            userId: user.id,
+            action: 'CONTRACT_ANALYZED',
+            module: 'contracts',
+            targetType: 'ContractAnalysis',
+            targetId: analysis.id,
+        });
+
+        return analysis;
     }
 
     @Get(':id/audit')
@@ -373,5 +414,30 @@ export class ContractsController {
         });
 
         return comparison;
+    }
+    @Post(':id/versions/:versionId/restore')
+    @Permissions('contract:restore')
+    async restoreVersion(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+        @Param('versionId') versionId: string,
+    ) {
+        const contract = await this.contractsService.restoreVersion(id, versionId, user.orgId!, user.id);
+
+        // Audit log
+        await this.auditService.log({
+            organizationId: user.orgId,
+            contractId: id,
+            userId: user.id,
+            action: 'CONTRACT_RESTORED',
+            module: 'contracts',
+            targetType: 'ContractVersion',
+            targetId: versionId,
+            metadata: {
+                message: `Restored to a previous version`,
+            } as Prisma.InputJsonValue,
+        });
+
+        return contract;
     }
 }

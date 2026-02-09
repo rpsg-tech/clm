@@ -13,6 +13,10 @@ export class OracleChatRequestDto {
     @IsOptional()
     @IsString()
     organizationId?: string;
+
+    @IsOptional()
+    @IsString()
+    contextContent?: string;
 }
 
 export class OracleContext {

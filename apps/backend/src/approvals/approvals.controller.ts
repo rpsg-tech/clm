@@ -52,7 +52,13 @@ export class ApprovalsController {
         @Param('id') id: string,
         @Body('comment') comment?: string,
     ) {
-        const { contract, approval } = await this.approvalsService.approve(id, user.id, user.orgId!, comment);
+        const { contract, approval } = await this.approvalsService.approve(
+            id,
+            user.id,
+            user.orgId!,
+            user.permissions,
+            comment
+        );
 
         // Audit log - contract returned, approval id is the param
         await this.auditService.log({
@@ -81,7 +87,13 @@ export class ApprovalsController {
         @Param('id') id: string,
         @Body('comment') comment: string,
     ) {
-        const { contract, approval } = await this.approvalsService.reject(id, user.id, user.orgId!, comment);
+        const { contract, approval } = await this.approvalsService.reject(
+            id,
+            user.id,
+            user.orgId!,
+            user.permissions,
+            comment
+        );
 
         // Audit log
         await this.auditService.log({

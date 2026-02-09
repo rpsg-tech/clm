@@ -17,6 +17,7 @@ import { FeatureFlagService } from '../config/feature-flag.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { StorageService } from '../common/storage/storage.service';
 import { OcrService } from '../common/services/ocr.service';
+import { RagService } from '../ai/rag/rag.service';
 
 @Injectable()
 export class ContractsService {
@@ -31,6 +32,7 @@ export class ContractsService {
         private configService: ConfigService,
         private featureFlagService: FeatureFlagService,
         private ocrService: OcrService,
+        private ragService: RagService,
     ) { }
 
     // ... (existing methods until sendToCounterparty)
@@ -329,7 +331,7 @@ export class ContractsService {
         const sanitizedAnnexures = sanitizeContractContent(finalAnnexureData);
 
         // Create contract with initial version in a transaction
-        return this.prisma.$transaction(async (tx) => {
+        const result = await this.prisma.$transaction(async (tx) => {
             const contract = await tx.contract.create({
                 data: {
                     organizationId,
@@ -386,6 +388,12 @@ export class ContractsService {
 
             return contract;
         });
+
+        // Trigger RAG Indexing (Async / Fire-and-forget)
+        this.ragService.indexContract(result.id, result.content)
+            .catch(err => this.logger.error(`Failed to index contract ${result.id}`, err));
+
+        return result;
     }
 
     /**
@@ -535,8 +543,24 @@ export class ContractsService {
         const contract = await this.findById(id, organizationId);
 
         // Can only update DRAFT or REVISION_REQUESTED contracts
-        if (contract.status !== ContractStatus.DRAFT && contract.status !== ContractStatus.REVISION_REQUESTED) {
-            throw new ForbiddenException('Can only update contracts in DRAFT or REVISION_REQUESTED status');
+        // Relaxed Check: Allow updates during review cycles as versions are tracked
+        const allowedStatuses = [
+            ContractStatus.DRAFT,
+            ContractStatus.REVISION_REQUESTED,
+            ContractStatus.IN_REVIEW,
+            ContractStatus.SENT_TO_LEGAL,
+            ContractStatus.SENT_TO_FINANCE // Allow Finance to edit too
+        ];
+
+        if (!allowedStatuses.includes(contract.status as any)) {
+            // For other statuses (APPROVED, ACTIVE, etc.), strict block remains
+            throw new ForbiddenException(`Cannot update contract in ${contract.status} status`);
+        }
+
+        // SPECIAL RULE: If Legal has already APPROVED, block editing (even if Finance is pending)
+        const legalApproval = contract.approvals?.find(a => a.type === 'LEGAL');
+        if (legalApproval?.status === 'APPROVED') {
+            throw new ForbiddenException('Cannot edit contract after Legal Approval. Please recall the approval request to make changes.');
         }
 
         // Get user for changelog
@@ -545,7 +569,12 @@ export class ContractsService {
             select: { email: true },
         });
 
-        return this.prisma.$transaction(async (tx) => {
+        // Calculate content updates outside transaction
+        const sanitizedContent = data.annexureData
+            ? sanitizeContractContent(data.annexureData)
+            : undefined;
+
+        const result = await this.prisma.$transaction(async (tx) => {
             // Get latest version number
             const latestVersion = await tx.contractVersion.findFirst({
                 where: { contractId: id },
@@ -553,11 +582,6 @@ export class ContractsService {
             });
 
             const newVersionNumber = (latestVersion?.versionNumber || 0) + 1;
-
-            // Update contract
-            const sanitizedContent = data.annexureData
-                ? sanitizeContractContent(data.annexureData)
-                : undefined;
 
             const updated = await tx.contract.update({
                 where: { id },
@@ -578,13 +602,9 @@ export class ContractsService {
                 const startDate = new Date(data.startDate);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
-
-                // For updates, we might need to be more careful if strictly enforcing "no past dates"
-                // But generally, moving a start date to the past is weird for a new/draft contract.
                 if (startDate < today) {
                     throw new BadRequestException('Start date cannot be in the past');
                 }
-
                 if (data.endDate) {
                     const endDate = new Date(data.endDate);
                     if (endDate <= startDate) {
@@ -618,7 +638,10 @@ export class ContractsService {
                     data: {
                         contractId: id,
                         versionNumber: newVersionNumber,
-                        contentSnapshot: sanitizedContent,
+                        contentSnapshot: JSON.stringify({
+                            main: contract.content,
+                            annexures: sanitizedContent
+                        }),
                         changeLog: changeLog as any,
                         createdByUserId: userId,
                     },
@@ -627,6 +650,16 @@ export class ContractsService {
 
             return updated;
         });
+
+        // Trigger RAG Indexing if content changed
+        if (sanitizedContent) {
+            // Combine fixed main content with new annexure data
+            const fullContent = `${contract.content}\n\n${sanitizedContent}`;
+            this.ragService.indexContract(id, fullContent)
+                .catch(err => this.logger.error(`Failed to re-index contract ${id}`, err));
+        }
+
+        return result;
     }
 
     /**
@@ -917,6 +950,14 @@ export class ContractsService {
 
         const versions = await this.prisma.contractVersion.findMany({
             where: { contractId: id },
+            select: {
+                id: true,
+                versionNumber: true,
+                createdAt: true,
+                createdByUserId: true,
+                changeLog: true,
+                // contentSnapshot is excluded for performance in list view
+            },
             orderBy: { versionNumber: 'desc' },
         });
 
@@ -933,7 +974,7 @@ export class ContractsService {
             const user = userMap.get(v.createdByUserId);
             return {
                 id: v.id,
-                version: v.versionNumber,
+                versionNumber: v.versionNumber,
                 createdAt: v.createdAt,
                 createdBy: {
                     name: user?.name || 'Unknown',
@@ -988,6 +1029,9 @@ export class ContractsService {
     /**
      * Compare two contract versions
      */
+    /**
+     * Compare two contract versions
+     */
     async compareVersions(
         id: string,
         fromVersionId: string,
@@ -1028,17 +1072,36 @@ export class ContractsService {
 
         if (!contract) throw new NotFoundException('Contract not found');
 
-        // Create comparison data
+        // Helper to parse content snapshot safely
+        const parseSnapshot = (snapshot: string | null) => {
+            if (!snapshot) return { main: '', annexures: '' };
+            try {
+                if (snapshot.startsWith('{')) {
+                    const parsed = JSON.parse(snapshot);
+                    return {
+                        main: parsed.main || '',
+                        annexures: parsed.annexures || '',
+                    };
+                }
+                return { main: snapshot, annexures: '' };
+            } catch (e) {
+                return { main: snapshot, annexures: '' };
+            }
+        };
+
+        const fromSnapshot = parseSnapshot(fromVersion.contentSnapshot);
+        const toSnapshot = parseSnapshot(toVersion.contentSnapshot);
+
         const fromData = {
             ...contract,
-            content: fromVersion.contentSnapshot,
-            annexureData: fromVersion.contentSnapshot, // Should be separate field if annexure versioned
+            content: fromSnapshot.main,
+            annexureData: fromSnapshot.annexures,
         };
 
         const toData = {
             ...contract,
-            content: toVersion.contentSnapshot,
-            annexureData: toVersion.contentSnapshot,
+            content: toSnapshot.main,
+            annexureData: toSnapshot.annexures,
         };
 
         const comparison = this.diffService.compareVersions(fromData, toData);
@@ -1046,8 +1109,9 @@ export class ContractsService {
         return {
             fromVersion: {
                 id: fromVersion.id,
-                version: fromVersion.versionNumber,
+                versionNumber: fromVersion.versionNumber,
                 createdAt: fromVersion.createdAt,
+                contentSnapshot: fromSnapshot, // Return object instead of string
                 createdBy: {
                     name: fromUser?.name || 'Unknown',
                     email: fromUser?.email || '',
@@ -1055,8 +1119,9 @@ export class ContractsService {
             },
             toVersion: {
                 id: toVersion.id,
-                version: toVersion.versionNumber,
+                versionNumber: toVersion.versionNumber,
                 createdAt: toVersion.createdAt,
+                contentSnapshot: toSnapshot, // Return object instead of string
                 createdBy: {
                     name: toUser?.name || 'Unknown',
                     email: toUser?.email || '',
@@ -1064,5 +1129,67 @@ export class ContractsService {
             },
             ...comparison,
         };
+    }
+
+    /**
+     * Restore a contract to a specific version
+     */
+    async restoreVersion(id: string, versionId: string, organizationId: string, userId: string) {
+        await this.findById(id, organizationId); // Verify access
+
+        const version = await this.prisma.contractVersion.findUnique({
+            where: { id: versionId },
+        });
+
+        if (!version || version.contractId !== id) {
+            throw new NotFoundException('Version not found');
+        }
+
+        // Parse snapshot for multi-field restoration
+        let contentToRestore = version.contentSnapshot;
+        let annexuresToRestore = '';
+
+        try {
+            if (version.contentSnapshot?.startsWith('{')) {
+                const parsed = JSON.parse(version.contentSnapshot);
+                contentToRestore = parsed.main || version.contentSnapshot;
+                annexuresToRestore = parsed.annexures || '';
+            }
+        } catch (e) {
+            // Keep as is
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            // Update contract with snapshot
+            const updatedContract = await tx.contract.update({
+                where: { id },
+                data: {
+                    content: contentToRestore,
+                    annexureData: annexuresToRestore,
+                },
+            });
+
+            // Create a new version for the restoration itself (Audit trail)
+            const latestVersion = await tx.contractVersion.findFirst({
+                where: { contractId: id },
+                orderBy: { versionNumber: 'desc' },
+            });
+
+            await tx.contractVersion.create({
+                data: {
+                    contractId: id,
+                    versionNumber: (latestVersion?.versionNumber || 0) + 1,
+                    contentSnapshot: version.contentSnapshot, // Re-use the same snapshot structure
+                    createdByUserId: userId,
+                    changeLog: {
+                        summary: `Restored to version ${version.versionNumber}`,
+                        restoredFrom: version.id,
+                        restoredAt: new Date(),
+                    },
+                },
+            });
+
+            return updatedContract;
+        });
     }
 }

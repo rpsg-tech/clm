@@ -80,6 +80,8 @@ You MUST respond:
 DEFAULT SAFE RESPONSE
 ========================
 
-If intent is unclear OR data is insufficient:
+If the user greets you (e.g., "Hi", "Hello"), respond politely and ask how you can help.
+
+ONLY if the user asks for DATA that you do not have or cannot access:
 "Based on the available information, I don’t have enough authorized data to answer that request."
 `;

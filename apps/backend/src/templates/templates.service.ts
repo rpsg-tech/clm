@@ -106,6 +106,7 @@ export class TemplatesService {
                 annexures: {
                     orderBy: { order: 'asc' },
                 },
+                organizationAccess: true, // [New] Include org access for edit mode
             },
         });
 
@@ -119,9 +120,12 @@ export class TemplatesService {
     /**
      * Create a new template with annexures (admin only)
      */
+    /**
+     * Create a new template with annexures (admin only)
+     */
     async create(
         userId: string,
-        organizationId: string, // Add organizationId
+        organizationId: string,
         data: {
             name: string;
             code: string;
@@ -129,6 +133,7 @@ export class TemplatesService {
             description?: string;
             baseContent: string;
             isGlobal?: boolean;
+            targetOrgIds?: string[]; // [New] Specific Org Assignment
             annexures?: {
                 name: string;
                 title: string;
@@ -165,14 +170,23 @@ export class TemplatesService {
                 });
             }
 
-            // 3. If NOT global, link to current Organization
+            // 3. Organization Linking Logic
+            // If Global: No specific org links needed (accessible by all)
+            // If Not Global: Link to specific orgs OR default to creator's org
             if (!data.isGlobal) {
-                await tx.templateOrganization.create({
-                    data: {
+                const orgsToLink = (data.targetOrgIds && data.targetOrgIds.length > 0)
+                    ? data.targetOrgIds
+                    : [organizationId]; // Default to creator's org
+
+                // Deduplicate just in case
+                const uniqueOrgs = [...new Set(orgsToLink)];
+
+                await tx.templateOrganization.createMany({
+                    data: uniqueOrgs.map(orgId => ({
                         templateId: template.id,
-                        organizationId: organizationId,
+                        organizationId: orgId,
                         isEnabled: true,
-                    },
+                    }))
                 });
             }
 
@@ -186,6 +200,7 @@ export class TemplatesService {
     async update(
         id: string,
         data: Prisma.TemplateUpdateInput & {
+            targetOrgIds?: string[]; // [New] Update assignments
             annexures?: {
                 name: string;
                 title: string;
@@ -196,7 +211,9 @@ export class TemplatesService {
     ): Promise<Template> {
         return this.prisma.$transaction(async (tx) => {
             // 1. Update Template Fields
-            const { annexures, ...templateData } = data;
+            // Extract custom fields to avoid Prisma errors
+            const { annexures, targetOrgIds, ...templateData } = data;
+
             const template = await tx.template.update({
                 where: { id },
                 data: templateData,
@@ -220,6 +237,26 @@ export class TemplatesService {
                             fieldsConfig: annexure.fieldsConfig || [],
                             order: index + 1,
                         })),
+                    });
+                }
+            }
+
+            // 3. Update Organization Assignments if provided
+            if (targetOrgIds !== undefined) {
+                // Always clear existing links first (clean slate)
+                await tx.templateOrganization.deleteMany({
+                    where: { templateId: id }
+                });
+
+                // If NOT global and targets provided, re-link
+                // (If global, we leave links empty as it's accessible to all)
+                if (template.isGlobal === false && targetOrgIds.length > 0) {
+                    await tx.templateOrganization.createMany({
+                        data: targetOrgIds.map(orgId => ({
+                            templateId: id,
+                            organizationId: orgId,
+                            isEnabled: true,
+                        }))
                     });
                 }
             }

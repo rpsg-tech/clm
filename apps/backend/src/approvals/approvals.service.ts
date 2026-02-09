@@ -28,9 +28,16 @@ export class ApprovalsService {
         approvalId: string,
         actorId: string,
         organizationId: string,
+        userPermissions: string[],
         comment?: string,
     ) {
         const approval = await this.findApproval(approvalId, organizationId);
+
+        // Security Check: Ensure user has permission for THIS specific approval type
+        const requiredPermission = `approval:${approval.type.toLowerCase()}:act`;
+        if (!userPermissions.includes(requiredPermission)) {
+            throw new ForbiddenException(`You do not have permission to approve ${approval.type} requests`);
+        }
 
         if (approval.status !== ApprovalStatus.PENDING) {
             throw new ForbiddenException('Approval has already been processed');
@@ -145,6 +152,7 @@ export class ApprovalsService {
         approvalId: string,
         actorId: string,
         organizationId: string,
+        userPermissions: string[],
         comment: string,
     ) {
         if (!comment) {
@@ -152,6 +160,12 @@ export class ApprovalsService {
         }
 
         const approval = await this.findApproval(approvalId, organizationId);
+
+        // Security Check: Ensure user has permission for THIS specific approval type
+        const requiredPermission = `approval:${approval.type.toLowerCase()}:act`;
+        if (!userPermissions.includes(requiredPermission)) {
+            throw new ForbiddenException(`You do not have permission to reject ${approval.type} requests`);
+        }
 
         if (approval.status !== ApprovalStatus.PENDING) {
             throw new ForbiddenException('Approval has already been processed');

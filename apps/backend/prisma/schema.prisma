@@ -252,6 +252,7 @@ model Contract {
   auditLogs      AuditLog[]
   analyses       ContractAnalysis[]
   attachments    ContractAttachment[]
+  chunks         ContractChunk[] // Added for RAG
 
   @@index([organizationId])
   @@index([status])
@@ -534,4 +535,25 @@ model OracleMessage {
   
   @@index([conversationId, createdAt])
   @@index([tier])
+}
+
+// ============ RAG VECTORS ============
+
+model ContractChunk {
+  id              String   @id @default(uuid())
+  contractId      String
+  
+  content         String   @db.Text
+  model_version   String   // e.g. "openai-text-embedding-3-small"
+  
+  // CAUTION: Requires `pgvector` extension enabled in DB
+  embedding       Unsupported("vector(1536)")? 
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  contract        Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([model_version])
 }

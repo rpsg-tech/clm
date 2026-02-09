@@ -66,18 +66,28 @@ export class AiService {
     }
 
     /**
+     * Helper: Determine effective provider
+     * Prioritizes explicit config -> OpenAI (if avail) -> Gemini (if avail) -> Mock
+     */
+    private determineProvider(config?: AiConfig): string {
+        if (config?.provider) return config.provider;
+        if (this.openai) return 'openai';
+        if (this.genAI) return 'google';
+        return 'mock';
+    }
+
+    /**
      * Analyze a contract
      */
     async analyzeContract(content: string, title?: string, config?: AiConfig): Promise<ContractAnalysis> {
-        this.logger.log(`Analyzing contract: ${title || 'Untitled'} using ${config?.provider || 'default (mock)'}`);
-
-        const provider = config?.provider || 'mock';
+        const provider = this.determineProvider(config);
+        this.logger.log(`Analyzing contract: ${title || 'Untitled'} using ${provider}`);
         const modelName = config?.model;
 
         if (provider === 'google' && this.genAI) {
             return this.analyzeWithGemini(content, modelName || 'gemini-1.5-flash');
         } else if (provider === 'openai' && this.openai) {
-            return this.analyzeWithOpenAI(content, modelName || 'gpt-4-turbo');
+            return this.analyzeWithOpenAI(content, modelName || 'gpt-4o-mini');
         }
 
         return this.mockAnalyze(content);
@@ -87,7 +97,7 @@ export class AiService {
      * Suggest clauses based on context
      */
     async suggestClauses(context: string, clauseType: string, config?: AiConfig): Promise<ClauseSuggestion[]> {
-        const provider = config?.provider || 'mock';
+        const provider = this.determineProvider(config);
         const modelName = config?.model;
 
         if (provider === 'google' && this.genAI) {
@@ -103,7 +113,7 @@ export class AiService {
      * Improve an existing clause
      */
     async improveClause(clause: string, config?: AiConfig): Promise<{ original: string; improved: string; changes: string[] }> {
-        const provider = config?.provider || 'mock';
+        const provider = this.determineProvider(config);
         const modelName = config?.model;
 
         if (provider === 'google' && this.genAI) {
@@ -119,7 +129,7 @@ export class AiService {
      * Extract expiry date from contract text
      */
     async extractExpiryDate(content: string, config?: AiConfig): Promise<{ expiryDate: Date | null; confidence: number; explanation: string }> {
-        const provider = config?.provider || 'mock';
+        const provider = this.determineProvider(config);
         const modelName = config?.model;
 
         if (provider === 'google' && this.genAI) {
@@ -135,8 +145,8 @@ export class AiService {
      * General Chat / RAG
      */
     async chat(systemPrompt: string, userQuery: string, config?: AiConfig): Promise<string> {
-        this.logger.log(`Chat request: ${userQuery.substring(0, 30)}...`);
-        const provider = config?.provider || 'mock';
+        const provider = this.determineProvider(config);
+        this.logger.log(`Chat request using ${provider}: ${userQuery.substring(0, 30)}...`);
         const modelName = config?.model;
 
         if (provider === 'google' && this.genAI) {
@@ -146,6 +156,36 @@ export class AiService {
         }
 
         return "I am running in MOCK mode. Please configure a valid AI provider to chat.";
+    }
+
+    /**
+     * Document-Specific Chat (Sidebar Co-pilot)
+     * Focused on drafting, editing, and explaining the CURRENT document.
+     */
+    async chatDocument(userQuery: string, documentContent: string, config?: AiConfig): Promise<string> {
+        const SYSTEM_PROMPT = `
+You are an expert Legal Drafting Assistant co-piloting a specific contract.
+Your goal is to help the user understand, edit, and improve the document they are currently viewing.
+
+CONTEXT:
+The user is viewing the following contract (or draft):
+"""
+${documentContent.substring(0, 20000)} ... (truncated if too long)
+"""
+
+RULES:
+1. Answer strictly based on the provided document text.
+2. If asked to draft/rewrite, provide professional, legally sound language.
+3. Be concise and helpful. 
+4. Do NOT make up facts not in the document.
+5. If the user greets you ("Hi"), be friendly and offer drafting help.
+`;
+
+        // Force gpt-4o-mini for speed/cost unless overridden
+        const modelName = config?.model || 'gpt-4o-mini';
+        const provider = config?.provider || 'openai';
+
+        return this.chat(SYSTEM_PROMPT, userQuery, { ...config, model: modelName, provider });
     }
 
     /**
@@ -343,8 +383,22 @@ export class AiService {
             const completion = await this.openai!.chat.completions.create({
                 model: modelName,
                 messages: [
-                    { role: "system", content: "Generate legal clauses in JSON array format." },
-                    { role: "user", content: `Generate 3 clauses for type "${clauseType}". Context: ${context}` }
+                    {
+                        role: "system",
+                        content: `Generate legal clauses in strict JSON array format. 
+                        Each clause object MUST have these fields:
+                        - title: string
+                        - content: string
+                        - category: string
+                        - confidence: number (0.0 to 1.0)`
+                    },
+                    {
+                        role: "user",
+                        content: `Generate 3 clauses for type "${clauseType}". 
+                        Context: ${context}
+                        
+                        Return ONLY the valid JSON array.`
+                    }
                 ],
                 response_format: { type: "json_object" }
             });
@@ -363,7 +417,14 @@ export class AiService {
             const completion = await this.openai!.chat.completions.create({
                 model: modelName,
                 messages: [
-                    { role: "system", content: "Improve legal clauses. Return JSON." },
+                    {
+                        role: "system",
+                        content: `Improve legal clauses for clarity and risk mitigation.
+                        Return strict JSON object with these fields:
+                        - original: string
+                        - improved: string
+                        - changes: string[] (list of 3-5 bullet points explaining changes)`
+                    },
                     { role: "user", content: `Improve this clause: "${clause}"` }
                 ],
                 response_format: { type: "json_object" }
