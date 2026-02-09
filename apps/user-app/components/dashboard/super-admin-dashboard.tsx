@@ -13,14 +13,7 @@ const SYSTEM_STATUS = {
   activeSessions: '1,240',
 };
 
-const AI_OBSERVABILITY = {
-  totalTokens: '2.4M',
-  progressPercent: 75,
-  driftScore: '0.12',
-  avgLatency: '340ms',
-  costEst: '$48.20',
-  status: 'High Efficiency',
-};
+
 
 const ORGANIZATIONS = [
   {
@@ -156,114 +149,7 @@ export function SuperAdminDashboard() {
         <div className="flex flex-col xl:flex-row gap-6">
           {/* Left Main Area */}
           <div className="flex-1 space-y-6">
-            {/* AI Observability Panel */}
-            <div className="relative rounded-xl border border-neutral-200 bg-white shadow-sm p-6 overflow-hidden">
-              {/* Violet left bar */}
-              <div className="absolute top-0 left-0 w-1 h-full bg-violet-700" />
 
-              {/* Purple blur */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-violet-700/5 rounded-full blur-3xl" />
-
-              {/* Content */}
-              <div className="relative">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <MaterialIcon name="smart_toy" size={24} className="text-violet-700" />
-                    <div>
-                      <h2 className="text-lg font-bold text-violet-900">
-                        AI Observability: Token Drift & Usage
-                      </h2>
-                      <p className="text-sm text-neutral-600 mt-0.5">
-                        Real-time monitoring across all organizations
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-100">
-                    {AI_OBSERVABILITY.status}
-                  </Badge>
-                </div>
-
-                {/* Two-column layout */}
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Left: Stats */}
-                  <div className="space-y-4">
-                    {/* Big number */}
-                    <div>
-                      <div className="text-4xl font-bold text-violet-900">
-                        {AI_OBSERVABILITY.totalTokens}
-                      </div>
-                      <div className="text-sm text-neutral-600 mt-1">Total tokens this month</div>
-                    </div>
-
-                    {/* Progress bar */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-neutral-600">Usage</span>
-                        <span className="font-medium text-neutral-900">
-                          {AI_OBSERVABILITY.progressPercent}%
-                        </span>
-                      </div>
-                      <div className="h-2 bg-neutral-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-violet-700 rounded-full transition-all"
-                          style={{ width: `${AI_OBSERVABILITY.progressPercent}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Stat cards */}
-                    <div className="grid grid-cols-3 gap-3 pt-2">
-                      <div className="bg-violet-50/50 border border-violet-100 rounded-lg p-3">
-                        <div className="text-xs text-violet-700 mb-1">Drift Score</div>
-                        <div className="text-lg font-bold text-violet-900">
-                          {AI_OBSERVABILITY.driftScore}
-                        </div>
-                      </div>
-                      <div className="bg-violet-50/50 border border-violet-100 rounded-lg p-3">
-                        <div className="text-xs text-violet-700 mb-1">Avg Latency</div>
-                        <div className="text-lg font-bold text-violet-900">
-                          {AI_OBSERVABILITY.avgLatency}
-                        </div>
-                      </div>
-                      <div className="bg-violet-50/50 border border-violet-100 rounded-lg p-3">
-                        <div className="text-xs text-violet-700 mb-1">Cost Est.</div>
-                        <div className="text-lg font-bold text-violet-900">
-                          {AI_OBSERVABILITY.costEst}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right: Chart */}
-                  <div className="h-48">
-                    <svg
-                      viewBox="0 0 400 150"
-                      fill="none"
-                      preserveAspectRatio="none"
-                      className="w-full h-full text-violet-500"
-                    >
-                      <defs>
-                        <linearGradient id="gradientViolet" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#6d28d9" stopOpacity="0.2" />
-                          <stop offset="100%" stopColor="#6d28d9" stopOpacity="0" />
-                        </linearGradient>
-                      </defs>
-                      <path
-                        d="M0,100 C50,100 50,50 100,50 C150,50 150,80 200,80 C250,80 250,20 300,20 C350,20 350,60 400,60 V150 H0 Z"
-                        fill="url(#gradientViolet)"
-                      />
-                      <path
-                        d="M0,100 C50,100 50,50 100,50 C150,50 150,80 200,80 C250,80 250,20 300,20 C350,20 350,60 400,60"
-                        stroke="#6d28d9"
-                        strokeWidth="2"
-                        fill="none"
-                      />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             {/* Organizations Table */}
             <div className="rounded-xl border border-neutral-200 bg-white shadow-sm">
@@ -338,11 +224,11 @@ export function SuperAdminDashboard() {
                             variant="outline"
                             className={cn(
                               org.tierColor === 'purple' &&
-                                'bg-purple-50 text-purple-700 border-purple-200',
+                              'bg-purple-50 text-purple-700 border-purple-200',
                               org.tierColor === 'sky' &&
-                                'bg-sky-50 text-sky-700 border-sky-200',
+                              'bg-sky-50 text-sky-700 border-sky-200',
                               org.tierColor === 'slate' &&
-                                'bg-neutral-50 text-neutral-700 border-neutral-200'
+                              'bg-neutral-50 text-neutral-700 border-neutral-200'
                             )}
                           >
                             {org.licenseTier}
@@ -483,9 +369,9 @@ export function SuperAdminDashboard() {
                           className={cn(
                             'mt-2',
                             event.type === 'security' &&
-                              'bg-red-50 text-red-700 border-red-200',
+                            'bg-red-50 text-red-700 border-red-200',
                             event.type === 'update' &&
-                              'bg-neutral-50 text-neutral-700 border-neutral-200'
+                            'bg-neutral-50 text-neutral-700 border-neutral-200'
                           )}
                         >
                           {event.type === 'security' && (

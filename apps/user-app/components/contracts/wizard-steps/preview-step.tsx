@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { OracleRiskPanel } from '@/components/contracts/oracle-risk-panel';
+
 import { MaterialIcon } from '@/components/ui/material-icon';
 
 interface PreviewStepProps {
@@ -18,7 +18,7 @@ export function PreviewStep({
     contractReference,
 }: PreviewStepProps) {
     const [zoom, setZoom] = useState(100);
-    const [showOracle, setShowOracle] = useState(true);
+
     const today = new Date().toLocaleDateString('en-IN', { month: 'long', day: 'numeric', year: 'numeric' });
 
     const hasPartA = Boolean(templateContent);
@@ -31,14 +31,7 @@ export function PreviewStep({
                     <p className="text-sm font-semibold text-neutral-900">Full Document Preview</p>
                     <p className="text-xs text-neutral-500">Combined view of Part A and Part B</p>
                 </div>
-                <button
-                    type="button"
-                    onClick={() => setShowOracle((prev) => !prev)}
-                    className="inline-flex items-center gap-2 text-xs font-semibold text-primary-700 bg-primary-50 border border-primary-200 px-3 py-1.5 rounded-md hover:bg-primary-100 transition-colors"
-                >
-                    <MaterialIcon name="auto_awesome" size={16} />
-                    {showOracle ? 'Hide Oracle Panel' : 'Show Oracle Panel'}
-                </button>
+
             </div>
 
             <div className="flex gap-6">
@@ -157,11 +150,7 @@ export function PreviewStep({
                     </div>
                 </main>
 
-                {showOracle && (
-                    <aside className="w-[380px] bg-violet-50 border-l border-violet-100 flex flex-col flex-shrink-0 rounded-xl overflow-hidden shadow-xl">
-                        <OracleRiskPanel contractId="draft" />
-                    </aside>
-                )}
+
             </div>
         </div>
     );

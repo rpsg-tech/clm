@@ -10,12 +10,7 @@ interface AiAssistantPanelProps {
     onInsertText?: (text: string) => void;
 }
 
-const SUGGESTED_PROMPTS = [
-    { label: 'Summarize Key Risks', icon: 'warning', query: 'Identify and summarize key risk areas in this contract.' },
-    { label: 'Explain Payment Terms', icon: 'payments', query: 'What are the specific payment terms and milestones?' },
-    { label: 'Suggest Improvements', icon: 'auto_fix_high', query: 'Suggest clause improvements based on best practices.' },
-    { label: 'Draft Termination Clause', icon: 'edit_document', query: 'Draft a standard termination for convenience clause.' },
-];
+
 
 export function AiAssistantPanel({ contractId: _contractId, onInsertText: _onInsertText }: AiAssistantPanelProps) {
     const [messages, setMessages] = useState<AiChatMessage[]>([]);
@@ -77,34 +72,14 @@ export function AiAssistantPanel({ contractId: _contractId, onInsertText: _onIns
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 z-10">
                 {messages.length === 0 && (
-                    <div className="space-y-4 pt-4">
-                        <div className="text-center px-4">
-                            <h4 className="text-sm font-semibold text-violet-900 mb-1">How can I help you today?</h4>
-                            <p className="text-xs text-violet-600">I can analyze clauses, suggest edits, and answer questions about this document.</p>
+                    <div className="flex flex-col items-center justify-center h-full text-center p-6 opacity-60">
+                        <div className="size-12 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center mb-3">
+                            <MaterialIcon name="psychology" size={24} />
                         </div>
-                        <div className="space-y-2">
-                            <p className="text-[10px] font-bold text-violet-400 uppercase tracking-widest px-2">Suggestions</p>
-                            {SUGGESTED_PROMPTS.map((prompt) => (
-                                <button
-                                    key={prompt.label}
-                                    onClick={() => handleSend(prompt.query)}
-                                    disabled={isThinking}
-                                    className="w-full flex items-start gap-3 p-3 rounded-lg border border-violet-100 bg-white shadow-sm hover:shadow-md hover:border-violet-200 transition-all text-left group"
-                                >
-                                    <div className="size-8 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center flex-shrink-0 group-hover:bg-violet-100 transition-colors">
-                                        <MaterialIcon
-                                            name={prompt.icon}
-                                            size={16}
-                                            className="text-violet-600"
-                                        />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <span className="text-sm font-semibold text-violet-900 block group-hover:text-violet-700 transition-colors">{prompt.label}</span>
-                                        <span className="text-xs text-violet-600 truncate block">{prompt.query}</span>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
+                        <h4 className="text-sm font-semibold text-violet-900 mb-1">Oracle AI</h4>
+                        <p className="text-xs text-violet-600 max-w-[200px]">
+                            Ask questions about clauses, risks, or terms in this contract.
+                        </p>
                     </div>
                 )}
 
@@ -114,9 +89,6 @@ export function AiAssistantPanel({ contractId: _contractId, onInsertText: _onIns
                             <div className="flex items-start gap-2 max-w-[85%]">
                                 <div className="bg-indigo-600 text-white px-4 py-3 rounded-lg rounded-tr-none text-sm shadow-md">
                                     {msg.content}
-                                </div>
-                                <div className="size-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0">
-                                    <MaterialIcon name="person" size={14} />
                                 </div>
                             </div>
                         ) : (

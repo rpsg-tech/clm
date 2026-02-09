@@ -21,26 +21,18 @@ export function AnnexureEditorStep({
     const [showAiPanel, setShowAiPanel] = useState(false);
 
     return (
-        <div className="-mx-[calc(50vw-50%)] px-4">
-            <div className="flex items-start gap-6">
-                <div className="flex-1 min-w-0">
-                    <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-neutral-50">
+        <div className="-mx-[calc(50vw-50%)] px-4 relative min-h-[calc(100vh-12rem)]">
+            <div className="flex items-start gap-6 h-full">
+                <div className="flex-1 min-w-0 h-full">
+                    <div className="bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden h-full flex flex-col">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-neutral-50 flex-shrink-0">
                             <div>
                                 <p className="text-sm font-semibold text-neutral-900">Edit Annexures</p>
                                 <p className="text-xs text-neutral-500">Part A is locked. Edit Part B below.</p>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setShowAiPanel((prev) => !prev)}
-                                className="inline-flex items-center gap-2 text-xs font-semibold text-primary-700 bg-primary-50 border border-primary-200 px-3 py-1.5 rounded-md hover:bg-primary-100 transition-colors"
-                            >
-                                <MaterialIcon name="auto_awesome" size={16} />
-                                {showAiPanel ? 'Hide AI Panel' : 'Show AI Panel'}
-                            </button>
                         </div>
 
-                        <div className="min-h-[720px]">
+                        <div className="flex-1 overflow-y-auto min-h-[720px]">
                             {/* Part A Banner - Sticky */}
                             <div className="bg-neutral-200 border-b border-neutral-300 px-8 py-3 flex items-center justify-between sticky top-0 z-10">
                                 <div className="flex items-center gap-2 text-neutral-500">
@@ -86,12 +78,29 @@ export function AnnexureEditorStep({
                     </div>
                 </div>
 
-                {showAiPanel && (
-                    <aside className="w-80 bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
-                        <AiAssistantPanel contractId={contractId || 'draft'} />
+                {showAiPanel ? (
+                    <aside className="w-80 bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden flex flex-col self-stretch sticky top-6 h-[calc(100vh-8rem)]">
+                        <div className="flex justify-start p-2 border-b border-neutral-100">
+                            <button onClick={() => setShowAiPanel(false)} className="p-1 hover:bg-neutral-100 rounded">
+                                <MaterialIcon name="close" size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                            <AiAssistantPanel contractId={contractId || 'draft'} />
+                        </div>
                     </aside>
+                ) : (
+                    <button
+                        onClick={() => setShowAiPanel(true)}
+                        className="fixed bottom-8 right-8 size-14 bg-violet-600 hover:bg-violet-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center z-50 group"
+                        title="Open Oracle AI"
+                    >
+                        <MaterialIcon name="psychology" size={28} className="group-hover:scale-110 transition-transform" />
+                        <span className="absolute -top-2 -right-2 size-4 bg-red-500 rounded-full border-2 border-white" />
+                    </button>
                 )}
             </div>
         </div>
     );
 }
+

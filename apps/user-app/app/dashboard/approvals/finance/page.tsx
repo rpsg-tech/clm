@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { ApprovalQueue } from '@/components/contracts/approval-queue';
 import { ReviewWorkbench } from '@/components/contracts/review-workbench';
-import { OracleRiskPanel } from '@/components/contracts/oracle-risk-panel';
+
 import { MaterialIcon } from '@/components/ui/material-icon';
 import type { Approval, Contract } from '@repo/types';
 
-type RightPanelTab = 'summary' | 'oracle';
+
 
 type ApprovalWithContract = Approval & {
     contract?: Pick<Contract, 'title' | 'counterpartyName' | 'reference' | 'status'>;
@@ -112,7 +112,7 @@ function FinancialSummaryContent() {
 
 export default function FinanceReviewPage() {
     const [selectedApproval, setSelectedApproval] = useState<ApprovalWithContract | null>(null);
-    const [activeTab, setActiveTab] = useState<RightPanelTab>('summary');
+
 
     const contractId = selectedApproval?.contractId ?? '';
 
@@ -141,49 +141,14 @@ export default function FinanceReviewPage() {
             <div className="w-80 bg-white border-l border-neutral-200 flex-shrink-0 flex flex-col">
                 {selectedApproval ? (
                     <>
-                        {/* Tab Bar */}
-                        <div className="flex border-b border-neutral-200 flex-shrink-0">
-                            <button
-                                onClick={() => setActiveTab('summary')}
-                                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-medium transition-colors ${
-                                    activeTab === 'summary'
-                                        ? 'text-indigo-700 border-b-2 border-indigo-700'
-                                        : 'text-neutral-500 hover:text-neutral-700'
-                                }`}
-                            >
-                                <MaterialIcon name="account_balance" size={16} />
-                                Summary
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('oracle')}
-                                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-medium transition-colors ${
-                                    activeTab === 'oracle'
-                                        ? 'text-violet-700 border-b-2 border-violet-700'
-                                        : 'text-neutral-500 hover:text-neutral-700'
-                                }`}
-                            >
-                                <MaterialIcon name="auto_awesome" size={16} />
-                                Oracle AI
-                            </button>
+                        {/* Header */}
+                        <div className="flex items-center gap-2 px-4 py-3 bg-neutral-50 border-b border-neutral-200 flex-shrink-0">
+                            <MaterialIcon name="account_balance" size={18} className="text-neutral-600" />
+                            <h3 className="text-sm font-semibold text-neutral-800">
+                                Financial Overview
+                            </h3>
                         </div>
-
-                        {/* Tab Content */}
-                        {activeTab === 'summary' ? (
-                            <>
-                                {/* Header */}
-                                <div className="flex items-center gap-2 px-4 py-3 bg-neutral-50 border-b border-neutral-200 flex-shrink-0">
-                                    <MaterialIcon name="account_balance" size={18} className="text-neutral-600" />
-                                    <h3 className="text-sm font-semibold text-neutral-800">
-                                        Financial Overview
-                                    </h3>
-                                </div>
-                                <FinancialSummaryContent />
-                            </>
-                        ) : (
-                            <div className="flex-1 overflow-y-auto">
-                                <OracleRiskPanel contractId={contractId} />
-                            </div>
-                        )}
+                        <FinancialSummaryContent />
                     </>
                 ) : (
                     /* Empty state */

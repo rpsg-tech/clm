@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ApprovalQueue } from '@/components/contracts/approval-queue';
 import { ReviewWorkbench } from '@/components/contracts/review-workbench';
-import { OracleRiskPanel } from '@/components/contracts/oracle-risk-panel';
+
 import type { Approval, Contract } from '@repo/types';
 
 type ApprovalWithContract = Approval & {
@@ -36,10 +36,7 @@ export default function LegalReviewPage() {
                 />
             </div>
 
-            {/* Right: Oracle Risk Panel */}
-            <div className="w-80 bg-white border-l border-neutral-200 flex-shrink-0">
-                <OracleRiskPanel contractId={contractId} />
-            </div>
+
         </div>
     );
 }

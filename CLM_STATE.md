@@ -1,7 +1,7 @@
 # CLM Frontend Rebuild — Stitch Rework State
 
-**Last Updated:** 2026-02-07 (Phase 12 complete)
-**Status:** Phase 12 COMPLETE — Creation Wizard Rebuild shipped and build verified
+**Last Updated:** 2026-02-09 (Phase 13 complete)
+**Status:** Phase 13 COMPLETE — AI Visualization Cleanup shipped and verified
 **Branch:** `feat/frontend-rebuild`
 **Plan:** `/Users/corphr.software/.claude/plans/rustling-herding-yeti.md`
 
@@ -23,7 +23,8 @@
 | Phase 9 | Admin User & Org Management | COMPLETE | a944c3e, a3c5898 |
 | Phase 10 | Admin Audit Log & Feature Flags | COMPLETE | a178dfb, aaa8aa8 |
 | Phase 11 | Cleanup & Polish | **COMPLETE** | acc82f8, af07ab1, a6c939a, a314311 |
-| Phase 12 | Creation Wizard Rebuild (Part A/B) | **COMPLETE** | codex |
+| Phase 12 | Creation Wizard Rebuild (Part A/B) | COMPLETE | codex |
+| Phase 13 | AI Visualization Cleanup | **COMPLETE** | antigravity |
 
 ---
 
@@ -1036,3 +1037,37 @@ After all tasks complete:
 - Password recovery is UI-only (no backend API integration)
 - Version diff depends on backend `compare` endpoint
 - SSO button not wired to real Azure AD flow yet
+
+---
+
+## Phase 13 — AI Visualization Cleanup (COMPLETE)
+
+**Status:** COMPLETE (2026-02-09)
+**Build verified:** `npm run build` (passes)
+**Agent:** Antigravity
+
+**Scope:** Remove intrusive AI visualizations while preserving the core AI Chat functionality.
+
+### Tasks Completed:
+
+1.  **Dashboard Cleanup:**
+    - Removed "AI Observability Panel" from Super Admin Dashboard (`super-admin-dashboard.tsx`).
+    - Layout adjusted to fill the gap.
+
+2.  **Contract Preview & Approvals:**
+    - Removed "Oracle Risk Panel" sidebar and toggle from `preview-step.tsx`.
+    - Removed "Oracle Risk Panel" from Legal Approval page (`approvals/legal/page.tsx`).
+    - Removed "Oracle Risk Panel" from Finance Approval page (`approvals/finance/page.tsx`).
+
+3.  **Upload Flow:**
+    - Replaced full-screen `AiProcessingOverlay` with a subtle inline loading spinner in `upload/page.tsx`.
+
+4.  **AI Chat Refinements (from previous session):**
+    - Simplified `AiAssistantPanel`.
+    - Implemented "minimize" state (Floating Action Button) for AI Chat in Editor and Wizard.
+    - Fixed Sidebar auto-collapse behavior in Editor routes.
+
+**Verification:**
+- Manual verification of UI changes.
+- `npm run build` passed.
+- `npm run lint` passed (warnings only).

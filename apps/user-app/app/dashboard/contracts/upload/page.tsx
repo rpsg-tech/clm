@@ -10,7 +10,7 @@ import { mockAnalyzeFile, type ExtractedMetadata } from '@/lib/ai-mock';
 import { MaterialIcon } from '@/components/ui/material-icon';
 import { FileDropZone } from '@/components/contracts/file-drop-zone';
 import { FilePreview } from '@/components/contracts/file-preview';
-import { AiProcessingOverlay } from '@/components/contracts/ai-processing-overlay';
+
 import { DualPaneLayout } from '@/components/contracts/dual-pane-layout';
 import { UploadMetadataForm } from '@/components/contracts/upload-metadata-form';
 import type { Template } from '@repo/types';
@@ -132,7 +132,14 @@ export default function UploadContractPage() {
 
     return (
         <>
-            <AiProcessingOverlay isProcessing={stage === 'processing'} />
+            {stage === 'processing' && (
+                <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="w-8 h-8 border-4 border-violet-200 border-t-violet-700 rounded-full animate-spin" />
+                        <p className="text-sm font-medium text-neutral-600">Processing document...</p>
+                    </div>
+                </div>
+            )}
 
             <div className="space-y-6">
                 {/* Back link + header */}

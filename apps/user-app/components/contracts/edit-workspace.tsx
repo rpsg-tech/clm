@@ -47,7 +47,7 @@ export function EditWorkspace({ contract }: EditWorkspaceProps) {
     const [content, setContent] = useState<string>(initialContent);
     const [isSaving, setIsSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
-    const [showAiPanel, setShowAiPanel] = useState(true);
+    const [showAiPanel, setShowAiPanel] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
 
     const editorRef = useRef<TipTapEditorRef>(null);
@@ -114,7 +114,7 @@ export function EditWorkspace({ contract }: EditWorkspaceProps) {
 
     return (
         <>
-            <div className="-m-6 flex h-[calc(100vh-4rem)]">
+            <div className="-m-6 flex h-[calc(100vh-4rem)] relative">
                 {/* Left: Navigation Sidebar */}
                 <div className="w-64 border-r border-neutral-200 bg-white flex-shrink-0 overflow-y-auto hidden lg:block">
                     <ContractNavSidebar contract={contract} />
@@ -205,8 +205,8 @@ export function EditWorkspace({ contract }: EditWorkspaceProps) {
                                     onClick={handleSubmit}
                                     className="h-9 px-6 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-sm font-medium text-white shadow-sm transition-colors flex items-center gap-2"
                                 >
-                                    <MaterialIcon name="save" size={18} />
-                                    <span>Save Draft</span>
+                                    <MaterialIcon name="send" size={18} />
+                                    <span>Submit for Review</span>
                                 </button>
                             )}
                         </div>
@@ -214,13 +214,29 @@ export function EditWorkspace({ contract }: EditWorkspaceProps) {
                 </div>
 
                 {/* Right: AI Assistant */}
-                {showAiPanel && (
+                {showAiPanel ? (
                     <div className="w-80 border-l border-neutral-200 bg-white flex-shrink-0 flex flex-col overflow-hidden shadow-xl shadow-neutral-200/50 z-20">
-                        <AiAssistantPanel
-                            contractId={contract.id}
-                            onInsertText={canEdit ? handleInsertText : undefined}
-                        />
+                        <div className="flex justify-start p-2 border-b border-neutral-100">
+                            <button onClick={() => setShowAiPanel(false)} className="p-1 hover:bg-neutral-100 rounded">
+                                <MaterialIcon name="close" size={20} />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-hidden">
+                            <AiAssistantPanel
+                                contractId={contract.id}
+                                onInsertText={canEdit ? handleInsertText : undefined}
+                            />
+                        </div>
                     </div>
+                ) : (
+                    <button
+                        onClick={() => setShowAiPanel(true)}
+                        className="absolute bottom-24 right-8 size-14 bg-violet-600 hover:bg-violet-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center z-50 group"
+                        title="Open Oracle AI"
+                    >
+                        <MaterialIcon name="psychology" size={28} className="group-hover:scale-110 transition-transform" />
+                        <span className="absolute -top-2 -right-2 size-4 bg-red-500 rounded-full border-2 border-white" />
+                    </button>
                 )}
             </div>
 
