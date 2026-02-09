@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+
 import { TipTapEditor } from '@/components/editor/tip-tap-editor';
-import { AiAssistantPanel } from '@/components/contracts/ai-assistant-panel';
+import { AiChatWidget } from '@/components/contracts/ai-chat-widget';
 import { MaterialIcon } from '@/components/ui/material-icon';
 
 interface AnnexureEditorStepProps {
@@ -18,7 +18,7 @@ export function AnnexureEditorStep({
     onAnnexureChange,
     contractId,
 }: AnnexureEditorStepProps) {
-    const [showAiPanel, setShowAiPanel] = useState(false);
+
 
     return (
         <div className="-mx-[calc(50vw-50%)] px-4 relative min-h-[calc(100vh-12rem)]">
@@ -78,27 +78,7 @@ export function AnnexureEditorStep({
                     </div>
                 </div>
 
-                {showAiPanel ? (
-                    <aside className="w-80 bg-white border border-neutral-200 rounded-xl shadow-sm overflow-hidden flex flex-col self-stretch sticky top-6 h-[calc(100vh-8rem)]">
-                        <div className="flex justify-start p-2 border-b border-neutral-100">
-                            <button onClick={() => setShowAiPanel(false)} className="p-1 hover:bg-neutral-100 rounded">
-                                <MaterialIcon name="close" size={20} />
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-hidden">
-                            <AiAssistantPanel contractId={contractId || 'draft'} />
-                        </div>
-                    </aside>
-                ) : (
-                    <button
-                        onClick={() => setShowAiPanel(true)}
-                        className="fixed bottom-8 right-8 size-14 bg-violet-600 hover:bg-violet-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center z-50 group"
-                        title="Open Oracle AI"
-                    >
-                        <MaterialIcon name="psychology" size={28} className="group-hover:scale-110 transition-transform" />
-                        <span className="absolute -top-2 -right-2 size-4 bg-red-500 rounded-full border-2 border-white" />
-                    </button>
-                )}
+                <AiChatWidget contractId={contractId} />
             </div>
         </div>
     );

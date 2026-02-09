@@ -1,6 +1,7 @@
 'use client';
 
 import { MaterialIcon } from '@/components/ui/material-icon';
+import { AiChatWidget } from '@/components/contracts/ai-chat-widget';
 
 interface PartAPreviewStepProps {
     templateContent: string;
@@ -37,8 +38,9 @@ export function PartAPreviewStep({ templateContent, templateName }: PartAPreview
                         <div dangerouslySetInnerHTML={{ __html: templateContent }} />
                     </div>
                 </div>
-                <div className="h-32 bg-gradient-to-b from-transparent to-white w-full mt-4" />
             </div>
+
+            <AiChatWidget />
         </div>
     );
 }

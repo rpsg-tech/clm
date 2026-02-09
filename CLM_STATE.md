@@ -1,7 +1,7 @@
 # CLM Frontend Rebuild — Stitch Rework State
 
-**Last Updated:** 2026-02-09 (Phase 13 complete)
-**Status:** Phase 13 COMPLETE — AI Visualization Cleanup shipped and verified
+**Last Updated:** 2026-02-09 (Phase 14 complete)
+**Status:** Phase 14 COMPLETE — UI/UX Consistency & Audit
 **Branch:** `feat/frontend-rebuild`
 **Plan:** `/Users/corphr.software/.claude/plans/rustling-herding-yeti.md`
 
@@ -24,7 +24,8 @@
 | Phase 10 | Admin Audit Log & Feature Flags | COMPLETE | a178dfb, aaa8aa8 |
 | Phase 11 | Cleanup & Polish | **COMPLETE** | acc82f8, af07ab1, a6c939a, a314311 |
 | Phase 12 | Creation Wizard Rebuild (Part A/B) | COMPLETE | codex |
-| Phase 13 | AI Visualization Cleanup | **COMPLETE** | antigravity |
+| Phase 13 | AI Visualization Cleanup | COMPLETE | antigravity |
+| Phase 14 | UI/UX Consistency Audit | **COMPLETE** | antigravity |
 
 ---
 
@@ -1071,3 +1072,32 @@ After all tasks complete:
 - Manual verification of UI changes.
 - `npm run build` passed.
 - `npm run lint` passed (warnings only).
+
+---
+
+## Phase 14 — UI/UX Consistency & Audit (COMPLETE)
+
+**Status:** COMPLETE (2026-02-09)
+**Build verified:** `npm run build` (passes)
+**Agent:** Antigravity
+
+**Scope:** UI/UX Audit findings implementation: standardized AI Chat widget and CTA colors.
+
+### Tasks Completed:
+
+1.  **AI Chat Consistency:**
+    - Created `AiChatWidget` component for consistent FAB/Panel behavior.
+    - Implemented `AiChatWidget` in `EditWorkspace` and `AnnexureEditorStep`.
+    - Added `AiChatWidget` to `PreviewStep` and `PartAPreviewStep` (previously missing).
+    - Standardized FAB position to `bottom-24` (or context-aware inside layout).
+
+2.  **CTA Hygiene:**
+    - Updated `EditWorkspace` "Submit" button to use `bg-primary-700` (was hardcoded `indigo-700`).
+
+3.  **Code Cleanup:**
+    - Fixed lint warnings in `annexure-editor-step.tsx` and approval pages.
+    - Verified build.
+
+**Verification:**
+- `npm run build` PASSED.
+

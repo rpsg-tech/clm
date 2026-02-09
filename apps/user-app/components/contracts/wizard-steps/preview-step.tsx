@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { MaterialIcon } from '@/components/ui/material-icon';
+import { AiChatWidget } from '@/components/contracts/ai-chat-widget';
 
 interface PreviewStepProps {
     templateContent: string;
@@ -152,6 +153,8 @@ export function PreviewStep({
 
 
             </div>
+
+            <AiChatWidget />
         </div>
     );
 }

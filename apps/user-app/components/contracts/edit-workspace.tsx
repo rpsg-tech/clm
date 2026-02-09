@@ -10,7 +10,7 @@ import { ContractStatus, RoleCode } from '@repo/types';
 import { TipTapEditor, type TipTapEditorRef } from '@/components/editor/tip-tap-editor';
 import { WorkspaceHeader } from '@/components/contracts/workspace-header';
 import { ContractNavSidebar } from '@/components/contracts/contract-nav-sidebar';
-import { AiAssistantPanel } from '@/components/contracts/ai-assistant-panel';
+import { AiChatWidget } from '@/components/contracts/ai-chat-widget';
 import { UploadVersionModal } from '@/components/contracts/upload-version-modal';
 import { MaterialIcon } from '@/components/ui/material-icon';
 import type { Contract } from '@repo/types';
@@ -47,7 +47,6 @@ export function EditWorkspace({ contract }: EditWorkspaceProps) {
     const [content, setContent] = useState<string>(initialContent);
     const [isSaving, setIsSaving] = useState(false);
     const [lastSaved, setLastSaved] = useState<Date | null>(null);
-    const [showAiPanel, setShowAiPanel] = useState(false);
     const [showUploadModal, setShowUploadModal] = useState(false);
 
     const editorRef = useRef<TipTapEditorRef>(null);
@@ -129,8 +128,8 @@ export function EditWorkspace({ contract }: EditWorkspaceProps) {
                         canEdit={canEdit}
                         isLegal={isLegal}
                         onSubmit={handleSubmit}
-                        onToggleAi={() => setShowAiPanel(!showAiPanel)}
-                        showAiPanel={showAiPanel}
+                        showAiPanel={false} // Deprecated prop, kept for compatibility if needed or should remove from header too
+                        onToggleAi={() => { }}
                         onUploadVersion={() => setShowUploadModal(true)}
                     />
                     <div className="flex-1 overflow-y-auto relative">
@@ -203,7 +202,7 @@ export function EditWorkspace({ contract }: EditWorkspaceProps) {
                             {canEdit && (
                                 <button
                                     onClick={handleSubmit}
-                                    className="h-9 px-6 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-sm font-medium text-white shadow-sm transition-colors flex items-center gap-2"
+                                    className="h-9 px-6 rounded-lg bg-primary-700 hover:bg-primary-800 text-sm font-medium text-white shadow-sm transition-colors flex items-center gap-2"
                                 >
                                     <MaterialIcon name="send" size={18} />
                                     <span>Submit for Review</span>
@@ -214,30 +213,10 @@ export function EditWorkspace({ contract }: EditWorkspaceProps) {
                 </div>
 
                 {/* Right: AI Assistant */}
-                {showAiPanel ? (
-                    <div className="w-80 border-l border-neutral-200 bg-white flex-shrink-0 flex flex-col overflow-hidden shadow-xl shadow-neutral-200/50 z-20">
-                        <div className="flex justify-start p-2 border-b border-neutral-100">
-                            <button onClick={() => setShowAiPanel(false)} className="p-1 hover:bg-neutral-100 rounded">
-                                <MaterialIcon name="close" size={20} />
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-hidden">
-                            <AiAssistantPanel
-                                contractId={contract.id}
-                                onInsertText={canEdit ? handleInsertText : undefined}
-                            />
-                        </div>
-                    </div>
-                ) : (
-                    <button
-                        onClick={() => setShowAiPanel(true)}
-                        className="absolute bottom-24 right-8 size-14 bg-violet-600 hover:bg-violet-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all flex items-center justify-center z-50 group"
-                        title="Open Oracle AI"
-                    >
-                        <MaterialIcon name="psychology" size={28} className="group-hover:scale-110 transition-transform" />
-                        <span className="absolute -top-2 -right-2 size-4 bg-red-500 rounded-full border-2 border-white" />
-                    </button>
-                )}
+                <AiChatWidget
+                    contractId={contract.id}
+                    onInsertText={canEdit ? handleInsertText : undefined}
+                />
             </div>
 
             <UploadVersionModal
