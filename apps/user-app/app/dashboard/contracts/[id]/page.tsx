@@ -63,7 +63,7 @@ interface Contract {
     template: { id: string; name: string; code: string; category: string };
     createdByUser: { id: string; name: string; email: string };
     versions: { id: string; versionNumber: number; createdAt: string; createdBy?: { name: string, id: string } }[];
-    approvals: { id: string; type: string; status: string; assignedUser?: { name: string } }[];
+    approvals: { id: string; type: string; status: string; assignedUser?: { name: string }; createdAt?: string; updatedAt?: string; comment?: string }[];
     attachments: { id: string; fileUrl: string; fileType: string; fileName: string }[];
 }
 
@@ -246,6 +246,9 @@ function ContractDetailContent() {
                 const reason = payload?.reason || 'No reason provided';
                 await api.contracts.cancel(contract.id, reason);
                 toast.success('Cancelled', 'Contract has been cancelled');
+            } else if (action === 'request_revision') {
+                await api.approvals.requestRevision(payload.id, payload.comment);
+                toast.success('Request Sent', 'Revision requested successfully');
             }
 
             // Refresh data
@@ -367,6 +370,27 @@ function ContractDetailContent() {
                             </FeatureGuard>
                         </div>
                     </div>
+
+
+                    {/* REVISION BANNER */}
+                    {contract.status === 'REVISION_REQUESTED' && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                                <h3 className="text-sm font-bold text-amber-800 mb-1">Changes Requested</h3>
+                                <p className="text-sm text-amber-700">
+                                    {(() => {
+                                        // Find the relevant rejection comment
+                                        const rejection = contract.approvals
+                                            ?.filter(a => a.status === 'REJECTED')
+                                            .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime())[0];
+
+                                        return rejection?.comment?.replace('REVISION REQUESTED: ', '') || 'A reviewer has requested changes to this contract.';
+                                    })()}
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     {/* 2. Control Bar (Smart Actions) */}
                     <SmartActionButtons

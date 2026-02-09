@@ -228,6 +228,89 @@ export class ApprovalsService {
     }
 
     /**
+     * Request a revision on a contract (Soft Rejection / Change Request)
+     */
+    async requestRevision(
+        approvalId: string,
+        actorId: string,
+        organizationId: string,
+        userPermissions: string[],
+        comment: string,
+    ) {
+        if (!comment) {
+            throw new ForbiddenException('Revision comment is required');
+        }
+
+        const approval = await this.findApproval(approvalId, organizationId);
+
+        // Security Check: Ensure user has permission for THIS specific approval type
+        const requiredPermission = `approval:${approval.type.toLowerCase()}:act`;
+        if (!userPermissions.includes(requiredPermission)) {
+            throw new ForbiddenException(`You do not have permission to request changes for ${approval.type}`);
+        }
+
+        if (approval.status !== ApprovalStatus.PENDING) {
+            throw new ForbiddenException('Approval has already been processed');
+        }
+
+        const result = await this.prisma.$transaction(async (tx) => {
+            // Update approval to REJECTED but with specific comment indicating revision
+            // We use REJECTED as the approval status, but the Contract status will be distinct
+            await tx.approval.update({
+                where: { id: approvalId },
+                data: {
+                    status: ApprovalStatus.REJECTED,
+                    actorId,
+                    actedAt: new Date(),
+                    comment: `REVISION REQUESTED: ${comment}`,
+                },
+            });
+
+            // Update contract status to REVISION_REQUESTED
+            const updatedContract = await tx.contract.update({
+                where: { id: approval.contractId },
+                data: { status: ContractStatus.REVISION_REQUESTED },
+                include: { approvals: true, createdByUser: true },
+            });
+
+            this.logger.log(
+                `Revision requested by ${approval.type} for contract ${approval.contractId}`,
+            );
+
+            return { contract: updatedContract, approval };
+        });
+
+        // Notifications (Outside Transaction)
+        try {
+            const { contract: updatedContract, approval: updatedApproval } = result;
+
+            if (updatedContract.createdByUser?.email) {
+                await this.emailService.sendApprovalResult(
+                    updatedContract.createdByUser.email,
+                    false, // Treated as rejection for email template purposes, or we could add a new template
+                    updatedContract.title,
+                    'Approver',
+                    `Changes Requested: ${comment}`,
+                    `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/contracts/${updatedContract.id}`,
+                );
+
+                // Create In-App Notification
+                await this.notificationsService.create({
+                    userId: updatedContract.createdByUserId,
+                    type: 'APPROVAL_REQUESTED_CHANGE',
+                    title: 'Action Required: Revision Requested',
+                    message: `${updatedApproval.type} requested changes on ${updatedContract.title}. Comment: ${comment}`,
+                    link: `/dashboard/contracts/${updatedContract.id}`,
+                });
+            }
+        } catch (error) {
+            this.logger.error(`Failed to send revision notifications: ${(error as Error).message}`);
+        }
+
+        return result;
+    }
+
+    /**
      * Get pending approvals for user (based on role)
      */
     async getPendingApprovals(

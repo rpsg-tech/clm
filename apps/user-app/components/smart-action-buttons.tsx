@@ -144,6 +144,31 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
         </button>
     );
 
+    const [showRevisionDialog, setShowRevisionDialog] = useState(false);
+    const [revisionComment, setRevisionComment] = useState("");
+
+    const handleRequestRevision = () => {
+        // Identify which approval we are acting on
+        const legalApproval = contract.approvals?.find((a: any) => a.type === 'LEGAL' && a.status === 'PENDING');
+        const financeApproval = contract.approvals?.find((a: any) => a.type === 'FINANCE' && a.status === 'PENDING');
+
+        let targetApprovalId;
+        if (permissions.canApproveLegal && legalApproval) {
+            targetApprovalId = legalApproval.id;
+        } else if (permissions.canApproveFinance && financeApproval) {
+            targetApprovalId = financeApproval.id;
+        }
+
+        if (targetApprovalId) {
+            onAction('request_revision', { id: targetApprovalId, comment: revisionComment });
+            setShowRevisionDialog(false);
+            setRevisionComment("");
+        } else {
+            console.error('No pending approval found for user');
+            // Optionally show error toast or disable button if logic allows
+        }
+    };
+
     return (
         <>
             <div className="w-full bg-white/80 backdrop-blur-md border border-slate-200/60 rounded-xl p-3 flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500 sticky top-4 z-20">
@@ -219,9 +244,21 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                             const isFinancePending = financeApproval?.status === 'PENDING';
                             const isLegalApproved = legalApproval?.status === 'APPROVED';
                             const isFinanceApproved = financeApproval?.status === 'APPROVED';
+                            const canAct = (permissions.canApproveLegal && isLegalPending) || (permissions.canApproveFinance && isFinancePending);
+
 
                             return (
                                 <>
+                                    {/* Request Changes (Available to any active approver) */}
+                                    {canAct && (
+                                        <ActionButton
+                                            icon={FileCheck} // Or a specific icon for changes
+                                            label="Request Changes"
+                                            onClick={() => setShowRevisionDialog(true)}
+                                            className="text-amber-600 hover:bg-amber-50 hover:border-amber-200"
+                                        />
+                                    )}
+
                                     {/* Allow adding missing reviewers (Parallel/Sequential option) */}
                                     {permissions.canSubmit && (
                                         <>
@@ -363,6 +400,42 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                             disabled={!cancelReason.trim()}
                         >
                             Confirm Cancellation
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Revision Dialog */}
+            <Dialog open={showRevisionDialog} onOpenChange={setShowRevisionDialog}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-amber-600">
+                            <Edit className="w-5 h-5" />
+                            Request Changes
+                        </DialogTitle>
+                        <DialogDescription>
+                            Specify the changes required. The contract will be returned to Draft state for the creator to edit.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <Textarea
+                            placeholder="Describe the changes needed..."
+                            value={revisionComment}
+                            onChange={(e) => setRevisionComment(e.target.value)}
+                            className="resize-none"
+                            rows={4}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowRevisionDialog(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleRequestRevision}
+                            disabled={!revisionComment.trim()}
+                            className="bg-amber-600 hover:bg-amber-700 text-white"
+                        >
+                            Request Changes
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -115,6 +115,42 @@ export class ApprovalsController {
         return contract;
     }
 
+
+    @Post(':id/request-revision')
+    @Permissions('approval:legal:act', 'approval:finance:act')
+    async requestRevision(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+        @Body('comment') comment: string,
+    ) {
+        const { contract, approval } = await this.approvalsService.requestRevision(
+            id,
+            user.id,
+            user.orgId!,
+            user.permissions,
+            comment
+        );
+
+        // Audit log
+        await this.auditService.log({
+            organizationId: user.orgId,
+            contractId: contract.id,
+            userId: user.id,
+            action: 'CONTRACT_REVISION_REQUESTED',
+            module: 'approvals',
+            targetType: 'Approval',
+            targetId: id,
+            metadata: {
+                comment: comment,
+                contractId: contract.id,
+                contractTitle: contract.title,
+                type: approval.type,
+            } as Prisma.InputJsonValue,
+        });
+
+        return contract;
+    }
+
     @Post(':id/escalate')
     @Permissions('approval:legal:escalate')
     async escalate(

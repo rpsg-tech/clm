@@ -374,6 +374,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ comment }),
       }),
+
+    requestRevision: (id: string, comment: string) =>
+      authFetch(`/approvals/${id}/request-revision`, {
+        method: 'POST',
+        body: JSON.stringify({ comment }),
+      }),
   },
 
   // Health
