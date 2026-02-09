@@ -2,6 +2,31 @@
 
 Enterprise-grade Contract Lifecycle Management (CLM) platform built with modern technologies.
 
+## 🎨 Frontend Rebuild (feat/frontend-rebuild)
+
+This branch contains a **complete frontend UI/UX rebuild** developed using:
+
+- **Product Requirements:** Comprehensive PRD documented in [`CLM-PRD.md`](./CLM-PRD.md)
+- **Design System:** Stitch-generated designs with detailed specifications in [`STITCH_DESIGN_BRIEF.md`](./STITCH_DESIGN_BRIEF.md)
+- **Design References:**
+  - Interactive mockups in `stitch_clm_redesign_stitch/` directory
+  - Design guide in [`stitch-designguide.md`](./stitch-designguide.md)
+- **Implementation Tracking:** Phase-by-phase progress in [`CLM_STATE.md`](./CLM_STATE.md)
+
+### Rebuild Scope
+- ✅ **Phases 0-10 Complete:** Dashboard, Contracts, Templates, Approvals, Admin pages
+- 🎯 **Design-First Approach:** Every component built from Stitch mockups and PRD specs
+- 🏗️ **Next Step:** Stability refactoring and backend integration by dev team
+
+### Tech Stack (Frontend)
+- **Next.js 15.5** with React 19 and App Router
+- **Tailwind V4** with custom design tokens (Indigo 700 primary, Slate 50 background)
+- **React Query** for data fetching and state management
+- **Material Symbols** for consistent iconography
+- **Radix UI** components for accessibility
+
+**Note to Dev Team:** This rebuild prioritized UI/UX completeness over backend stability. Please review, refactor, and integrate with production backend before merging to main.
+
 ## 🏗️ Architecture
 
 This is a **Turborepo monorepo** with the following structure:

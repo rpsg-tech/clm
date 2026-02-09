@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Legal Head Dashboard V3</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4338ca", // indigo-700
+                        "primary-dark": "#3730a3", // indigo-800
+                        "primary-light": "#e0e7ff", // indigo-100
+                        "background-light": "#f8fafc", // slate-50
+                        "background-dark": "#0f172a", // slate-900
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1e293b", // slate-800
+                        "text-main": "#0f172a", // slate-900
+                        "text-sub": "#64748b", // slate-500
+                        "text-dark-main": "#f1f5f9", // slate-100
+                        "text-dark-sub": "#94a3b8", // slate-400
+                        "border-light": "#e2e8f0", // slate-200
+                        "border-dark": "#334155", // slate-700
+                        "danger": "#ef4444",
+                        "warning": "#f59e0b",
+                        "success": "#10b981",
+                        "indigo-text": "#4338ca",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.375rem",
+                        "md": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #475569;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main dark:text-text-dark-main min-h-screen flex overflow-hidden">
+<aside class="w-64 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark flex-shrink-0 flex flex-col justify-between h-screen fixed left-0 top-0 z-20 transition-colors duration-300">
+<div class="flex flex-col h-full">
+<div class="p-6">
+<nav class="flex flex-col gap-2 mt-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary dark:text-primary-light font-medium group transition-colors" href="#">
+<span class="material-symbols-outlined filled">dashboard</span>
+                        Dashboard
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-sub dark:text-text-dark-sub hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group hover:text-text-main dark:hover:text-text-dark-main" href="#">
+<span class="material-symbols-outlined">description</span>
+                        Contracts
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-sub dark:text-text-dark-sub hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group hover:text-text-main dark:hover:text-text-dark-main" href="#">
+<span class="material-symbols-outlined">content_paste</span>
+                        Templates
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-text-sub dark:text-text-dark-sub hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group hover:text-text-main dark:hover:text-text-dark-main" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+                        Reports
+                    </a>
+</nav>
+</div>
+<div class="mt-auto p-4 border-t border-border-light dark:border-border-dark">
+<nav class="flex flex-col gap-2 mb-4">
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-text-sub dark:text-text-dark-sub hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group hover:text-text-main dark:hover:text-text-dark-main" href="#">
+<span class="material-symbols-outlined">settings</span>
+                        Settings
+                    </a>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-text-sub dark:text-text-dark-sub hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group hover:text-text-main dark:hover:text-text-dark-main" href="#">
+<span class="material-symbols-outlined">person</span>
+                        Profile
+                    </a>
+</nav>
+<div class="px-4 pb-2 text-xs text-text-sub dark:text-text-dark-sub opacity-70">
+                    © 2026 Acme Corp.
+                </div>
+</div>
+</div>
+</aside>
+<main class="flex-1 ml-64 flex flex-col min-w-0 bg-background-light dark:bg-background-dark h-screen overflow-y-auto">
+<header class="bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark px-8 py-3 sticky top-0 z-30 flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<div class="h-8 w-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-md">
+<span class="material-symbols-outlined filled text-[20px]">policy</span>
+</div>
+<span class="text-lg font-bold text-text-main dark:text-text-dark-main tracking-tight">CLM</span>
+</div>
+<div class="relative hidden md:block pl-6 border-l border-border-light dark:border-border-dark">
+<button class="flex items-center gap-2 text-sm font-medium text-text-main dark:text-text-dark-main hover:text-primary transition-colors focus:outline-none">
+<span>Acme Corp</span>
+<span class="material-symbols-outlined text-text-sub text-[18px]">expand_more</span>
+</button>
+</div>
+</div>
+<div class="flex-1 max-w-xl px-8">
+<div class="relative group w-full">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-text-sub dark:text-text-dark-sub text-[20px]">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2 border border-border-light dark:border-border-dark rounded-lg leading-5 bg-background-light dark:bg-background-dark text-text-main dark:text-text-dark-main placeholder-text-sub dark:placeholder-text-dark-sub focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all shadow-sm" placeholder="Search contracts, parties, clauses..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-lg text-text-sub dark:text-text-dark-sub hover:bg-background-light dark:hover:bg-surface-dark transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 h-2 w-2 bg-danger rounded-full ring-2 ring-white dark:ring-surface-dark"></span>
+</button>
+<div class="flex items-center gap-3 pl-4 border-l border-border-light dark:border-border-dark">
+<div class="flex flex-col text-right hidden sm:block">
+<span class="text-sm font-semibold text-text-main dark:text-text-dark-main">Sarah Jenkins</span>
+<span class="text-xs text-text-sub dark:text-text-dark-sub">Legal Head</span>
+</div>
+<div class="relative cursor-pointer">
+<div class="h-9 w-9 rounded-full bg-cover bg-center ring-2 ring-primary/10" data-alt="Professional woman in business attire profile picture" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuARKkkKUoooTQ7kO7Omst0PhYXE2e__Qv3t7uWsQRDomBX6Qyng9gUMrAZm0Pv-LUoGJcOFE2qiHBogn89dEyZx6k18HIbG5s1cHOuI0Gq_2vE2glyUdiU54L722fORa9SbrRcWVACIXlerZ_Yrm9kAw_nIu_lA4_T6P4mjFuFq9KldFMwvolZACmMfhMct-vyFzbRthNAo3irVYuB-QlsqwWNdPd14KM-fmINErT6-bF5nSQEzNN7vnz24EkEHoaIwYWI8Lr3BnCo')"></div>
+<div class="absolute bottom-0 right-0 h-2.5 w-2.5 bg-success rounded-full border-2 border-white dark:border-surface-dark"></div>
+</div>
+</div>
+</div>
+</header>
+<div class="p-8 max-w-[1600px] w-full mx-auto flex flex-col gap-6">
+<div class="flex flex-col">
+<h2 class="text-2xl font-bold text-text-main dark:text-text-dark-main tracking-tight">Executive Overview</h2>
+<p class="text-sm text-text-sub dark:text-text-dark-sub mt-1">High-level oversight for RPSG Group entities.</p>
+</div>
+<div class="grid grid-cols-12 gap-6">
+<div class="col-span-12 lg:col-span-4 bg-surface-light dark:bg-surface-dark rounded-xl p-6 border border-border-light dark:border-border-dark shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+<div class="absolute top-0 left-0 w-1.5 h-full bg-danger"></div>
+<div class="flex justify-between items-start mb-4 pl-2">
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-text-sub dark:text-text-dark-sub uppercase tracking-wider">Escalated Items</span>
+<div class="flex items-baseline gap-2 mt-2">
+<span class="text-4xl font-bold text-text-main dark:text-text-dark-main">12</span>
+<span class="text-xs font-bold text-danger bg-danger/10 px-2 py-0.5 rounded-full border border-danger/20">ACTION REQUIRED</span>
+</div>
+</div>
+<div class="p-2.5 bg-danger/10 rounded-lg text-danger">
+<span class="material-symbols-outlined filled">warning</span>
+</div>
+</div>
+<div class="flex items-center gap-2 text-sm text-text-sub dark:text-text-dark-sub pl-2">
+<span class="text-danger font-medium flex items-center">
+<span class="material-symbols-outlined text-base mr-0.5">trending_up</span> +3
+                        </span>
+<span>new since yesterday</span>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-4 bg-surface-light dark:bg-surface-dark rounded-xl p-6 border border-border-light dark:border-border-dark shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+<div class="absolute top-0 left-0 w-1.5 h-full bg-warning"></div>
+<div class="flex justify-between items-start mb-4 pl-2">
+<div class="flex flex-col">
+<span class="text-sm font-semibold text-text-sub dark:text-text-dark-sub uppercase tracking-wider">Pending Reviews</span>
+<div class="flex items-baseline gap-2 mt-2">
+<span class="text-4xl font-bold text-text-main dark:text-text-dark-main">45</span>
+<span class="text-xs font-bold text-warning bg-warning/10 px-2 py-0.5 rounded-full border border-warning/20">IN QUEUE</span>
+</div>
+</div>
+<div class="p-2.5 bg-warning/10 rounded-lg text-warning">
+<span class="material-symbols-outlined filled">pending_actions</span>
+</div>
+</div>
+<div class="flex items-center gap-2 text-sm text-text-sub dark:text-text-dark-sub pl-2">
+<span class="text-text-sub font-medium flex items-center">
+<span class="material-symbols-outlined text-base mr-0.5">remove</span> 0
+                        </span>
+<span>steady from last week</span>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-5 border border-border-light dark:border-border-dark shadow-sm flex items-center justify-between hover:border-primary/30 transition-colors h-full">
+<div>
+<p class="text-sm font-medium text-text-sub dark:text-text-dark-sub">Approved This Period</p>
+<div class="flex items-baseline gap-2 mt-1">
+<h3 class="text-2xl font-bold text-indigo-text dark:text-indigo-400">₹4.2 Cr</h3>
+<span class="text-xs text-success font-medium flex items-center bg-success/5 px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px] mr-0.5">arrow_upward</span> 12%
+                                </span>
+</div>
+</div>
+<div class="h-10 w-10 bg-primary/5 rounded-full flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl p-5 border border-border-light dark:border-border-dark shadow-sm flex items-center justify-between hover:border-warning/30 transition-colors h-full">
+<div>
+<p class="text-sm font-medium text-text-sub dark:text-text-dark-sub">Avg. Cycle Time</p>
+<div class="flex items-baseline gap-2 mt-1">
+<h3 class="text-2xl font-bold text-indigo-text dark:text-indigo-400">4.5 Days</h3>
+<span class="text-xs text-success font-medium flex items-center bg-success/5 px-1.5 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px] mr-0.5">arrow_downward</span> 0.5d
+                                </span>
+</div>
+</div>
+<div class="h-10 w-10 bg-primary/5 rounded-full flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">timer</span>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-6 h-full min-h-[500px]">
+<div class="col-span-12 xl:col-span-3 flex flex-col gap-4">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm h-full flex flex-col overflow-hidden">
+<div class="p-5 border-b border-border-light dark:border-border-dark flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/30">
+<h3 class="font-bold text-text-main dark:text-text-dark-main">Expiration Alerts</h3>
+<span class="text-xs bg-white dark:bg-gray-700 border border-border-light dark:border-border-dark text-text-sub px-2 py-1 rounded shadow-sm">30 Days</span>
+</div>
+<div class="p-3 overflow-y-auto flex-1 custom-scrollbar">
+<div class="flex flex-col gap-3">
+<div>
+<div class="px-2 mb-2 text-xs font-bold text-danger uppercase tracking-wider flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-danger"></span>
+                                        Critical (&lt; 7 Days)
+                                    </div>
+<div class="space-y-2">
+<div class="group flex items-center justify-between p-3 rounded-lg bg-white dark:bg-gray-800/50 border border-danger/20 hover:border-danger hover:shadow-sm cursor-pointer transition-all">
+<div class="flex-1 min-w-0 pr-3">
+<p class="text-sm font-semibold text-text-main dark:text-text-dark-main truncate">Vendor Renewals - IT</p>
+<p class="text-xs text-danger font-medium mt-0.5">Expires in 2 days</p>
+</div>
+<span class="material-symbols-outlined text-danger text-[18px]">priority_high</span>
+</div>
+<div class="group flex items-center justify-between p-3 rounded-lg bg-white dark:bg-gray-800/50 border border-danger/20 hover:border-danger hover:shadow-sm cursor-pointer transition-all">
+<div class="flex-1 min-w-0 pr-3">
+<p class="text-sm font-semibold text-text-main dark:text-text-dark-main truncate">Service Agmt - Apex</p>
+<p class="text-xs text-danger font-medium mt-0.5">Expires in 4 days</p>
+</div>
+<span class="material-symbols-outlined text-danger text-[18px]">priority_high</span>
+</div>
+</div>
+</div>
+<div class="mt-2">
+<div class="px-2 mb-2 text-xs font-bold text-warning uppercase tracking-wider flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
+                                        Upcoming (&lt; 30 Days)
+                                    </div>
+<div class="space-y-2">
+<div class="group flex items-center justify-between p-3 rounded-lg bg-white dark:bg-gray-800/50 border border-warning/20 hover:border-warning hover:shadow-sm cursor-pointer transition-all">
+<div class="flex-1 min-w-0 pr-3">
+<p class="text-sm font-semibold text-text-main dark:text-text-dark-main truncate">Licensing - Adobe</p>
+<p class="text-xs text-warning font-medium mt-0.5">Expires in 12 days</p>
+</div>
+</div>
+<div class="group flex items-center justify-between p-3 rounded-lg bg-white dark:bg-gray-800/50 border border-warning/20 hover:border-warning hover:shadow-sm cursor-pointer transition-all">
+<div class="flex-1 min-w-0 pr-3">
+<p class="text-sm font-semibold text-text-main dark:text-text-dark-main truncate">Office Lease - NY</p>
+<p class="text-xs text-warning font-medium mt-0.5">Expires in 15 days</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-3 border-t border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-gray-800/30">
+<button class="w-full py-2 text-sm font-medium text-primary hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm border border-transparent hover:border-border-light dark:hover:border-border-dark rounded-lg transition-all text-center">View All Alerts</button>
+</div>
+</div>
+</div>
+<div class="col-span-12 xl:col-span-9 flex flex-col gap-4">
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm flex flex-col h-full overflow-hidden">
+<div class="p-5 border-b border-border-light dark:border-border-dark flex flex-wrap gap-4 justify-between items-center bg-gray-50/30 dark:bg-gray-800/20">
+<div class="flex items-center gap-3">
+<h3 class="font-bold text-lg text-text-main dark:text-text-dark-main">Contract Oversight</h3>
+<span class="bg-primary/10 text-primary text-xs font-semibold px-2 py-0.5 rounded-full border border-primary/20">Active</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center bg-white dark:bg-surface-dark rounded-lg px-3 py-1.5 border border-border-light dark:border-border-dark shadow-sm">
+<span class="material-symbols-outlined text-text-sub text-[18px] mr-2">filter_list</span>
+<select class="bg-transparent border-none text-sm text-text-main dark:text-text-dark-main focus:ring-0 p-0 pr-6 cursor-pointer font-medium">
+<option>All Statuses</option>
+<option>Escalated</option>
+<option>Pending Review</option>
+</select>
+</div>
+<button class="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                                    New Contract
+                                </button>
+</div>
+</div>
+<div class="overflow-x-auto flex-1">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-gray-50/80 dark:bg-surface-dark border-b border-border-light dark:border-border-dark text-xs uppercase tracking-wider text-text-sub dark:text-text-dark-sub font-semibold">
+<th class="px-6 py-4">Contract ID</th>
+<th class="px-6 py-4">Contract Name</th>
+<th class="px-6 py-4">Status</th>
+<th class="px-6 py-4 text-right">Value (INR)</th>
+<th class="px-6 py-4">Deadline</th>
+<th class="px-6 py-4">Reviewer</th>
+<th class="px-6 py-4 text-center">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-light dark:divide-border-dark text-sm">
+<tr class="group hover:bg-red-50/30 dark:hover:bg-red-900/10 transition-colors">
+<td class="px-6 py-4 font-mono text-text-sub text-xs">#CNT-2940</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-semibold text-text-main dark:text-text-dark-main">MSA - Acme Corp</span>
+<span class="text-xs text-text-sub">Procurement</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-danger/10 text-danger border border-danger/20">
+<span class="w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span>
+                                                Needs Approval
+                                            </span>
+</td>
+<td class="px-6 py-4 text-right font-mono font-medium text-text-main dark:text-text-dark-main">₹1.5 L</td>
+<td class="px-6 py-4 text-danger font-bold">Today</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2" title="Michael B.">
+<div class="h-8 w-8 rounded-full bg-cover bg-center ring-2 ring-white dark:ring-surface-dark shadow-sm" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAmjr-mLUJyhmT4k92GdcLUfFeWenMl-92hvKAKx2YZYDNHSKzUJ9dekQbVrFGO0pQmL8fN381-C_wWsWy-Ybdp9CBpEFaVzca-lcsezCptRd1eUgwVPjijpyd3iN8zeb6-FCTT1tD2vaiVpclNQsW_JVj4cOCmKt1vQEuzyNst98gNya8ZnCXNZSdKC-enjaG17JFzhx1VQj6MlNR2PUPZWXhAZpxX98gwa4hNOIjza1eDbf0M0UIdyQa4TR1wpW-bkeCcL8T0pcA')"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-text-sub hover:text-text-main p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="group hover:bg-red-50/30 dark:hover:bg-red-900/10 transition-colors">
+<td class="px-6 py-4 font-mono text-text-sub text-xs">#CNT-2938</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-semibold text-text-main dark:text-text-dark-main">Global Supply Chain - Beta</span>
+<span class="text-xs text-text-sub">Logistics</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-danger/10 text-danger border border-danger/20">
+<span class="w-1.5 h-1.5 rounded-full bg-danger"></span>
+                                                Escalated
+                                            </span>
+</td>
+<td class="px-6 py-4 text-right font-mono font-medium text-text-main dark:text-text-dark-main">₹2.45 Cr</td>
+<td class="px-6 py-4 text-danger font-bold">Tomorrow</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2" title="Jennifer L.">
+<div class="h-8 w-8 rounded-full bg-cover bg-center ring-2 ring-white dark:ring-surface-dark shadow-sm" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDXiCpiHkPUjbU2MOC32n06uZKnjINPV6E0FJMxXA1CM-H9c0w2iR-HulnqiXr4LPwcUffSTXH6M5DNhHVWOgt-Typ-UKQRgOhWsOpIX4IdqZgwTswyHVTsN-ERY-DjXQOMmUnf33f5dVLhBEW9cr37biKLIRzjGR4OXDsXktuhTPItvEv95aklDH_xrEHNE1z4D6xFk755kqsK4-tOMhNGUGRO6-cbC-WRGsIb1-PlMKC2rHK-CQDWDkCQ0EyZvPyFQ0ncc4GZg7Y')"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-text-sub hover:text-text-main p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="group hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+<td class="px-6 py-4 font-mono text-text-sub text-xs">#CNT-2921</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-semibold text-text-main dark:text-text-dark-main">NDA - Stealth Startup</span>
+<span class="text-xs text-text-sub">Corporate</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                                                In Review
+                                            </span>
+</td>
+<td class="px-6 py-4 text-right font-mono font-medium text-text-sub">N/A</td>
+<td class="px-6 py-4 text-text-sub">Oct 24, 2026</td>
+<td class="px-6 py-4">
+<div class="flex -space-x-2 overflow-hidden">
+<div class="inline-block h-8 w-8 rounded-full bg-cover bg-center ring-2 ring-white dark:ring-surface-dark shadow-sm" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCfTxtDb4gPU5WEy1R5T7u2EgZNqemU59PhZ7xXLnrGoOsRtx2Eti1oYsKaiWckg8deaf2Q1u2eTu3kfS_bFC38d8QWzhlgybZgEcJLfN9DeYhWU51NIzzajULP4Yxbeh6NbBVn8Q-vIyl-nns1OTa4KbQjRcA0JqN7C4cyakihIr_uKy2huK5HuqHE9xVQbYyzwnTPefxJIevu_TfUbohjxVBLH8xVQy3_Lq2_natDiDYZaQy9URwJ38EZrlB6ut4oX3CnHe1JJpQ')"></div>
+<div class="inline-block h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-[10px] font-bold ring-2 ring-white dark:ring-surface-dark">+1</div>
+</div>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-text-sub hover:text-text-main p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="group hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+<td class="px-6 py-4 font-mono text-text-sub text-xs">#CNT-2890</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-semibold text-text-main dark:text-text-dark-main">Vendor Agreement - Slack</span>
+<span class="text-xs text-text-sub">IT Services</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning border border-warning/20">
+                                                Drafting
+                                            </span>
+</td>
+<td class="px-6 py-4 text-right font-mono font-medium text-text-main dark:text-text-dark-main">₹12 L</td>
+<td class="px-6 py-4 text-text-sub">Oct 28, 2026</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2" title="Sarah J.">
+<div class="h-8 w-8 rounded-full bg-cover bg-center ring-2 ring-white dark:ring-surface-dark shadow-sm" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCCmn439gNuhZfFufnd6sqy8kWQGWj5HAOJQRhu8a8Z7PqTXPoOoaRSZnbvBrb6S74TTmePPcCXmbjfgHFGo2FlJzDkjDTEKdOj8EtRxNF74ASQkh-QwZeKDFrMUaaK-KKzjXY6Kj-whudkKYmZmtieVpTvLXltCWvJTn7LcSW-AGNVo0cIdDMaLlKKbJjqLOPy4pXYpepTpUgFx65_TrSLWc0fM3yD4mjlBRx9wKjxTD-CULFGoK2XjGedspVS6taA5AIGjnvnoRc')"></div>
+</div>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-text-sub hover:text-text-main p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="group hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+<td class="px-6 py-4 font-mono text-text-sub text-xs">#CNT-2855</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="font-semibold text-text-main dark:text-text-dark-main">Employment Contract - VP</span>
+<span class="text-xs text-text-sub">HR</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-success/10 text-success border border-success/20">
+                                                Signatures
+                                            </span>
+</td>
+<td class="px-6 py-4 text-right font-mono font-medium text-text-main dark:text-text-dark-main">₹18 L</td>
+<td class="px-6 py-4 text-text-sub">Nov 01, 2026</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2" title="HR Dept">
+<div class="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-primary font-bold text-xs ring-2 ring-white dark:ring-surface-dark shadow-sm">HR</div>
+</div>
+</td>
+<td class="px-6 py-4 text-center">
+<button class="text-text-sub hover:text-text-main p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-border-light dark:border-border-dark flex items-center justify-between bg-gray-50/30 dark:bg-gray-800/20">
+<span class="text-sm text-text-sub dark:text-text-dark-sub">Showing <span class="font-medium text-text-main dark:text-text-dark-main">1</span> to <span class="font-medium text-text-main dark:text-text-dark-main">5</span> of <span class="font-medium text-text-main dark:text-text-dark-main">45</span></span>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark rounded-md hover:bg-white dark:hover:bg-gray-800 disabled:opacity-50 disabled:hover:bg-transparent text-text-sub dark:text-text-dark-sub hover:text-text-main hover:shadow-sm transition-all" disabled="">Previous</button>
+<button class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark rounded-md hover:bg-white dark:hover:bg-gray-800 text-text-sub dark:text-text-dark-sub hover:text-text-main hover:shadow-sm transition-all">Next</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+
+</body></html>

@@ -11,9 +11,9 @@ export interface StatusDisplay {
 const STATUS_MAP: Record<ContractStatus, StatusDisplay> = {
     [ContractStatus.DRAFT]: {
         label: 'Draft',
-        bg: 'bg-slate-50',
-        text: 'text-slate-600',
-        ring: 'ring-slate-300',
+        bg: 'bg-neutral-50',
+        text: 'text-neutral-600',
+        ring: 'ring-neutral-300',
         icon: 'edit_note',
     },
     [ContractStatus.SENT_TO_LEGAL]: {
@@ -123,9 +123,9 @@ const STATUS_MAP: Record<ContractStatus, StatusDisplay> = {
     },
     [ContractStatus.CANCELLED]: {
         label: 'Cancelled',
-        bg: 'bg-slate-50',
-        text: 'text-slate-600',
-        ring: 'ring-slate-300',
+        bg: 'bg-neutral-50',
+        text: 'text-neutral-600',
+        ring: 'ring-neutral-300',
         icon: 'block',
     },
     [ContractStatus.EXECUTED]: {
@@ -148,9 +148,9 @@ export const EXPIRING_DISPLAY: StatusDisplay = {
 
 const FALLBACK_DISPLAY: StatusDisplay = {
     label: 'Unknown',
-    bg: 'bg-slate-50',
-    text: 'text-slate-500',
-    ring: 'ring-slate-300',
+    bg: 'bg-neutral-50',
+    text: 'text-neutral-500',
+    ring: 'ring-neutral-300',
     icon: 'help_outline',
 };
 

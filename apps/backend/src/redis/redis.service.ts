@@ -242,6 +242,33 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     /**
+     * Delete cache keys matching a pattern
+     */
+    async deleteCachePattern(pattern: string): Promise<number> {
+        if (!this.isConnected) return 0;
+
+        const fullPattern = `${this.KEY_PREFIX.CACHE}${pattern}`;
+        let cursor = '0';
+        let totalDeleted = 0;
+
+        try {
+            do {
+                const [nextCursor, keys] = await this.client.scan(cursor, 'MATCH', fullPattern, 'COUNT', 100);
+                cursor = nextCursor;
+
+                if (keys.length > 0) {
+                    const deleted = await this.client.del(...keys);
+                    totalDeleted += deleted;
+                }
+            } while (cursor !== '0');
+        } catch (error) {
+            this.logger.error(`Failed to delete cache pattern: ${(error as Error).message}`);
+        }
+
+        return totalDeleted;
+    }
+
+    /**
      * Get raw Redis client for advanced operations
      */
     getClient(): Redis {

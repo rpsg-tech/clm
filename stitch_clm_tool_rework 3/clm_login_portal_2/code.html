@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CLM Login Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "brand-indigo": "#3730A3", // Indigo-800 from request
+              "brand-primary": "#4338ca", // Indigo-700 primary
+              "background-light": "#ffffff",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="font-display bg-background-light min-h-screen w-full flex flex-col lg:flex-row overflow-hidden text-slate-900">
+<div class="relative hidden lg:flex w-[60%] bg-[#3730A3] flex-col justify-between p-16 overflow-hidden">
+<div class="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-indigo-500 rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
+<div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 bg-purple-500 rounded-full blur-[80px] opacity-20 pointer-events-none"></div>
+<div class="z-10 flex items-center gap-3">
+<div class="bg-white/10 p-2 rounded-lg backdrop-blur-sm border border-white/10">
+<span class="material-symbols-outlined text-white" style="font-size: 28px;">contract_edit</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-white leading-none">RPSG Group</h1>
+<p class="text-indigo-200 text-sm font-medium leading-tight mt-0.5">CLM</p>
+</div>
+</div>
+<div class="z-10 mt-auto mb-10">
+<h2 class="text-3xl font-bold text-white mb-12 max-w-lg leading-tight">Secure Contract Lifecycle Management for Enterprise</h2>
+<div class="grid grid-cols-2 gap-x-12 gap-y-12 max-w-3xl">
+<div class="group">
+<div class="w-12 h-12 rounded-lg bg-indigo-500/30 flex items-center justify-center mb-4 border border-indigo-400/20 group-hover:bg-indigo-500/50 transition-colors">
+<span class="material-symbols-outlined text-white">post_add</span>
+</div>
+<h3 class="text-lg font-semibold text-white mb-1">Template Creation</h3>
+<p class="text-indigo-200 text-sm leading-relaxed">Automate drafting with smart, compliant templates.</p>
+</div>
+<div class="group">
+<div class="w-12 h-12 rounded-lg bg-indigo-500/30 flex items-center justify-center mb-4 border border-indigo-400/20 group-hover:bg-indigo-500/50 transition-colors">
+<span class="material-symbols-outlined text-white">gavel</span>
+</div>
+<h3 class="text-lg font-semibold text-white mb-1">Legal Review</h3>
+<p class="text-indigo-200 text-sm leading-relaxed">Streamline approval workflows across departments.</p>
+</div>
+<div class="group">
+<div class="w-12 h-12 rounded-lg bg-indigo-500/30 flex items-center justify-center mb-4 border border-indigo-400/20 group-hover:bg-indigo-500/50 transition-colors">
+<span class="material-symbols-outlined text-white">psychology</span>
+</div>
+<h3 class="text-lg font-semibold text-white mb-1">AI Insights</h3>
+<p class="text-indigo-200 text-sm leading-relaxed">Data-driven risk analysis and obligation extraction.</p>
+</div>
+<div class="group">
+<div class="w-12 h-12 rounded-lg bg-indigo-500/30 flex items-center justify-center mb-4 border border-indigo-400/20 group-hover:bg-indigo-500/50 transition-colors">
+<span class="material-symbols-outlined text-white">history</span>
+</div>
+<h3 class="text-lg font-semibold text-white mb-1">Version Control</h3>
+<p class="text-indigo-200 text-sm leading-relaxed">Track every change with precision audit trails.</p>
+</div>
+</div>
+</div>
+<div class="z-10 text-indigo-300 text-xs flex justify-between items-center w-full max-w-3xl border-t border-indigo-500/30 pt-6">
+<span>© 2026 RPSG Group. All rights reserved.</span>
+</div>
+</div>
+<div class="w-full lg:w-[40%] bg-white flex flex-col justify-center items-center px-6 py-12 lg:px-12 relative">
+<div class="lg:hidden absolute top-8 left-8 flex items-center gap-2 mb-8">
+<span class="material-symbols-outlined text-brand-primary" style="font-size: 24px;">contract_edit</span>
+<div>
+<span class="font-bold text-slate-900 block leading-none">RPSG Group</span>
+<span class="text-xs text-slate-500 font-medium">CLM</span>
+</div>
+</div>
+<div class="w-full max-w-[380px] space-y-8">
+<div class="text-center lg:text-left">
+<h2 class="text-2xl lg:text-3xl font-bold tracking-tight text-slate-900">Welcome back</h2>
+<p class="mt-2 text-slate-500 text-sm">Please enter your details to sign in.</p>
+</div>
+<button class="w-full flex items-center justify-center gap-3 bg-[#2F2F2F] hover:bg-black text-white h-12 px-5 rounded-md transition-all duration-200 font-medium text-sm shadow-sm">
+<span class="material-symbols-outlined text-white" style="font-size: 20px;">grid_view</span>
+<span>Sign in with Microsoft</span>
+</button>
+<div class="relative flex items-center py-2">
+<div class="flex-grow border-t border-slate-200"></div>
+<span class="flex-shrink-0 mx-4 text-xs font-medium text-slate-400 uppercase tracking-wider">Or</span>
+<div class="flex-grow border-t border-slate-200"></div>
+</div>
+<form class="flex flex-col gap-4">
+<label class="block">
+<span class="text-sm font-medium text-slate-700 mb-1.5 block">Email</span>
+<input class="form-input w-full rounded-md border-slate-300 bg-white text-slate-900 h-11 px-3 text-sm placeholder:text-slate-400 focus:border-brand-primary focus:ring-brand-primary/20 transition-all" placeholder="name@company.com" required="" type="email"/>
+</label>
+<label class="block">
+<span class="text-sm font-medium text-slate-700 mb-1.5 block">Password</span>
+<input class="form-input w-full rounded-md border-slate-300 bg-white text-slate-900 h-11 px-3 text-sm placeholder:text-slate-400 focus:border-brand-primary focus:ring-brand-primary/20 transition-all" placeholder="••••••••" required="" type="password"/>
+</label>
+<div class="flex items-center justify-between mt-1">
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="rounded border-slate-300 text-brand-primary focus:ring-brand-primary/20" type="checkbox"/>
+<span class="text-xs text-slate-600">Remember me</span>
+</label>
+<a class="text-xs font-medium text-brand-primary hover:text-brand-primary/80 transition-colors" href="#">Forgot password?</a>
+</div>
+<button class="mt-2 w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 h-11 rounded-md font-semibold text-sm transition-all active:scale-[0.98]" type="submit">
+                    Sign in with Email
+                </button>
+</form>
+<div class="pt-4 text-center space-y-4">
+<p class="text-xs text-slate-400">
+                    Contact your administrator for account access.
+                </p>
+<p class="text-[10px] text-slate-300 leading-relaxed max-w-xs mx-auto">
+                    Supported Roles: Super Admin • Entity Admin • Legal Head • Legal Manager • Finance Manager • Business User
+                </p>
+</div>
+</div>
+</div>
+
+</body></html>

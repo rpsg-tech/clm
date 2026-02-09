@@ -3,7 +3,7 @@
 import { Button } from '@repo/ui';
 
 export default function Error({
-    error,
+    error: _error,
     reset,
 }: {
     error: Error & { digest?: string };

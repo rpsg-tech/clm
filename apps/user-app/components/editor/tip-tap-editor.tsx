@@ -46,7 +46,7 @@ export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(({ co
             StarterKit,
             Placeholder.configure({
                 placeholder: placeholder,
-                emptyEditorClass: 'is-editor-empty before:content-[attr(data-placeholder)] before:text-slate-400 before:float-left before:pointer-events-none',
+                emptyEditorClass: 'is-editor-empty before:content-[attr(data-placeholder)] before:text-neutral-400 before:float-left before:pointer-events-none',
             }),
             Typography,
             Table.configure({
@@ -91,7 +91,7 @@ export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(({ co
         },
         editorProps: {
             attributes: {
-                class: 'prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl focus:outline-none max-w-none min-h-full p-8 lg:p-12',
+                class: 'prose prose-sm sm:prose-base lg:prose-lg xl:prose-xl font-serif focus:outline-none max-w-none min-h-full p-8 lg:p-12',
             },
         },
     });
@@ -139,21 +139,21 @@ export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(({ co
     }
 
     return (
-        <div className={`w-full flex flex-col bg-slate-50/50 rounded-2xl border border-slate-200 overflow-hidden min-h-0 ${className}`}>
+        <div className={`w-full flex flex-col bg-neutral-50/50 rounded-2xl border border-neutral-200 overflow-hidden min-h-0 ${className}`}>
             {/* Fixed Toolbar */}
             {editable && (
                 <div className="flex flex-col shrink-0">
                     <EditorToolbar editor={editor} />
                     {/* Variable Toolbar (Quick Insert) */}
-                    <div className="flex gap-2 p-2 bg-slate-50 border-b border-slate-100 text-xs overflow-x-auto">
-                        <span className="text-slate-400 font-bold uppercase tracking-wider py-1">Insert Vars:</span>
-                        <button onClick={() => insertVariable('Counterparty Name')} className="px-2 py-1 bg-white border border-slate-200 rounded-md hover:border-orange-300 hover:text-orange-600 transition-colors shadow-sm">
+                    <div className="flex gap-2 p-2 bg-neutral-50 border-b border-neutral-100 text-xs overflow-x-auto">
+                        <span className="text-neutral-400 font-bold uppercase tracking-wider py-1">Insert Vars:</span>
+                        <button onClick={() => insertVariable('Counterparty Name')} className="px-2 py-1 bg-white border border-neutral-200 rounded-md hover:border-indigo-300 hover:text-indigo-600 transition-colors shadow-sm">
                             Client Name
                         </button>
-                        <button onClick={() => insertVariable('Effective Date')} className="px-2 py-1 bg-white border border-slate-200 rounded-md hover:border-orange-300 hover:text-orange-600 transition-colors shadow-sm">
+                        <button onClick={() => insertVariable('Effective Date')} className="px-2 py-1 bg-white border border-neutral-200 rounded-md hover:border-indigo-300 hover:text-indigo-600 transition-colors shadow-sm">
                             Date
                         </button>
-                        <button onClick={() => insertVariable('Total Amount')} className="px-2 py-1 bg-white border border-slate-200 rounded-md hover:border-orange-300 hover:text-orange-600 transition-colors shadow-sm">
+                        <button onClick={() => insertVariable('Total Amount')} className="px-2 py-1 bg-white border border-neutral-200 rounded-md hover:border-indigo-300 hover:text-indigo-600 transition-colors shadow-sm">
                             Amount
                         </button>
                     </div>
@@ -165,7 +165,7 @@ export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(({ co
                 <EditorContent editor={editor} className="min-h-full" />
             </div>
 
-            <div className="py-2 px-6 text-xs text-slate-400 font-mono flex justify-between items-center border-t border-slate-100 bg-white">
+            <div className="py-2 px-6 text-xs text-neutral-400 font-mono flex justify-between items-center border-t border-neutral-100 bg-white">
                 <div className="flex gap-4">
                     <span>{editor.storage.characterCount.characters()} characters</span>
                     <span>{editor.storage.characterCount.words()} words</span>

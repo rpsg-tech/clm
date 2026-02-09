@@ -72,6 +72,7 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
         logger: new AppLogger(),
     });
+
     const logger = new Logger('Bootstrap'); // Or use app.get(AppLogger) if registered globally, but Logger wrapper is fine for bootstrap
     const configService = app.get(ConfigService);
 

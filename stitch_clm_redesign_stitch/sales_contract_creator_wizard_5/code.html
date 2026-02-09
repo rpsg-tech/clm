@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Contract Detail &amp; AI Assistant</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#463acb",
+                        "primary-light": "#6a5fd6",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#14131f",
+                        "violet-50": "#f5f3ff",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white h-screen flex flex-col font-display antialiased overflow-hidden">
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm shrink-0">
+<div class="px-6 h-16 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-8 text-primary flex items-center justify-center rounded-lg bg-primary/10">
+<span class="material-symbols-outlined text-[24px]">description</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-sm font-bold tracking-tight text-slate-900 dark:text-white">MSA_Acme_Corp_v3.pdf</h1>
+<span class="text-xs text-slate-500 dark:text-slate-400">Last edited 2 hours ago by Alex Morgan</span>
+</div>
+<span class="ml-2 inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Active Draft</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center gap-2">
+<button class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors">
+<span class="material-symbols-outlined text-[20px]">share</span>
+                    Share
+                </button>
+<button class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors">
+<span class="material-symbols-outlined text-[20px]">download</span>
+                    Export
+                </button>
+</div>
+<div class="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-2"></div>
+<button class="flex items-center gap-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors pr-2">
+<div class="size-8 rounded-full bg-cover bg-center border border-slate-200 dark:border-slate-700" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB_5UGxn_7WtGlbpJtSynRNppYg6mkPIcGu4LR1v_eeH7TMnAtN3zM20BoVT4-dvKgghyivJqHcpBi_K4Gx3gnhzkgQYbLt2VGOGhCF-s_3mGFkm0IJvj2SJ0BppW3vjzVzUIZsHjfo_WHxWXJojMFziAuuqAokF9YbUoJ5isnRmLddkbf-qoIXc2i6qhnn59yzzc_Pw-WasHfBK7IhUEocv_ivUoZTmypXHXcPC2qvREOa9uvY-Hj6htOB8RWU5sTxPi5CW0p6Vrg');"></div>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-1 flex overflow-hidden">
+<aside class="w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 z-10">
+<div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+<h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Version History</h2>
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-6">
+<div class="relative pl-6 group">
+<div class="absolute left-1.5 top-2 bottom-0 w-px bg-slate-200 dark:bg-slate-700 group-last:hidden h-full"></div>
+<div class="absolute left-0 top-1.5 size-3 rounded-full bg-primary ring-4 ring-white dark:ring-slate-900"></div>
+<div class="flex flex-col gap-2">
+<div class="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-lg p-3">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-bold text-primary">v3.2 Current</span>
+<span class="text-[10px] text-slate-500">10:23 AM</span>
+</div>
+<div class="flex items-center gap-2 mb-2">
+<div class="size-5 rounded-full bg-slate-200 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB_5UGxn_7WtGlbpJtSynRNppYg6mkPIcGu4LR1v_eeH7TMnAtN3zM20BoVT4-dvKgghyivJqHcpBi_K4Gx3gnhzkgQYbLt2VGOGhCF-s_3mGFkm0IJvj2SJ0BppW3vjzVzUIZsHjfo_WHxWXJojMFziAuuqAokF9YbUoJ5isnRmLddkbf-qoIXc2i6qhnn59yzzc_Pw-WasHfBK7IhUEocv_ivUoZTmypXHXcPC2qvREOa9uvY-Hj6htOB8RWU5sTxPi5CW0p6Vrg');"></div>
+<span class="text-xs font-medium text-slate-900 dark:text-white">Alex Morgan</span>
+</div>
+<p class="text-xs text-slate-600 dark:text-slate-300 leading-snug">
+                            Updated indemnity clause per legal feedback.
+                        </p>
+<div class="mt-2 flex gap-2 text-[10px] font-mono">
+<span class="text-green-600 bg-green-50 px-1.5 py-0.5 rounded">+12 lines</span>
+<span class="text-red-600 bg-red-50 px-1.5 py-0.5 rounded">-4 lines</span>
+</div>
+</div>
+</div>
+</div>
+<div class="relative pl-6 group">
+<div class="absolute left-1.5 top-2 bottom-[-24px] w-px bg-slate-200 dark:bg-slate-700 h-full"></div>
+<div class="absolute left-0 top-1.5 size-3 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-slate-900"></div>
+<div class="flex flex-col gap-2">
+<div class="hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-3 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-semibold text-slate-700 dark:text-slate-300">v3.1 Review</span>
+<span class="text-[10px] text-slate-500">Yesterday</span>
+</div>
+<div class="flex items-center gap-2 mb-2">
+<div class="size-5 rounded-full bg-purple-100 flex items-center justify-center text-[10px] font-bold text-purple-600">SJ</div>
+<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Sarah Jenkins</span>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 leading-snug">
+                            Added standard GDPR data processing addendum.
+                        </p>
+<div class="mt-2 flex gap-2 text-[10px] font-mono">
+<span class="text-green-600 bg-green-50 px-1.5 py-0.5 rounded">+145 lines</span>
+</div>
+</div>
+</div>
+</div>
+<div class="relative pl-6 group">
+<div class="absolute left-0 top-1.5 size-3 rounded-full bg-slate-300 dark:bg-slate-600 ring-4 ring-white dark:ring-slate-900"></div>
+<div class="flex flex-col gap-2">
+<div class="hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg p-3 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-semibold text-slate-700 dark:text-slate-300">v1.0 Initial Draft</span>
+<span class="text-[10px] text-slate-500">Oct 24</span>
+</div>
+<div class="flex items-center gap-2 mb-2">
+<div class="size-5 rounded-full bg-slate-200 bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB_5UGxn_7WtGlbpJtSynRNppYg6mkPIcGu4LR1v_eeH7TMnAtN3zM20BoVT4-dvKgghyivJqHcpBi_K4Gx3gnhzkgQYbLt2VGOGhCF-s_3mGFkm0IJvj2SJ0BppW3vjzVzUIZsHjfo_WHxWXJojMFziAuuqAokF9YbUoJ5isnRmLddkbf-qoIXc2i6qhnn59yzzc_Pw-WasHfBK7IhUEocv_ivUoZTmypXHXcPC2qvREOa9uvY-Hj6htOB8RWU5sTxPi5CW0p6Vrg');"></div>
+<span class="text-xs font-medium text-slate-600 dark:text-slate-400">Alex Morgan</span>
+</div>
+<p class="text-xs text-slate-500 dark:text-slate-400 leading-snug">
+                            Created from Sales Template B.
+                        </p>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<section class="flex-1 bg-slate-100 dark:bg-slate-950 overflow-y-auto relative p-8">
+<div class="sticky top-0 z-20 flex justify-center mb-6 pointer-events-none">
+<div class="bg-slate-900/90 backdrop-blur-md text-white px-1 py-1 rounded-full shadow-lg flex items-center gap-1 pointer-events-auto ring-1 ring-white/10">
+<button class="size-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" title="Zoom Out">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+<span class="text-xs font-mono font-medium w-12 text-center">100%</span>
+<button class="size-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" title="Zoom In">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+<div class="w-px h-4 bg-white/20 mx-1"></div>
+<button class="size-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" title="Search Text">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" title="Download PDF">
+<span class="material-symbols-outlined text-[18px]">print</span>
+</button>
+</div>
+</div>
+<div class="max-w-[800px] mx-auto bg-white dark:bg-[#1e1e1e] min-h-[1100px] shadow-xl border border-slate-200 dark:border-slate-800 p-12 sm:p-16 text-slate-900 dark:text-slate-300">
+<div class="flex justify-between items-end mb-16 border-b-2 border-black dark:border-white pb-4">
+<h1 class="text-3xl font-serif font-bold tracking-wider uppercase">Master Services Agreement</h1>
+<span class="font-mono text-sm">Ref: #MSA-2023-894</span>
+</div>
+<div class="space-y-6 font-serif text-[15px] leading-relaxed text-justify">
+<p>
+<strong>THIS MASTER SERVICES AGREEMENT</strong> ("Agreement") is made and entered into as of October 26, 2023 ("Effective Date"), by and between <strong>ACME CORP</strong>, a Delaware corporation with its principal place of business at 123 Tech Blvd, San Francisco, CA ("Client"), and <strong>SERVICE PROVIDER INC.</strong>, a California corporation ("Provider").
+                </p>
+<h3 class="text-lg font-bold uppercase mt-8 mb-2">1. Services and Scope</h3>
+<p>
+                    Provider agrees to perform the services described in one or more Statements of Work ("SOW") attached hereto and incorporated by reference (the "Services"). Provider shall perform the Services in a professional and workmanlike manner, consistent with industry standards.
+                </p>
+<h3 class="text-lg font-bold uppercase mt-8 mb-2">2. Payment Terms</h3>
+<p class="bg-yellow-100/50 dark:bg-yellow-900/30 px-1 -mx-1 rounded">
+                    Client shall pay Provider the fees set forth in the applicable SOW. Unless otherwise specified in an SOW, invoices are due <strong>Net 45 days</strong> from the date of receipt. Late payments shall accrue interest at a rate of 1.5% per month or the maximum rate permitted by law, whichever is less.
+                </p>
+<h3 class="text-lg font-bold uppercase mt-8 mb-2">3. Intellectual Property</h3>
+<p>
+                    All deliverables created by Provider specifically for Client under this Agreement shall be considered "works made for hire" and shall be the sole and exclusive property of Client. Provider hereby assigns all right, title, and interest in such deliverables to Client.
+                </p>
+<h3 class="text-lg font-bold uppercase mt-8 mb-2">4. Confidentiality</h3>
+<p>
+                    Each party agrees to maintain the confidentiality of the other party's proprietary information and not to disclose such information to any third party without prior written consent, except as required by law.
+                </p>
+<h3 class="text-lg font-bold uppercase mt-8 mb-2">5. Indemnification</h3>
+<div class="relative group">
+<div class="absolute -left-12 top-0 bottom-0 w-1 bg-primary rounded-full"></div>
+<p class="text-slate-800 dark:text-slate-200 font-medium">
+                        Provider shall indemnify, defend, and hold harmless Client from and against any and all claims, damages, liabilities, costs, and expenses (including reasonable attorneys' fees) arising out of or related to Provider's negligence, willful misconduct, or breach of this Agreement.
+                    </p>
+<div class="absolute -right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-primary text-white p-1.5 rounded-full shadow-lg hover:bg-indigo-700">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</button>
+</div>
+</div>
+<h3 class="text-lg font-bold uppercase mt-8 mb-2">6. Term and Termination</h3>
+<p>
+                    This Agreement shall commence on the Effective Date and continue for a period of two (2) years, unless earlier terminated as provided herein. Either party may terminate this Agreement for convenience upon thirty (30) days' written notice.
+                </p>
+<div class="h-32"></div> 
+</div>
+<div class="mt-12 pt-8 border-t border-slate-300 dark:border-slate-700 flex justify-between">
+<div class="w-1/3">
+<div class="h-12 border-b border-black dark:border-slate-500 mb-2"></div>
+<p class="text-sm">Client Signature</p>
+</div>
+<div class="w-1/3">
+<div class="h-12 border-b border-black dark:border-slate-500 mb-2"></div>
+<p class="text-sm">Provider Signature</p>
+</div>
+</div>
+</div>
+<div class="h-12"></div>
+</section>
+<aside class="w-96 bg-violet-50 dark:bg-[#1a1829] border-l border-violet-100 dark:border-slate-800 flex flex-col shrink-0 shadow-[-10px_0_30px_-10px_rgba(0,0,0,0.05)] z-30">
+<div class="p-5 border-b border-violet-100 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm flex items-center justify-between">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined fill-1 animate-pulse">auto_awesome</span>
+<h2 class="font-semibold text-slate-900 dark:text-white">AI Assistant</h2>
+</div>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-5 space-y-6">
+<div class="flex gap-3">
+<div class="size-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 shadow-md">
+<span class="material-symbols-outlined text-white text-[16px]">smart_toy</span>
+</div>
+<div class="flex flex-col gap-1 max-w-[85%]">
+<span class="text-xs font-semibold text-slate-500 dark:text-slate-400 ml-1">AI Assistant</span>
+<div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl rounded-tl-none shadow-sm text-sm text-slate-700 dark:text-slate-200 border border-violet-100 dark:border-slate-700">
+<p>Hello Alex! I've analyzed the <strong>Master Services Agreement</strong>. I can help you find clauses, summarize risks, or compare terms.</p>
+</div>
+</div>
+</div>
+<div class="flex flex-row-reverse gap-3">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-slate-700 bg-cover bg-center shrink-0" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB_5UGxn_7WtGlbpJtSynRNppYg6mkPIcGu4LR1v_eeH7TMnAtN3zM20BoVT4-dvKgghyivJqHcpBi_K4Gx3gnhzkgQYbLt2VGOGhCF-s_3mGFkm0IJvj2SJ0BppW3vjzVzUIZsHjfo_WHxWXJojMFziAuuqAokF9YbUoJ5isnRmLddkbf-qoIXc2i6qhnn59yzzc_Pw-WasHfBK7IhUEocv_ivUoZTmypXHXcPC2qvREOa9uvY-Hj6htOB8RWU5sTxPi5CW0p6Vrg');"></div>
+<div class="flex flex-col gap-1 items-end max-w-[85%]">
+<div class="bg-primary text-white p-3.5 rounded-2xl rounded-tr-none shadow-md text-sm">
+<p>What are the payment terms in this version?</p>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="size-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 shadow-md">
+<span class="material-symbols-outlined text-white text-[16px]">smart_toy</span>
+</div>
+<div class="flex flex-col gap-1 max-w-[90%]">
+<span class="text-xs font-semibold text-slate-500 dark:text-slate-400 ml-1">AI Assistant</span>
+<div class="bg-white dark:bg-slate-800 p-3.5 rounded-2xl rounded-tl-none shadow-sm text-sm text-slate-700 dark:text-slate-200 border border-violet-100 dark:border-slate-700">
+<p>The payment terms are located in <strong>Section 2</strong>. </p>
+<ul class="list-disc list-inside mt-2 space-y-1 text-slate-600 dark:text-slate-300">
+<li>Due date: <strong>Net 45 days</strong> (changed from Net 30 in v2.0).</li>
+<li>Late fee: 1.5% per month.</li>
+</ul>
+<div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+<button class="text-xs font-medium text-primary hover:underline flex items-center gap-1">
+                                Go to Section 2
+                                <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-row-reverse gap-3">
+<div class="size-8 rounded-full bg-slate-200 dark:bg-slate-700 bg-cover bg-center shrink-0" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB_5UGxn_7WtGlbpJtSynRNppYg6mkPIcGu4LR1v_eeH7TMnAtN3zM20BoVT4-dvKgghyivJqHcpBi_K4Gx3gnhzkgQYbLt2VGOGhCF-s_3mGFkm0IJvj2SJ0BppW3vjzVzUIZsHjfo_WHxWXJojMFziAuuqAokF9YbUoJ5isnRmLddkbf-qoIXc2i6qhnn59yzzc_Pw-WasHfBK7IhUEocv_ivUoZTmypXHXcPC2qvREOa9uvY-Hj6htOB8RWU5sTxPi5CW0p6Vrg');"></div>
+<div class="flex flex-col gap-1 items-end max-w-[85%]">
+<div class="bg-primary text-white p-3.5 rounded-2xl rounded-tr-none shadow-md text-sm">
+<p>Is that standard for us?</p>
+</div>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="size-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 shadow-md">
+<span class="material-symbols-outlined text-white text-[16px]">smart_toy</span>
+</div>
+<div class="flex flex-col gap-1 max-w-[90%]">
+<div class="bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm border border-violet-100 dark:border-slate-700 flex gap-1 items-center">
+<div class="size-2 bg-indigo-400 rounded-full animate-bounce"></div>
+<div class="size-2 bg-indigo-400 rounded-full animate-bounce delay-75"></div>
+<div class="size-2 bg-indigo-400 rounded-full animate-bounce delay-150"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="px-5 pb-2">
+<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+<button class="whitespace-nowrap px-3 py-1.5 bg-white dark:bg-slate-800 border border-violet-200 dark:border-slate-700 rounded-full text-xs font-medium text-primary hover:bg-violet-50 transition-colors">
+                    Draft Indemnity Clause
+                </button>
+<button class="whitespace-nowrap px-3 py-1.5 bg-white dark:bg-slate-800 border border-violet-200 dark:border-slate-700 rounded-full text-xs font-medium text-primary hover:bg-violet-50 transition-colors">
+                    Summarize Risks
+                </button>
+<button class="whitespace-nowrap px-3 py-1.5 bg-white dark:bg-slate-800 border border-violet-200 dark:border-slate-700 rounded-full text-xs font-medium text-primary hover:bg-violet-50 transition-colors">
+                    Compare to Playbook
+                </button>
+</div>
+</div>
+<div class="p-4 bg-white dark:bg-slate-900 border-t border-violet-100 dark:border-slate-800">
+<div class="relative rounded-xl shadow-sm">
+<input class="block w-full rounded-xl border-0 py-3 pl-4 pr-12 text-slate-900 dark:text-white shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 bg-slate-50 dark:bg-slate-800" placeholder="Ask a question about this contract..." type="text"/>
+<button class="absolute inset-y-0 right-0 flex items-center pr-3">
+<div class="p-1.5 bg-primary hover:bg-indigo-700 rounded-lg text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">arrow_upward</span>
+</div>
+</button>
+</div>
+<div class="mt-2 text-center">
+<p class="text-[10px] text-slate-400 dark:text-slate-500">AI can make mistakes. Verify important info.</p>
+</div>
+</div>
+</aside>
+</main>
+
+</body></html>

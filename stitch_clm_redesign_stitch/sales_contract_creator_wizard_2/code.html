@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CLM Core Design System</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        indigo: {
+                            700: '#4338ca', 
+                            800: '#3730a3',
+                        },
+                        violet: {
+                            700: '#6d28d9',
+                        },
+                        slate: {
+                            300: '#cbd5e1',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.375rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-white text-slate-900 min-h-screen flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-900">
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md">
+<div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-8 bg-indigo-700 text-white flex items-center justify-center rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-[20px]">dataset</span>
+</div>
+<h1 class="text-lg font-bold tracking-tight text-slate-900">CLM Core <span class="text-slate-400 font-normal">Design System</span></h1>
+</div>
+<div class="flex items-center gap-4 text-sm font-medium text-slate-500">
+<span>v2.4.0</span>
+<a class="hover:text-indigo-700 transition-colors" href="#">Documentation</a>
+<div class="size-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600">
+<span class="material-symbols-outlined text-[18px]">person</span>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 w-full max-w-7xl mx-auto py-12 px-6 space-y-20">
+<div class="max-w-3xl">
+<h2 class="text-4xl font-bold text-slate-900 tracking-tight mb-4">UI Kit &amp; Components</h2>
+<p class="text-lg text-slate-500 leading-relaxed">
+                A comprehensive collection of reusable components, color tokens, and typography standards for the Corporate CLM Tool. Designed for stark professionalism, clarity, and speed.
+            </p>
+</div>
+<section>
+<div class="flex items-center gap-2 mb-8 pb-4 border-b border-slate-100">
+<span class="material-symbols-outlined text-slate-400">palette</span>
+<h3 class="text-xl font-semibold text-slate-900">Color Palette</h3>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+<div class="space-y-3">
+<div class="h-24 w-full bg-indigo-700 rounded-lg shadow-sm ring-1 ring-inset ring-black/5"></div>
+<div>
+<p class="font-semibold text-slate-900">Indigo 700</p>
+<p class="text-xs text-slate-500 font-mono">#4338CA</p>
+<p class="text-xs text-indigo-700 mt-1">Primary Action</p>
+</div>
+</div>
+<div class="space-y-3">
+<div class="h-24 w-full bg-violet-700 rounded-lg shadow-sm ring-1 ring-inset ring-black/5"></div>
+<div>
+<p class="font-semibold text-slate-900">Violet 700</p>
+<p class="text-xs text-slate-500 font-mono">#6D28D9</p>
+<p class="text-xs text-violet-700 mt-1">AI / Highlights</p>
+</div>
+</div>
+<div class="space-y-3">
+<div class="h-24 w-full bg-slate-300 rounded-lg shadow-sm ring-1 ring-inset ring-black/5"></div>
+<div>
+<p class="font-semibold text-slate-900">Slate 300</p>
+<p class="text-xs text-slate-500 font-mono">#CBD5E1</p>
+<p class="text-xs text-slate-500 mt-1">Borders / Disabled</p>
+</div>
+</div>
+<div class="space-y-3">
+<div class="h-24 w-full bg-slate-50 rounded-lg shadow-sm ring-1 ring-inset ring-black/5 border border-slate-200"></div>
+<div>
+<p class="font-semibold text-slate-900">Slate 50</p>
+<p class="text-xs text-slate-500 font-mono">#F8FAFC</p>
+<p class="text-xs text-slate-500 mt-1">Backgrounds</p>
+</div>
+</div>
+<div class="space-y-3">
+<div class="h-24 w-full bg-rose-600 rounded-lg shadow-sm ring-1 ring-inset ring-black/5"></div>
+<div>
+<p class="font-semibold text-slate-900">Rose 600</p>
+<p class="text-xs text-slate-500 font-mono">#E11D48</p>
+<p class="text-xs text-rose-600 mt-1">Destructive</p>
+</div>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center gap-2 mb-8 pb-4 border-b border-slate-100">
+<span class="material-symbols-outlined text-slate-400">text_fields</span>
+<h3 class="text-xl font-semibold text-slate-900">Typography</h3>
+</div>
+<div class="grid lg:grid-cols-2 gap-12 items-start">
+<div class="space-y-8">
+<div class="flex flex-col gap-2">
+<span class="text-xs font-mono text-slate-400">Display 2xl / Bold</span>
+<h1 class="text-5xl font-bold text-slate-900 tracking-tight">Contract Management</h1>
+</div>
+<div class="flex flex-col gap-2">
+<span class="text-xs font-mono text-slate-400">Display xl / Semibold</span>
+<h2 class="text-4xl font-semibold text-slate-900 tracking-tight">Review Agreement</h2>
+</div>
+<div class="flex flex-col gap-2">
+<span class="text-xs font-mono text-slate-400">Heading lg / Medium</span>
+<h3 class="text-2xl font-medium text-slate-900">Clause Library</h3>
+</div>
+</div>
+<div class="space-y-8">
+<div class="flex flex-col gap-2">
+<span class="text-xs font-mono text-slate-400">Body Base / Regular</span>
+<p class="text-base text-slate-600 leading-relaxed">
+                            The standard body text for the CLM platform is Inter, set at 16px (1rem) with a relaxed line-height to ensure readability across dense legal documents. Color contrast is kept high for accessibility.
+                        </p>
+</div>
+<div class="flex flex-col gap-2">
+<span class="text-xs font-mono text-slate-400">Body Small / Medium</span>
+<p class="text-sm font-medium text-slate-500">
+                            Secondary text, captions, and helper labels often use the small variant.
+                        </p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<span class="text-xs font-mono text-slate-400 block mb-2">Link</span>
+<a class="text-indigo-700 font-medium hover:underline" href="#">View Document Details</a>
+</div>
+<div>
+<span class="text-xs font-mono text-slate-400 block mb-2">Code</span>
+<code class="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono text-slate-800">contract_id_v2</code>
+</div>
+</div>
+</div>
+</div>
+</section>
+<div class="grid lg:grid-cols-2 gap-16">
+<section>
+<div class="flex items-center gap-2 mb-8 pb-4 border-b border-slate-100">
+<span class="material-symbols-outlined text-slate-400">smart_button</span>
+<h3 class="text-xl font-semibold text-slate-900">Buttons &amp; Actions</h3>
+</div>
+<div class="space-y-8">
+<div class="flex flex-wrap items-center gap-4">
+<button class="bg-indigo-700 hover:bg-indigo-800 text-white font-medium py-2.5 px-5 rounded-md shadow-sm transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-indigo-700">
+                            Primary Action
+                        </button>
+<button class="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium py-2.5 px-5 rounded-md shadow-sm transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-slate-400">
+                            Secondary Action
+                        </button>
+<button class="text-slate-600 hover:text-indigo-700 hover:bg-indigo-50 font-medium py-2.5 px-5 rounded-md transition-colors">
+                            Ghost Button
+                        </button>
+</div>
+<div class="flex flex-wrap items-center gap-4">
+<button class="bg-rose-600 hover:bg-rose-700 text-white font-medium py-2.5 px-5 rounded-md shadow-sm transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+                            Delete
+                        </button>
+<button class="bg-slate-100 text-slate-400 font-medium py-2.5 px-5 rounded-md cursor-not-allowed" disabled="">
+                            Disabled
+                        </button>
+<button class="size-10 flex items-center justify-center rounded-md border border-slate-300 hover:bg-slate-50 text-slate-600 transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<div class="pt-4 border-t border-slate-100">
+<p class="text-xs text-slate-400 font-mono mb-4">SIZES</p>
+<div class="flex items-center gap-4">
+<button class="bg-indigo-700 text-white text-xs font-medium py-1.5 px-3 rounded">Small</button>
+<button class="bg-indigo-700 text-white text-sm font-medium py-2 px-4 rounded-md">Default</button>
+<button class="bg-indigo-700 text-white text-base font-medium py-3 px-6 rounded-lg">Large</button>
+</div>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center gap-2 mb-8 pb-4 border-b border-slate-100">
+<span class="material-symbols-outlined text-slate-400">input</span>
+<h3 class="text-xl font-semibold text-slate-900">Forms &amp; Inputs</h3>
+</div>
+<div class="space-y-5 max-w-md">
+<div>
+<label class="block text-sm font-medium text-slate-700 mb-1.5">Email Address</label>
+<input class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-slate-900 py-3 px-3 sm:text-sm" placeholder="user@company.com" type="email"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-700 mb-1.5">Contract Type</label>
+<select class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-slate-900 py-3 px-3 sm:text-sm">
+<option>Master Service Agreement (MSA)</option>
+<option>Non-Disclosure Agreement (NDA)</option>
+<option>Statement of Work (SOW)</option>
+</select>
+</div>
+<div class="flex items-start gap-3 pt-2">
+<div class="flex h-6 items-center">
+<input class="h-4 w-4 rounded border-slate-300 text-indigo-700 focus:ring-indigo-600" id="terms" type="checkbox"/>
+</div>
+<div class="text-sm leading-6">
+<label class="font-medium text-slate-900" for="terms">Include Audit Trail</label>
+<p class="text-slate-500">Automatically append log to PDF.</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<section>
+<div class="flex items-center gap-2 mb-8 pb-4 border-b border-slate-100">
+<span class="material-symbols-outlined text-slate-400">grid_view</span>
+<h3 class="text-xl font-semibold text-slate-900">Shadcn-Inspired Cards</h3>
+</div>
+<div class="grid md:grid-cols-3 gap-6">
+<div class="rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm">
+<div class="flex flex-col space-y-1.5 p-6">
+<h3 class="font-semibold leading-none tracking-tight">Create Project</h3>
+<p class="text-sm text-slate-500">Deploy your new project in one-click.</p>
+</div>
+<div class="p-6 pt-0">
+<div class="grid w-full items-center gap-4">
+<div class="flex flex-col space-y-1.5">
+<label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70" for="name">Name</label>
+<input class="flex h-9 w-full rounded-md border border-slate-300 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-700 disabled:cursor-not-allowed disabled:opacity-50" id="name" placeholder="Name of your project"/>
+</div>
+</div>
+</div>
+<div class="flex items-center p-6 pt-0">
+<button class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-indigo-700 disabled:pointer-events-none disabled:opacity-50 bg-slate-900 text-white shadow hover:bg-slate-900/90 h-9 px-4 py-2 w-full">Deploy</button>
+</div>
+</div>
+<div class="rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm flex flex-col justify-between">
+<div class="p-6 flex flex-row items-center justify-between space-y-0 pb-2">
+<h3 class="tracking-tight text-sm font-medium">Total Revenue</h3>
+<span class="material-symbols-outlined text-slate-500 text-[20px]">attach_money</span>
+</div>
+<div class="p-6 pt-0">
+<div class="text-2xl font-bold">$45,231.89</div>
+<p class="text-xs text-slate-500">+20.1% from last month</p>
+</div>
+<div class="p-6 pt-0 mt-auto">
+<div class="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-indigo-700 w-[65%] rounded-full"></div>
+</div>
+</div>
+</div>
+<div class="rounded-xl border border-violet-100 bg-violet-50/50 text-slate-900 shadow-sm relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-[120px] text-violet-700">auto_awesome</span>
+</div>
+<div class="flex flex-col space-y-1.5 p-6 relative z-10">
+<div class="flex items-center gap-2 text-violet-700 mb-2">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+<span class="text-xs font-bold uppercase tracking-wider">AI Assistant</span>
+</div>
+<h3 class="font-semibold leading-none tracking-tight">Contract Analysis</h3>
+<p class="text-sm text-slate-600 mt-2">
+                            The uploaded PDF contains 3 risky indemnity clauses. Would you like to generate a redline version?
+                        </p>
+</div>
+<div class="flex items-center gap-3 p-6 pt-0 relative z-10">
+<button class="bg-violet-700 text-white text-sm font-medium px-4 py-2 rounded-md shadow-sm hover:bg-violet-800 transition-colors">
+                            Generate Redlines
+                        </button>
+<button class="text-violet-700 hover:bg-violet-100 px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                            Dismiss
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center gap-2 mb-8 pb-4 border-b border-slate-100">
+<span class="material-symbols-outlined text-slate-400">sentiment_satisfied</span>
+<h3 class="text-xl font-semibold text-slate-900">Iconography</h3>
+</div>
+<p class="text-slate-500 mb-6">Using Material Symbols Outlined, styled to match the clean aesthetic of Lucide.</p>
+<div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+<div class="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all group">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-indigo-700 mb-2">home</span>
+<span class="text-xs text-slate-400">home</span>
+</div>
+<div class="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all group">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-indigo-700 mb-2">settings</span>
+<span class="text-xs text-slate-400">settings</span>
+</div>
+<div class="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all group">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-indigo-700 mb-2">description</span>
+<span class="text-xs text-slate-400">file</span>
+</div>
+<div class="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all group">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-indigo-700 mb-2">mail</span>
+<span class="text-xs text-slate-400">mail</span>
+</div>
+<div class="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all group">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-indigo-700 mb-2">search</span>
+<span class="text-xs text-slate-400">search</span>
+</div>
+<div class="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all group">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-indigo-700 mb-2">add_circle</span>
+<span class="text-xs text-slate-400">add</span>
+</div>
+<div class="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all group">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-indigo-700 mb-2">calendar_today</span>
+<span class="text-xs text-slate-400">calendar</span>
+</div>
+<div class="flex flex-col items-center justify-center p-4 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all group">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-indigo-700 mb-2">more_vert</span>
+<span class="text-xs text-slate-400">more</span>
+</div>
+</div>
+</section>
+</main>
+<footer class="bg-slate-50 border-t border-slate-200 mt-20">
+<div class="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-center">
+<p class="text-slate-500 text-sm">© 2024 CLM Corporation. All rights reserved.</p>
+<div class="flex gap-6 mt-4 md:mt-0">
+<a class="text-slate-500 hover:text-indigo-700 text-sm" href="#">Privacy Policy</a>
+<a class="text-slate-500 hover:text-indigo-700 text-sm" href="#">Terms of Service</a>
+</div>
+</div>
+</footer>
+
+</body></html>

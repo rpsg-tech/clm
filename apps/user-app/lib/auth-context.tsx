@@ -6,30 +6,22 @@
  Implements smart caching and sessionStorage persistence for optimal performance.
  */
 
-import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
+import type { Organization, User } from '@repo/types';
 
-interface User {
-    id: string;
-    email: string;
-    name: string;
-    organizations: Array<{
-        id: string;
-        name: string;
-        code: string;
-        role: string;
-    }>;
-}
-
-interface Organization {
+type AuthOrganizationRole = {
     id: string;
     name: string;
     code: string;
-}
+    role: string;
+};
+
+type AuthUser = User & { organizations?: AuthOrganizationRole[] };
 
 interface AuthState {
-    user: User | null;
+    user: AuthUser | null;
     currentOrg: Organization | null;
     permissions: string[];
     features: Record<string, boolean>;
@@ -44,6 +36,14 @@ interface AuthContextType extends AuthState {
     switchOrg: (organizationId: string) => Promise<void>;
     hasPermission: (permission: string) => boolean;
     isFeatureEnabled: (featureCode: string) => boolean;
+}
+
+interface AuthQueryData {
+    user: AuthUser;
+    currentOrg: Organization;
+    role: string;
+    permissions: string[];
+    features: Record<string, boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -175,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = useCallback(
         async (email: string, password: string) => {
-            const response = await api.auth.login(email, password);
+            await api.auth.login(email, password);
 
             // Refresh context by invalidating and refetching
             await queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEY });
@@ -223,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const response = await api.auth.switchOrg(organizationId);
 
             // Update the query cache with new org context
-            queryClient.setQueryData(AUTH_QUERY_KEY, (oldData: any) => ({
+            queryClient.setQueryData(AUTH_QUERY_KEY, (oldData: AuthQueryData | undefined) => ({
                 ...oldData,
                 currentOrg: response.organization,
                 permissions: response.permissions,

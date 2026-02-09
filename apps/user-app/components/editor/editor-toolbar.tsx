@@ -2,13 +2,7 @@
 
 import React, { useRef } from 'react';
 import { Editor } from '@tiptap/react';
-import {
-    Bold, Italic, Strikethrough, Underline, Code,
-    List, ListOrdered, Quote, Minus, Undo, Redo,
-    Link as LinkIcon, Image as ImageIcon, Table as TableIcon,
-    Subscript as SubIcon, Superscript as SuperIcon,
-    Merge, Split, Scissors
-} from 'lucide-react';
+import { MaterialIcon } from '@/components/ui/material-icon';
 
 interface EditorToolbarProps {
     editor: Editor | null;
@@ -37,9 +31,9 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
         <button
             onClick={onClick}
             title={title}
-            className={`p-2 rounded-lg transition-all ${isActive
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+            className={`p-2 rounded-lg transition-all flex items-center justify-center ${isActive
+                ? 'bg-neutral-900 text-white shadow-sm'
+                : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-900'
                 } ${className}`}
             type="button"
         >
@@ -132,7 +126,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     };
 
     return (
-        <div className="flex flex-wrap items-center gap-1 p-2 bg-white border-b border-slate-100 sticky top-0 z-10 w-full">
+        <div className="flex flex-wrap items-center gap-1 p-2 bg-white border-b border-neutral-100 sticky top-0 z-10 w-full">
             <input
                 type="file"
                 ref={fileInputRef}
@@ -142,21 +136,21 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             />
 
             {/* History */}
-            <div className="flex items-center gap-1 pr-2 border-r border-slate-100 mr-1">
+            <div className="flex items-center gap-1 pr-2 border-r border-neutral-100 mr-1">
                 <ToggleButton onClick={() => editor.chain().focus().undo().run()} title="Undo">
-                    <Undo size={16} />
+                    <MaterialIcon name="undo" size={16} />
                 </ToggleButton>
                 <ToggleButton onClick={() => editor.chain().focus().redo().run()} title="Redo">
-                    <Redo size={16} />
+                    <MaterialIcon name="redo" size={16} />
                 </ToggleButton>
             </div>
 
             {/* Typography */}
-            <div className="flex items-center px-1 border-r border-slate-100 gap-1 mr-1">
+            <div className="flex items-center px-1 border-r border-neutral-100 gap-1 mr-1">
                 <select
                     value={getCurrentHeadingValue()}
                     onChange={handleHeadingChange}
-                    className="h-8 px-2 text-sm bg-transparent border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-100 cursor-pointer text-slate-700 font-medium w-28"
+                    className="h-8 px-2 text-sm bg-transparent border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer text-neutral-700 font-medium w-28"
                     title="Heading Level"
                 >
                     <option value="p">Normal</option>
@@ -167,7 +161,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                 <select
                     value={getCurrentFontValue()}
                     onChange={handleFontChange}
-                    className="h-8 px-2 text-sm bg-transparent border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-100 cursor-pointer text-slate-700 font-medium w-24"
+                    className="h-8 px-2 text-sm bg-transparent border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer text-neutral-700 font-medium w-24"
                     title="Font Family"
                 >
                     <option value="inter">Inter</option>
@@ -178,11 +172,11 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             </div>
 
             {/* Alignment */}
-            <div className="flex items-center px-1 border-r border-slate-100 mr-1">
+            <div className="flex items-center px-1 border-r border-neutral-100 mr-1">
                 <select
                     value={getCurrentAlignValue()}
                     onChange={handleAlignChange}
-                    className="h-8 px-2 text-sm bg-transparent border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-100 cursor-pointer text-slate-700 font-medium w-24"
+                    className="h-8 px-2 text-sm bg-transparent border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer text-neutral-700 font-medium w-24"
                     title="Alignment"
                 >
                     <option value="left">Left</option>
@@ -193,18 +187,18 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             </div>
 
             {/* Basic Formatting */}
-            <div className="flex items-center gap-1 pr-2 border-r border-slate-100 mr-1">
+            <div className="flex items-center gap-1 pr-2 border-r border-neutral-100 mr-1">
                 <ToggleButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title="Bold">
-                    <Bold size={16} />
+                    <MaterialIcon name="format_bold" size={16} />
                 </ToggleButton>
                 <ToggleButton onClick={() => editor.chain().focus().toggleItalic().run()} isActive={editor.isActive('italic')} title="Italic">
-                    <Italic size={16} />
+                    <MaterialIcon name="format_italic" size={16} />
                 </ToggleButton>
                 <ToggleButton onClick={() => editor.chain().focus().toggleUnderline().run()} isActive={editor.isActive('underline')} title="Underline">
-                    <Underline size={16} />
+                    <MaterialIcon name="format_underlined" size={16} />
                 </ToggleButton>
                 <ToggleButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive('strike')} title="Strikethrough">
-                    <Strikethrough size={16} />
+                    <MaterialIcon name="format_strikethrough" size={16} />
                 </ToggleButton>
                 <div className="relative group flex items-center justify-center -ml-1">
                     <input
@@ -222,21 +216,21 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             </div>
 
             {/* Advanced Formatting */}
-            <div className="flex items-center gap-1 pr-2 border-r border-slate-100 mr-1">
+            <div className="flex items-center gap-1 pr-2 border-r border-neutral-100 mr-1">
                 <ToggleButton onClick={() => editor.chain().focus().toggleSubscript().run()} isActive={editor.isActive('subscript')} title="Subscript">
-                    <SubIcon size={16} />
+                    <MaterialIcon name="subscript" size={16} />
                 </ToggleButton>
                 <ToggleButton onClick={() => editor.chain().focus().toggleSuperscript().run()} isActive={editor.isActive('superscript')} title="Superscript">
-                    <SuperIcon size={16} />
+                    <MaterialIcon name="superscript" size={16} />
                 </ToggleButton>
                 <ToggleButton onClick={() => editor.chain().focus().toggleCode().run()} isActive={editor.isActive('code')} title="Code">
-                    <Code size={16} />
+                    <MaterialIcon name="code" size={16} />
                 </ToggleButton>
             </div>
 
 
             {/* Inserts */}
-            <div className="flex items-center gap-1 pr-2 border-r border-slate-100 mr-1">
+            <div className="flex items-center gap-1 pr-2 border-r border-neutral-100 mr-1">
                 <select
                     onChange={(e) => {
                         const [key, label] = e.target.value.split('|');
@@ -248,7 +242,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                             e.target.value = ""; // Reset
                         }
                     }}
-                    className="h-8 px-2 text-sm bg-transparent border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-100 cursor-pointer text-slate-700 font-medium w-32"
+                    className="h-8 px-2 text-sm bg-transparent border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-100 cursor-pointer text-neutral-700 font-medium w-32"
                     title="Insert Variable"
                 >
                     <option value="">+ Variable</option>
@@ -261,48 +255,48 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                 </select>
 
                 <ToggleButton onClick={addLink} isActive={editor.isActive('link')} title="Link">
-                    <LinkIcon size={16} />
+                    <MaterialIcon name="link" size={16} />
                 </ToggleButton>
                 <ToggleButton onClick={triggerImageUpload} isActive={false} title="Image">
-                    <ImageIcon size={16} />
+                    <MaterialIcon name="image" size={16} />
                 </ToggleButton>
                 <ToggleButton onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} isActive={false} title="Table">
-                    <TableIcon size={16} />
+                    <MaterialIcon name="table_chart" size={16} />
                 </ToggleButton>
             </div>
 
             {/* Lists */}
             <div className="flex items-center gap-1">
                 <ToggleButton onClick={() => editor.chain().focus().toggleBulletList().run()} isActive={editor.isActive('bulletList')} title="Bullet List">
-                    <List size={16} />
+                    <MaterialIcon name="format_list_bulleted" size={16} />
                 </ToggleButton>
                 <ToggleButton onClick={() => editor.chain().focus().toggleOrderedList().run()} isActive={editor.isActive('orderedList')} title="Ordered List">
-                    <ListOrdered size={16} />
+                    <MaterialIcon name="format_list_numbered" size={16} />
                 </ToggleButton>
                 <ToggleButton onClick={() => editor.chain().focus().toggleBlockquote().run()} isActive={editor.isActive('blockquote')} title="Blockquote">
-                    <Quote size={16} />
+                    <MaterialIcon name="format_quote" size={16} />
                 </ToggleButton>
                 <ToggleButton onClick={() => editor.chain().focus().setHorizontalRule().run()} isActive={false} title="Page Break / Divider">
-                    <Minus size={16} />
+                    <MaterialIcon name="horizontal_rule" size={16} />
                 </ToggleButton>
             </div>
 
             {/* Table Controls (Contextual) */}
             {editor.isActive('table') && (
-                <div className="flex items-center gap-1 pl-2 border-l border-slate-100 ml-1 bg-slate-50 rounded-r-lg overflow-x-auto">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 mr-1">Table:</span>
+                <div className="flex items-center gap-1 pl-2 border-l border-neutral-100 ml-1 bg-neutral-50 rounded-r-lg overflow-x-auto">
+                    <span className="text-[10px] uppercase font-bold text-neutral-400 mr-1">Table:</span>
 
                     {/* Cells */}
                     <div className="flex gap-0.5">
                         <ToggleButton onClick={() => editor.chain().focus().mergeCells().run()} title="Merge Cells">
-                            <Merge size={14} />
+                            <MaterialIcon name="merge" size={14} />
                         </ToggleButton>
                         <ToggleButton onClick={() => editor.chain().focus().splitCell().run()} title="Split Cell">
-                            <Split size={14} />
+                            <MaterialIcon name="call_split" size={14} />
                         </ToggleButton>
                     </div>
 
-                    <div className="w-px h-4 bg-slate-300 mx-1"></div>
+                    <div className="w-px h-4 bg-neutral-300 mx-1"></div>
 
                     {/* Columns */}
                     <div className="flex gap-0.5 items-center">
@@ -317,7 +311,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                         </ToggleButton>
                     </div>
 
-                    <div className="w-px h-4 bg-slate-300 mx-1"></div>
+                    <div className="w-px h-4 bg-neutral-300 mx-1"></div>
 
                     {/* Rows */}
                     <div className="flex gap-0.5 items-center">
@@ -332,13 +326,14 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                         </ToggleButton>
                     </div>
 
-                    <div className="w-px h-4 bg-slate-300 mx-1"></div>
+                    <div className="w-px h-4 bg-neutral-300 mx-1"></div>
 
                     <ToggleButton onClick={() => editor.chain().focus().deleteTable().run()} title="Delete Entire Table">
-                        <Scissors size={14} className="text-red-600" />
+                        <MaterialIcon name="content_cut" size={14} className="text-red-600" />
                     </ToggleButton>
                 </div>
             )}
         </div>
     );
 }
+

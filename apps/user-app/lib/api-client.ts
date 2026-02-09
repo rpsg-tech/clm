@@ -1,9 +1,190 @@
 'use client';
 /**
  * API Client for CLM Enterprise - User App
- * 
+ *
  * Updated for HttpOnly Cookie Authentication.
  */
+
+import type {
+  User,
+  UserWithRoles,
+  Organization,
+  OrganizationWithChildren,
+  Role,
+  Permission,
+  TemplateWithAnnexures,
+  Annexure,
+  ContractVersion,
+  AuditLog,
+  FeatureFlag,
+} from '@repo/types';
+
+// ============ LOCAL RESPONSE TYPES ============
+// These define response shapes for endpoints not covered by @repo/types
+
+/** Meta shape returned by paginated list endpoints */
+interface PaginatedMeta {
+  total: number;
+  lastPage: number;
+  currentPage: number;
+  perPage: number;
+  prev: number | null;
+  next: number | null;
+}
+
+/** Auth session data returned by /auth/me and /auth/session */
+interface AuthSessionResponse {
+  user: User;
+  currentOrg: Organization;
+  role: string;
+  permissions: string[];
+  features: Record<string, boolean>;
+}
+
+/** Extended session with notification count */
+interface AuthSessionWithNotifications extends AuthSessionResponse {
+  unreadNotifications: number;
+}
+
+/** Response from /auth/switch-org */
+interface SwitchOrgResponse {
+  organization: { id: string; name: string; code: string };
+  role: string;
+  permissions: string[];
+  features: Record<string, boolean>;
+}
+
+/** AI contract analysis result */
+interface AIAnalysisResponse {
+  risks: string[];
+  summary: string;
+  score?: number;
+  clauses?: unknown[];
+  recommendations?: string[];
+}
+
+/** AI clause suggestion */
+interface AIClauseSuggestion {
+  text: string;
+  confidence: number;
+  explanation?: string;
+}
+
+/** AI clause improvement result */
+interface AIClauseImprovement {
+  improved: string;
+  changes: string[];
+  confidence: number;
+}
+
+/** AI clause type descriptor */
+interface AIClauseType {
+  code: string;
+  name: string;
+  description?: string;
+}
+
+/** Analytics contracts summary */
+interface AnalyticsSummary {
+  total: number;
+  active: number;
+  draft: number;
+  activeValue: number;
+}
+
+/** Analytics contracts by status */
+interface AnalyticsByStatus {
+  status: string;
+  count: number;
+}
+
+/** Analytics trend data point */
+interface AnalyticsTrendPoint {
+  date: string;
+  count: number;
+}
+
+/** Approvals metrics */
+interface ApprovalsMetrics {
+  pending: number;
+  approved: number;
+  rejected: number;
+  avgTurnaroundDays: number;
+}
+
+/** Activity log entry from analytics */
+interface ActivityEntry {
+  id: string;
+  action: string;
+  description: string;
+  userId: string;
+  userName?: string;
+  createdAt: string;
+}
+
+/** Notification item */
+interface Notification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  data?: Record<string, unknown>;
+}
+
+/** Document upload confirmation response */
+interface DocumentUploadConfirmation {
+  id: string;
+  filename: string;
+  key: string;
+  fileSize: number;
+  contentType?: string;
+}
+
+/** Version changelog response */
+interface VersionChangelog {
+  versionId: string;
+  versionNumber: number;
+  changes: Record<string, unknown>;
+  createdAt: string;
+  createdByUserId: string;
+}
+
+/** Version comparison response */
+interface VersionComparison {
+  from: { versionNumber: number; content: string };
+  to: { versionNumber: number; content: string };
+  diff: string;
+}
+
+/** Admin stats response */
+interface AdminStats {
+  totalUsers: number;
+  totalContracts: number;
+  totalOrganizations: number;
+  activeContracts: number;
+  pendingApprovals: number;
+}
+
+/** Oracle chat response */
+interface OracleChatResponse {
+  response: string;
+  context?: Record<string, unknown>;
+  meta?: Record<string, unknown>;
+}
+
+/**
+ * JSON-serialized version of types where Date fields become strings.
+ * API responses serialize Date objects to ISO strings over the wire.
+ */
+type Serialized<T> = {
+  [K in keyof T]: T[K] extends Date ? string
+    : T[K] extends Date | undefined ? string | undefined
+    : T[K] extends (infer U)[] ? Serialized<U>[]
+    : T[K] extends object ? Serialized<T[K]>
+    : T[K];
+};
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
@@ -86,7 +267,7 @@ async function authFetch<T>(
         await fetch(`${API_BASE_URL}/health`, { credentials: 'include' });
         // Retry original request
         return authFetch<T>(endpoint, options);
-      } catch (e) {
+      } catch {
         throw new ApiError('CSRF token refresh failed', 403, data);
       }
     }
@@ -109,7 +290,7 @@ async function authFetch<T>(
           // Retry original request
           return authFetch<T>(endpoint, options);
         }
-      } catch (e) {
+      } catch {
         // Refresh failed
       }
     }
@@ -144,14 +325,14 @@ async function refreshTokens(): Promise<boolean> {
 }
 
 // Cache for auth.me request to prevent redundant calls
-let mePromise: Promise<{ user: any; currentOrg: any; role: string; permissions: string[]; features: any }> | null = null;
+let mePromise: Promise<AuthSessionResponse> | null = null;
 
 export const api = {
   // Auth
   auth: {
     login: async (email: string, password: string) => {
       mePromise = null; // Clear cache on login attempt
-      return authFetch<{ user: any }>('/auth/login', {
+      return authFetch<{ user: User }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
@@ -159,7 +340,7 @@ export const api = {
 
     me: () => {
       if (!mePromise) {
-        mePromise = authFetch<{ user: any; currentOrg: any; role: string; permissions: string[]; features: any }>('/auth/me')
+        mePromise = authFetch<AuthSessionResponse>('/auth/me')
           .catch(err => {
             mePromise = null; // Clear cache on failure so retry works
             throw err;
@@ -173,24 +354,12 @@ export const api = {
      * Consolidated endpoint to reduce initial load
      */
     session: () => {
-      return authFetch<{
-        user: any;
-        currentOrg: any;
-        role: string;
-        permissions: string[];
-        features: any;
-        unreadNotifications: number;
-      }>('/auth/session');
+      return authFetch<AuthSessionWithNotifications>('/auth/session');
     },
 
     switchOrg: async (organizationId: string) => {
       mePromise = null; // Clear cache as org context changes
-      return authFetch<{
-        organization: { id: string; name: string; code: string };
-        role: string;
-        permissions: string[];
-        features: any;
-      }>('/auth/switch-org', {
+      return authFetch<SwitchOrgResponse>('/auth/switch-org', {
         method: 'POST',
         body: JSON.stringify({ organizationId }),
       });
@@ -245,7 +414,7 @@ export const api = {
 
 
     getAuditLogs: (id: string) => {
-      return authFetch<any[]>(`/contracts/${id}/audit`)
+      return authFetch<Serialized<AuditLog>[]>(`/contracts/${id}/audit`)
     },
 
     submit: (id: string, payload?: { target: 'LEGAL' | 'FINANCE' }) =>
@@ -265,7 +434,7 @@ export const api = {
 
     uploadSigned: async (id: string, file: File) => {
       // Step 1: Get Presigned URL
-      const { uploadUrl, key, publicUrl } = await authFetch<{ uploadUrl: string; key: string; publicUrl: string }>(
+      const { uploadUrl, key } = await authFetch<{ uploadUrl: string; key: string; publicUrl: string }>(
         `/contracts/${id}/upload-url`,
         {
           method: 'POST',
@@ -302,7 +471,7 @@ export const api = {
       }),
 
     confirmDocumentUpload: (id: string, key: string, filename: string, fileSize: number) =>
-      authFetch<any>(`/contracts/${id}/document/upload-confirm`, {
+      authFetch<DocumentUploadConfirmation>(`/contracts/${id}/document/upload-confirm`, {
         method: 'POST',
         body: JSON.stringify({ key, filename, fileSize }),
       }),
@@ -310,13 +479,13 @@ export const api = {
     getAttachmentDownloadUrl: (id: string, attachmentId: string) =>
       authFetch<{ url: string; filename: string; contentType: string }>(`/contracts/${id}/attachments/${attachmentId}/download-url`),
 
-    getVersions: (id: string) => authFetch<any[]>(`/contracts/${id}/versions`),
+    getVersions: (id: string) => authFetch<ContractVersion[]>(`/contracts/${id}/versions`),
 
     getVersionChangelog: (id: string, versionId: string) =>
-      authFetch<any>(`/contracts/${id}/versions/${versionId}/changelog`),
+      authFetch<VersionChangelog>(`/contracts/${id}/versions/${versionId}/changelog`),
 
     compare: (id: string, from: string, to: string) =>
-      authFetch<any>(`/contracts/${id}/compare?from=${from}&to=${to}`),
+      authFetch<VersionComparison>(`/contracts/${id}/compare?from=${from}&to=${to}`),
   },
 
   // Templates
@@ -336,20 +505,20 @@ export const api = {
     get: (id: string) => authFetch(`/templates/${id}`),
 
     // Admin Methods
-    create: (data: { name: string; code: string; category: string; description?: string; baseContent: string; isGlobal?: boolean; annexures?: any[] }) =>
-      authFetch<any>('/admin/templates', {
+    create: (data: { name: string; code: string; category: string; description?: string; baseContent: string; isGlobal?: boolean; annexures?: Partial<Annexure>[] }) =>
+      authFetch<TemplateWithAnnexures>('/admin/templates', {
         method: 'POST',
         body: JSON.stringify(data)
       }),
-    update: (id: string, data: { name?: string; description?: string; baseContent?: string; isGlobal?: boolean; isActive?: boolean; annexures?: any[] }) =>
-      authFetch<any>(`/admin/templates/${id}`, {
+    update: (id: string, data: { name?: string; description?: string; baseContent?: string; isGlobal?: boolean; isActive?: boolean; annexures?: Partial<Annexure>[] }) =>
+      authFetch<TemplateWithAnnexures>(`/admin/templates/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data)
       }),
     enableForOrg: (templateId: string, orgId: string) =>
-      authFetch<any>(`/admin/templates/${templateId}/enable/${orgId}`, { method: 'PATCH' }),
+      authFetch<{ success: boolean }>(`/admin/templates/${templateId}/enable/${orgId}`, { method: 'PATCH' }),
     disableForOrg: (templateId: string, orgId: string) =>
-      authFetch<any>(`/admin/templates/${templateId}/disable/${orgId}`, { method: 'PATCH' }),
+      authFetch<{ success: boolean }>(`/admin/templates/${templateId}/disable/${orgId}`, { method: 'PATCH' }),
   },
 
   // Approvals
@@ -379,25 +548,25 @@ export const api = {
   // Including essential AI for completeness as file had it
   ai: {
     analyze: (content: string, title?: string) =>
-      authFetch<any>('/ai/analyze', {
+      authFetch<AIAnalysisResponse>('/ai/analyze', {
         method: 'POST',
         body: JSON.stringify({ content, title }),
       }),
 
     suggestClause: (clauseType: string, context?: string) =>
-      authFetch<any>('/ai/suggest-clause', {
+      authFetch<AIClauseSuggestion>('/ai/suggest-clause', {
         method: 'POST',
         body: JSON.stringify({ clauseType, context }),
       }),
 
     improveClause: (clause: string) =>
-      authFetch<any>('/ai/improve-clause', {
+      authFetch<AIClauseImprovement>('/ai/improve-clause', {
         method: 'POST',
         body: JSON.stringify({ clause }),
       }),
 
     getClauseTypes: () =>
-      authFetch<any>('/ai/clause-types'),
+      authFetch<AIClauseType[]>('/ai/clause-types'),
 
     extractDate: (content: string) =>
       authFetch<{ expiryDate: string | null; confidence: number; explanation: string }>('/ai/extract-date', {
@@ -419,16 +588,16 @@ export const api = {
   },
 
   analytics: {
-    contractsSummary: () => authFetch<any>('/analytics/contracts/summary'),
-    contractsByStatus: () => authFetch<any>('/analytics/contracts/by-status'),
-    contractsTrend: () => authFetch<any>('/analytics/contracts/trend'),
-    approvalsMetrics: () => authFetch<any>('/analytics/approvals/metrics'),
-    recentActivity: (limit = 10) => authFetch<any>(`/analytics/activity?limit=${limit}`),
+    contractsSummary: () => authFetch<AnalyticsSummary>('/analytics/contracts/summary'),
+    contractsByStatus: () => authFetch<AnalyticsByStatus[]>('/analytics/contracts/by-status'),
+    contractsTrend: () => authFetch<AnalyticsTrendPoint[]>('/analytics/contracts/trend'),
+    approvalsMetrics: () => authFetch<ApprovalsMetrics>('/analytics/approvals/metrics'),
+    recentActivity: (limit = 10) => authFetch<ActivityEntry[]>(`/analytics/activity?limit=${limit}`),
   },
 
   // Notifications
   notifications: {
-    list: () => authFetch<{ notifications: any[]; unreadCount: number }>('/notifications'),
+    list: () => authFetch<{ notifications: Notification[]; unreadCount: number }>('/notifications'),
 
     markRead: (id: string) =>
       authFetch(`/notifications/${id}/read`, { method: 'PATCH' }),
@@ -459,7 +628,7 @@ export const api = {
       if (params?.skip !== undefined) searchParams.set('skip', params.skip.toString());
       if (params?.take !== undefined) searchParams.set('take', params.take.toString());
       const query = searchParams.toString();
-      return authFetch<{ logs: any[]; total: number }>(`/audit${query ? `?${query}` : ''}`);
+      return authFetch<{ logs: Serialized<AuditLog>[]; total: number }>(`/audit${query ? `?${query}` : ''}`);
     },
   },
 
@@ -467,7 +636,7 @@ export const api = {
 
   // Permissions
   permissions: {
-    list: () => authFetch<any>('/permissions'),
+    list: () => authFetch<Permission[]>('/permissions'),
   },
 
   // Organizations
@@ -481,28 +650,28 @@ export const api = {
       if (params?.search) query.set('search', params.search);
       const queryStr = query.toString();
       return authFetch<{
-        data: any[];
-        meta: { total: number; lastPage: number; currentPage: number; perPage: number; prev: number | null; next: number | null };
+        data: Organization[];
+        meta: PaginatedMeta;
       }>(`/organizations${queryStr ? `?${queryStr}` : ''}`);
     },
-    get: (id: string) => authFetch<any>(`/organizations/${id}`),
+    get: (id: string) => authFetch<OrganizationWithChildren>(`/organizations/${id}`),
     create: (data: { name: string; code: string; type?: 'PARENT' | 'ENTITY'; parentId?: string }) =>
-      authFetch<any>('/organizations', {
+      authFetch<Organization>('/organizations', {
         method: 'POST',
         body: JSON.stringify(data)
       }),
-    update: (id: string, data: { name?: string; isActive?: boolean; settings?: any }) =>
-      authFetch<any>(`/organizations/${id}`, {
+    update: (id: string, data: { name?: string; isActive?: boolean; settings?: Record<string, unknown> }) =>
+      authFetch<Organization>(`/organizations/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data)
       }),
-    updateSettings: (id: string, settings: Record<string, any>) =>
-      authFetch<any>(`/organizations/${id}/settings`, {
+    updateSettings: (id: string, settings: Record<string, unknown>) =>
+      authFetch<Organization>(`/organizations/${id}/settings`, {
         method: 'PUT',
         body: JSON.stringify(settings)
       }),
     deactivate: (id: string) =>
-      authFetch<any>(`/organizations/${id}/deactivate`, { method: 'PUT' }),
+      authFetch<Organization>(`/organizations/${id}/deactivate`, { method: 'PUT' }),
   },
 
   // Users (Admin Context)
@@ -515,8 +684,8 @@ export const api = {
       if (params?.status) query.set('status', params.status);
       const queryStr = query.toString();
       return authFetch<{
-        data: any[];
-        meta: { total: number; lastPage: number; currentPage: number; perPage: number; prev: number | null; next: number | null };
+        data: UserWithRoles[];
+        meta: PaginatedMeta;
       }>(`/users${queryStr ? `?${queryStr}` : ''}`);
     },
     invite: (data: { email: string; roleId: string; organizationIds?: string[]; name?: string; password?: string }) =>
@@ -525,7 +694,7 @@ export const api = {
         body: JSON.stringify(data)
       }),
     update: (id: string, data: { name?: string; email?: string; roleId?: string; isActive?: boolean; organizationIds?: string[] }) =>
-      authFetch<any>(`/users/${id}`, {
+      authFetch<UserWithRoles>(`/users/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(data)
       }),
@@ -540,18 +709,18 @@ export const api = {
       if (params?.search) query.set('search', params.search);
       const queryStr = query.toString();
       return authFetch<{
-        data: any[];
-        meta: { total: number; lastPage: number; currentPage: number; perPage: number; prev: number | null; next: number | null };
+        data: Role[];
+        meta: PaginatedMeta;
       }>(`/roles${queryStr ? `?${queryStr}` : ''}`);
     },
-    get: (id: string) => authFetch<any>(`/roles/${id}`),
+    get: (id: string) => authFetch<Role & { permissions: Permission[] }>(`/roles/${id}`),
     create: (data: { name: string; code: string; description?: string; permissionIds: string[] }) =>
-      authFetch<any>('/roles', {
+      authFetch<Role>('/roles', {
         method: 'POST',
         body: JSON.stringify(data)
       }),
     update: (id: string, data: { name?: string; description?: string; permissionIds?: string[] }) =>
-      authFetch<any>(`/roles/${id}`, {
+      authFetch<Role>(`/roles/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(data)
       }),
@@ -559,24 +728,24 @@ export const api = {
 
   // Feature Flags (System Settings)
   featureFlags: {
-    list: () => authFetch<any[]>('/feature-flags'),
-    toggle: (code: string, isEnabled: boolean, config?: any) =>
-      authFetch<any>(`/feature-flags/${code}`, {
+    list: () => authFetch<FeatureFlag[]>('/feature-flags'),
+    toggle: (code: string, isEnabled: boolean, config?: Record<string, unknown>) =>
+      authFetch<FeatureFlag>(`/feature-flags/${code}`, {
         method: 'PUT',
         body: JSON.stringify({ isEnabled, config })
       }),
-    getAvailable: () => authFetch<any[]>('/feature-flags/available'),
+    getAvailable: () => authFetch<FeatureFlag[]>('/feature-flags/available'),
   },
 
   // Admin Analytics
   analyticsAdmin: {
-    getAdminStats: () => authFetch<any>('/analytics/admin/stats'),
+    getAdminStats: () => authFetch<AdminStats>('/analytics/admin/stats'),
   },
 
   // Oracle AI
   oracle: {
     chat: (data: { query: string; contextUrl?: string; organizationId?: string }) =>
-      authFetch<{ response: string; context?: any; meta?: any }>('/oracle/chat', {
+      authFetch<OracleChatResponse>('/oracle/chat', {
         method: 'POST',
         body: JSON.stringify(data)
       }),
@@ -590,7 +759,7 @@ export const api = {
 export async function initializeCsrf(): Promise<void> {
   try {
     await fetch(`${API_BASE_URL}/health`, { credentials: 'include' });
-    console.log('✅ CSRF token initialized');
+    console.warn('✅ CSRF token initialized');
   } catch (error) {
     console.error('Failed to initialize CSRF token:', error);
   }
@@ -605,4 +774,3 @@ export function withIdempotencyKey(idempotencyKey?: string): { 'Idempotency-Key'
     'Idempotency-Key': idempotencyKey || crypto.randomUUID(),
   };
 }
-

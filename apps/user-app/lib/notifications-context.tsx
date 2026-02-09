@@ -7,12 +7,18 @@ import { api } from './api-client';
 
 export interface Notification {
     id: string;
-    type: 'CONTRACT_UPDATE' | 'APPROVAL_REQUEST' | 'APPROVAL_COMPLETE' | 'SYSTEM' | 'INFO';
+    type: string;
     title: string;
     message: string;
     link?: string;
     isRead: boolean;
     createdAt: string;
+    data?: Record<string, unknown>;
+}
+
+interface NotificationsData {
+    notifications: Notification[];
+    unreadCount: number;
 }
 
 interface NotificationsContextType {
@@ -38,9 +44,10 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         queryFn: async () => {
             try {
                 return await api.notifications.list();
-            } catch (error: any) {
+            } catch (error: unknown) {
                 // Silently handle auth errors (401) - user is logging out or not authenticated
-                if (error?.statusCode === 401 || error?.status === 401) {
+                const err = error as Record<string, unknown> | undefined;
+                if (err?.statusCode === 401 || err?.status === 401) {
                     return { notifications: [], unreadCount: 0 };
                 }
                 console.error('Failed to fetch notifications:', error);
@@ -67,7 +74,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
             };
 
             // Optimistically update cache
-            queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: any) => ({
+            queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: NotificationsData | undefined) => ({
                 notifications: [newNotification, ...(old?.notifications || [])],
                 unreadCount: (old?.unreadCount || 0) + 1,
             }));
@@ -78,7 +85,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     const markAsRead = useCallback(
         async (id: string) => {
             // Optimistic update
-            queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: any) => ({
+            queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: NotificationsData | undefined) => ({
                 notifications: old?.notifications?.map((n: Notification) =>
                     n.id === id ? { ...n, isRead: true } : n
                 ) || [],
@@ -100,7 +107,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
     const markAllAsRead = useCallback(async () => {
         // Optimistic update
-        queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: any) => ({
+        queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: NotificationsData | undefined) => ({
             notifications: old?.notifications?.map((n: Notification) => ({ ...n, isRead: true })) || [],
             unreadCount: 0,
         }));

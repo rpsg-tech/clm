@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Upload New Version (Standardized) v1</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4338ca","background-light": "#f6f6f8",
+                        "background-dark": "#131220",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+        .dark textarea::-webkit-scrollbar-thumb {
+            background-color: #4b5563;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-[#121217] dark:text-gray-100 font-display min-h-screen flex flex-col items-center py-8 px-4 sm:px-6">
+<nav class="w-full max-w-[640px] mb-6 flex flex-wrap items-center text-sm font-medium text-[#686586] dark:text-gray-400">
+<a class="hover:text-primary transition-colors" href="#">Contracts</a>
+<span class="material-symbols-outlined text-base mx-1 text-gray-400">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">MSA_Acme_Corp</a>
+<span class="material-symbols-outlined text-base mx-1 text-gray-400">chevron_right</span>
+<span class="text-[#121217] dark:text-white font-semibold">Upload New Version</span>
+</nav>
+<main class="w-full max-w-[640px] bg-white dark:bg-[#1e1e2d] rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-[#dddce5] dark:border-gray-700 overflow-hidden flex flex-col">
+<div class="p-6 border-b border-[#dddce5] dark:border-gray-700 bg-white dark:bg-[#1e1e2d]">
+<div class="flex items-start justify-between gap-4">
+<div class="flex flex-col gap-2">
+<div class="flex flex-wrap items-center gap-2">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">
+<span class="material-symbols-outlined text-[14px]">schedule_send</span>
+                            Sent to Legal
+                        </span>
+<span class="text-xs text-gray-500 dark:text-gray-400 font-medium bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-[11px] uppercase tracking-wide">Template: MSA</span>
+</div>
+<div>
+<h1 class="text-2xl font-bold text-[#121217] dark:text-white leading-tight">MSA_Acme_Corp</h1>
+<p class="text-sm text-[#686586] dark:text-gray-400 mt-1 font-medium">Acme Corp • ₹ 12,00,000 • <span class="text-[#121217] dark:text-gray-300">Current: v1.2</span></p>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6 flex flex-col gap-8">
+<div class="relative group cursor-pointer flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-[#dddce5] dark:border-gray-600 hover:border-indigo-700 dark:hover:border-indigo-500 bg-gray-50/50 dark:bg-[#252535] px-6 py-10 transition-all duration-200">
+<div class="h-14 w-14 flex items-center justify-center rounded-full bg-white dark:bg-gray-700 shadow-sm text-indigo-700 dark:text-indigo-400 group-hover:scale-110 group-hover:shadow-md transition-all duration-200">
+<span class="material-symbols-outlined text-[28px]">cloud_upload</span>
+</div>
+<div class="text-center space-y-1">
+<p class="text-lg font-bold text-[#121217] dark:text-white">Upload Document</p>
+<p class="text-sm text-[#686586] dark:text-gray-400">Drag and drop your document here, or <span class="text-indigo-700 dark:text-indigo-400 font-bold hover:underline cursor-pointer">browse files</span></p>
+</div>
+<input class="absolute inset-0 opacity-0 cursor-pointer" title="Upload file" type="file"/>
+</div>
+<div>
+<h3 class="text-sm font-bold text-[#121217] dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-lg text-gray-400">category</span>
+                    What are you uploading?
+                </h3>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-0">
+<label class="relative flex cursor-pointer select-none h-full">
+<input checked="" class="peer sr-only" name="upload_type" type="radio"/>
+<div class="w-full flex items-start gap-3 p-4 rounded-lg border border-[#dddce5] dark:border-gray-600 bg-white dark:bg-[#252535] hover:bg-gray-50 dark:hover:bg-[#2f2f45] peer-checked:border-indigo-700 peer-checked:border-[1.5px] peer-checked:bg-indigo-50/30 dark:peer-checked:bg-indigo-900/20 transition-all">
+<span class="material-symbols-outlined text-2xl text-gray-400 peer-checked:text-indigo-700 dark:peer-checked:text-indigo-400 mt-0.5">edit_document</span>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-[#121217] dark:text-white">Revised Version</span>
+<span class="text-xs text-[#686586] dark:text-gray-400 mt-0.5">Internal edits or new draft</span>
+</div>
+</div>
+</label>
+<label class="relative flex cursor-pointer select-none h-full">
+<input class="peer sr-only" name="upload_type" type="radio"/>
+<div class="w-full flex items-start gap-3 p-4 rounded-lg border border-[#dddce5] dark:border-gray-600 bg-white dark:bg-[#252535] hover:bg-gray-50 dark:hover:bg-[#2f2f45] peer-checked:border-indigo-700 peer-checked:border-[1.5px] peer-checked:bg-indigo-50/30 dark:peer-checked:bg-indigo-900/20 transition-all">
+<span class="material-symbols-outlined text-2xl text-gray-400 peer-checked:text-indigo-700 dark:peer-checked:text-indigo-400 mt-0.5">reply</span>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-[#121217] dark:text-white">Counterparty Response</span>
+<span class="text-xs text-[#686586] dark:text-gray-400 mt-0.5">Redlines from the other party</span>
+</div>
+</div>
+</label>
+</div>
+</div>
+<div class="flex gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 text-amber-900 dark:text-amber-100 items-start shadow-sm">
+<span class="material-symbols-outlined text-xl shrink-0 mt-0.5 text-amber-600 dark:text-amber-400">warning</span>
+<div class="text-sm leading-relaxed">
+<p class="font-bold mb-0.5 text-amber-800 dark:text-amber-200">Existing Approvals</p>
+<p class="opacity-90">This contract has existing approvals. Uploading a new version will flag reviewers to check changes.</p>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-baseline mb-2">
+<label class="text-sm font-bold text-[#121217] dark:text-white flex items-center gap-1" for="notes">
+                        Change Notes <span class="text-red-500 text-lg leading-none">*</span>
+</label>
+<span class="text-xs font-medium text-[#686586] dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">0 / 10 min</span>
+</div>
+<div class="relative">
+<textarea class="w-full rounded-lg border border-[#dddce5] dark:border-gray-600 bg-white dark:bg-[#252535] p-3 text-sm text-[#121217] dark:text-white placeholder-gray-400 focus:border-indigo-700 focus:ring-1 focus:ring-indigo-700 outline-none transition-shadow resize-none" id="notes" placeholder="Describe key changes made in this version..." rows="4"></textarea>
+<div class="absolute bottom-3 right-3 pointer-events-none">
+<span class="material-symbols-outlined text-gray-300 text-sm">edit_note</span>
+</div>
+</div>
+</div>
+</div>
+<div class="px-6 py-5 bg-gray-50/80 dark:bg-[#1a1a27] border-t border-[#dddce5] dark:border-gray-700 flex flex-col-reverse sm:flex-row items-center justify-end gap-3 backdrop-blur-sm">
+<button class="w-full sm:w-auto px-6 py-2.5 rounded-lg text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white transition-colors">
+                Cancel
+            </button>
+<button class="w-full sm:w-auto px-6 py-2.5 rounded-lg text-sm font-bold text-white bg-indigo-700 hover:bg-indigo-800 shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group">
+<span class="material-symbols-outlined text-[20px] group-hover:-translate-y-0.5 transition-transform">cloud_upload</span>
+                Upload &amp; Save
+            </button>
+</div>
+</main>
+<footer class="mt-8 text-center">
+<p class="text-xs text-gray-400 font-medium">Copyright © 2026 Acme Corp.</p>
+</footer>
+
+</body></html>

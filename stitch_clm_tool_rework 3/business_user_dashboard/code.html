@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Business User Dashboard - Acme CLM</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ["Inter", "sans-serif"],
+                        display: ["Inter", "sans-serif"]
+                    },
+                    colors: {
+                        primary: "#4338ca", // indigo-700
+                        "primary-hover": "#3730a3", // indigo-800
+                        background: "#f8fafc", // slate-50
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px; 
+            vertical-align: middle;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased overflow-hidden">
+<div class="flex h-screen flex-col">
+<header class="h-16 flex-shrink-0 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-30">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2.5">
+<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-700 text-white shadow-sm">
+<span class="material-symbols-outlined text-[20px]">description</span>
+</div>
+<span class="text-xl font-bold tracking-tight text-slate-900">CLM</span>
+</div>
+<div class="hidden md:block relative w-80 lg:w-96">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+<span class="material-symbols-outlined">search</span>
+</span>
+<input class="w-full h-9 pl-10 pr-4 rounded-md border border-slate-200 bg-slate-50 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="Search contracts, parties..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative text-slate-500 hover:text-slate-700 transition-colors">
+<span class="material-symbols-outlined text-[24px]">notifications</span>
+<span class="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500 border border-white"></span>
+</button>
+<div class="h-6 w-px bg-slate-200"></div>
+<button class="hidden sm:flex items-center gap-2 text-sm font-medium text-slate-700 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">domain</span>
+                Acme Corp
+                <span class="material-symbols-outlined text-slate-400">expand_more</span>
+</button>
+<div class="flex items-center gap-3 pl-2">
+<div class="hidden md:flex flex-col items-end leading-tight">
+<span class="text-sm font-semibold text-slate-900">Alex</span>
+<span class="text-xs text-slate-500">Business User</span>
+</div>
+<button class="h-9 w-9 rounded-full bg-slate-200 overflow-hidden border border-slate-200 ring-2 ring-transparent hover:ring-indigo-100 transition-all">
+<img alt="Alex" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZNRkcdNIteAUXpe1wWjZnqMhubtYn42droUCBF73wvyDK4RO5kCS6kI-b_PnGoMdKpzXiYkJ656BsD9OhuLHl7Pcwf8JAxw7pvVUTaZiPJOr9r8cfV1ZxGynAiTpcULpnato84fZdSmnaippuz_FIC_Mj-u2ulBjQKlmrmXsCfmHNmfwrmvLChqXwcVY8-wgEWNYYPegn9jVWVTgjn1X4V0JBlzbDUueJ3ew-rM3QqLgES0tpITVegZ21Jk-Y-s_NKRrkPPKFBW4"/>
+</button>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<aside class="w-64 bg-white border-r border-slate-200 flex flex-col flex-shrink-0 z-20">
+<nav class="flex-1 p-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 rounded-lg bg-indigo-50 px-3 py-2.5 text-indigo-700 font-medium transition-colors" href="#">
+<span class="material-symbols-outlined icon-fill">dashboard</span>
+                    Dashboard
+                </a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+                    Contracts
+                </a>
+</nav>
+<nav class="p-4 border-t border-slate-100 flex flex-col gap-1">
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+                    Settings
+                </a>
+<a class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium transition-colors" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+                    Profile
+                </a>
+</nav>
+</aside>
+<main class="flex-1 overflow-y-auto bg-slate-50 p-8">
+<div class="mx-auto max-w-6xl flex flex-col gap-8">
+<div class="flex flex-col">
+<h1 class="text-2xl font-bold text-slate-900">Good Morning, Alex</h1>
+<p class="text-slate-500 mt-1">Here is the status of your contract portfolio today.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-indigo-200 transition-colors">
+<div class="flex items-center gap-2 text-slate-500 mb-3">
+<span class="material-symbols-outlined">folder_shared</span>
+<span class="text-xs font-bold uppercase tracking-wider">My Contracts</span>
+</div>
+<div class="text-3xl font-bold text-slate-900">24</div>
+</div>
+<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-emerald-200 transition-colors">
+<div class="flex items-center gap-2 text-emerald-600 mb-3">
+<span class="material-symbols-outlined icon-fill">check_circle</span>
+<span class="text-xs font-bold uppercase tracking-wider text-slate-500">Active</span>
+</div>
+<div class="text-3xl font-bold text-slate-900">12</div>
+</div>
+<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 transition-colors">
+<div class="flex items-center gap-2 text-slate-500 mb-3">
+<span class="material-symbols-outlined">edit_document</span>
+<span class="text-xs font-bold uppercase tracking-wider">Drafts</span>
+</div>
+<div class="text-3xl font-bold text-slate-900">4</div>
+</div>
+<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-blue-200 transition-colors">
+<div class="flex items-center gap-2 text-blue-600 mb-3">
+<span class="material-symbols-outlined">rate_review</span>
+<span class="text-xs font-bold uppercase tracking-wider text-slate-500">Pending Review</span>
+</div>
+<div class="text-3xl font-bold text-slate-900">8</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="flex flex-col gap-4">
+<h2 class="text-lg font-bold text-slate-900">Quick Actions</h2>
+<button class="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm hover:border-indigo-300 hover:shadow-md transition-all">
+<div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 group-hover:bg-indigo-700 group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[24px]">add_box</span>
+</div>
+<div>
+<h3 class="font-semibold text-slate-900 group-hover:text-indigo-700 transition-colors">Create from Template</h3>
+<p class="mt-1 text-xs text-slate-500 leading-relaxed">Use approved Acme Corp templates.</p>
+</div>
+</button>
+<button class="group flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm hover:border-indigo-300 hover:shadow-md transition-all">
+<div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600 group-hover:bg-indigo-700 group-hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[24px]">upload_file</span>
+</div>
+<div>
+<h3 class="font-semibold text-slate-900 group-hover:text-indigo-700 transition-colors">Upload Agreement</h3>
+<p class="mt-1 text-xs text-slate-500 leading-relaxed">Import counterparty paper (PDF).</p>
+</div>
+</button>
+</div>
+<div class="lg:col-span-2 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<h2 class="text-lg font-bold text-slate-900">My Recent Contracts</h2>
+<a class="text-sm font-medium text-indigo-700 hover:text-indigo-800 hover:underline" href="#">View All</a>
+</div>
+<div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+<table class="w-full text-left text-sm text-slate-600">
+<thead class="bg-slate-50 text-xs font-semibold uppercase text-slate-500 border-b border-slate-100">
+<tr>
+<th class="px-6 py-4">Contract Name</th>
+<th class="px-6 py-4">Status</th>
+<th class="px-6 py-4 font-mono">Amount (INR)</th>
+<th class="px-6 py-4">Date</th>
+<th class="px-6 py-4 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="px-6 py-4 font-medium text-slate-900">
+                                            MSA - TechSolutions Ltd
+                                        </td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+                                                Active
+                                            </span>
+</td>
+<td class="px-6 py-4 font-mono text-slate-700">₹ 24,00,000</td>
+<td class="px-6 py-4 text-slate-500">12 Jan 2025</td>
+<td class="px-6 py-4 text-right">
+<button class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="px-6 py-4 font-medium text-slate-900">
+                                            Service Agreement - Apex
+                                        </td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                                                Draft
+                                            </span>
+</td>
+<td class="px-6 py-4 font-mono text-slate-700">₹ 8,50,000</td>
+<td class="px-6 py-4 text-slate-500">20 Feb 2025</td>
+<td class="px-6 py-4 text-right">
+<button class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="px-6 py-4 font-medium text-slate-900">
+                                            Licensing - SoftCorp
+                                        </td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                                                Pending Review
+                                            </span>
+</td>
+<td class="px-6 py-4 font-mono text-slate-700">₹ 12,50,000</td>
+<td class="px-6 py-4 text-slate-500">05 Mar 2026</td>
+<td class="px-6 py-4 text-right">
+<button class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 transition-colors group">
+<td class="px-6 py-4 font-medium text-slate-900">
+                                            Consultancy - Alpha
+                                        </td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+                                                Active
+                                            </span>
+</td>
+<td class="px-6 py-4 font-mono text-slate-700">₹ 5,00,000</td>
+<td class="px-6 py-4 text-slate-500">15 Mar 2026</td>
+<td class="px-6 py-4 text-right">
+<button class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</div>
+
+</body></html>

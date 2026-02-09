@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-page-custom-font */
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -24,6 +25,10 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" className={inter.variable} suppressHydrationWarning>
+            <head>
+                <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700;900&display=swap" rel="stylesheet" />
+                <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+            </head>
             <body className="antialiased" suppressHydrationWarning>
                 <ReactQueryProvider>
                     <CsrfProvider>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Org Selector (Multi-Org) V2</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#4338ca","primary-light": "#e0e7ff","slate-50": "#f8fafc",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill-1 { font-variation-settings: 'FILL' 1; }.custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 99px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 font-display">
+<div class="w-full max-w-5xl h-[85vh] max-h-[800px] bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col overflow-hidden relative">
+<div class="flex-none bg-white z-20 border-b border-gray-100 px-6 pt-8 pb-6 sm:px-10">
+<div class="flex flex-col gap-1 mb-6">
+<h1 class="text-3xl font-bold text-gray-900 tracking-tight">Welcome back, Alex</h1>
+<p class="text-gray-500 text-lg">Select an organization to access your dashboard.</p>
+</div>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="block w-full pl-12 pr-4 py-3.5 border border-gray-200 bg-gray-50 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-primary focus:border-transparent focus:bg-white transition-all text-base font-medium shadow-sm hover:bg-white" placeholder="Search by organization name..." type="text"/>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 sm:px-10 bg-white">
+<div class="hidden flex flex-col items-center justify-center h-full text-center py-12">
+<div class="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-3xl text-gray-400">domain_disabled</span>
+</div>
+<h3 class="text-lg font-bold text-gray-900 mb-2">No organizations found</h3>
+<p class="text-gray-500 max-w-sm mb-6">We couldn't find any organizations matching your search.</p>
+<button class="text-primary hover:text-primary/80 font-semibold flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined">add_circle</span>
+<span>Contact admin</span>
+</button>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pb-4">
+<div class="group relative flex flex-col p-5 bg-primary-light border-[2px] border-primary rounded-xl shadow-sm cursor-pointer transition-all">
+<div class="flex items-start justify-between mb-4">
+<div class="h-12 w-12 rounded-lg bg-white flex items-center justify-center shadow-sm overflow-hidden border border-indigo-100 shrink-0">
+<img alt="Acme Corp logo" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBquFfWIP0nuYsnwJDs2BsEyEY0Vlnd-bZD_kb5wBONzQaPABmxsIdmRuY4CMdEq-3uJCTi5yWJxQx-wnapMIV4j7U8XyRwDG-Q2xHSxJTmNt34MLjFzmPFOZz6Vs1ryQm9t3wHhTYPM89xglF4zBRB7DMIPBTJdo_4HWbD2GNDzs0m8k9clFqbBIGbAKxnET_cwqcJqDPh06Mj227VqiRLcnNJuPy2slK2yfj-M_LwKmLaHSQG255bwnf0P4BzqSmvlGxCJJ26rGE"/>
+</div>
+<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-primary text-white shadow-sm tracking-wide uppercase">
+                            Legal Head
+                        </span>
+</div>
+<div class="mt-auto">
+<h3 class="text-lg font-bold text-gray-900 mb-1">Acme Corp</h3>
+<div class="flex items-center text-sm text-primary font-medium gap-1.5">
+<span class="material-symbols-outlined text-[18px] fill-1">description</span>
+<span>45 Active Contracts</span>
+</div>
+</div>
+<div class="absolute top-5 right-1/2 translate-x-1/2 -mt-8 sm:mt-0 sm:top-auto sm:translate-x-0 sm:bottom-5 sm:right-5 text-primary">
+<span class="material-symbols-outlined fill-1 text-2xl">check_circle</span>
+</div>
+</div>
+<div class="group relative flex flex-col p-5 bg-white border border-gray-200 rounded-xl hover:border-primary/60 hover:shadow-md cursor-pointer transition-all duration-200">
+<div class="flex items-start justify-between mb-4">
+<div class="h-12 w-12 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 border border-gray-100">
+<img alt="Globex Inc logo" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjMChw7HwJJ8Dc8pfUSK0q-ZC2JSZuQiGiyZbuvAH9asrDuEiCJ7kN-8_R0pJtGThd9S9_xjokpEN7RozFrWlnbXTYacwPfLji7MCm4Nevj3ls-QELSTS9ts9iUIqpTQGdILOsVWVu55pE_vF_i5vuSwIxpGHXyQxEfZAXJeLzGqTSNrNI8oJlGTMcJBAlP-fQtA8cG-AciuLXOyzRRyU2Ub1mhaDcbaLPLzVj6nMA38Nm9iXYsyEP26r0HhsVVo3LLijP7RdWdKM"/>
+</div>
+<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-600 tracking-wide uppercase border border-gray-200">
+                            Business User
+                        </span>
+</div>
+<div class="mt-auto">
+<h3 class="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors">Globex Inc</h3>
+<div class="flex items-center text-sm text-gray-500 gap-1.5">
+<span class="material-symbols-outlined text-[18px]">pending_actions</span>
+<span>3 Pending Approvals</span>
+</div>
+</div>
+</div>
+<div class="group relative flex flex-col p-5 bg-white border border-gray-200 rounded-xl hover:border-primary/60 hover:shadow-md cursor-pointer transition-all duration-200">
+<div class="flex items-start justify-between mb-4">
+<div class="h-12 w-12 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 border border-gray-100">
+<img alt="Soylent Corp logo" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_XDW6tOI4mIVo9Nbf0uCrJs1X1fsU2uyxkR7IXiYJ2RSCB2-Ogtz_tw8tTQ1DSZC8XuphcTvB3Og3UGPwydQFZQ4ODjSgMM4Rxo8ztr7TD_x674rXRonwPkRUEhyeYYlQCuyxmydBUlGokB68JXoG7QxvFJ5_UuRVA0ejFmRCV7poUFgkRf9Kgk_KneJZVlYrJKES9AHrgDg_ljgZYzrM8jMeJyrDz_jmoVtGAyLTui_zWszAbuXYydbWjw6eOgcd7jz7FgC0pas"/>
+</div>
+<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-100 tracking-wide uppercase">
+                            Legal Manager
+                        </span>
+</div>
+<div class="mt-auto">
+<h3 class="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors">Soylent Corp</h3>
+<div class="flex items-center text-sm text-gray-500 gap-1.5">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+<span>12 Active Contracts</span>
+</div>
+</div>
+</div>
+<div class="group relative flex flex-col p-5 bg-white border border-gray-200 rounded-xl hover:border-primary/60 hover:shadow-md cursor-pointer transition-all duration-200">
+<div class="flex items-start justify-between mb-4">
+<div class="h-12 w-12 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 border border-gray-100">
+<img alt="Umbrella Corp logo" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC62Rxl5xZxeX9vg4-Q3ajjQeE0ufILamdRBR2s6upXg-DlHD4WTiaDDgOeMLoGaZY_r__ak-f3KdC9V6YSQzLHJ9t081h91o6o71Al40kN1W1obH63y4yvHoHyfuh7TnirMiMbmVIbtapqk5kWw5qbSSqbmiLF5z2sTKueOLQ3ViPnNzt7URv9OYliLpZbuPWw6r9BOFwdTa1FxO7s258w00wMksU6YdspwwV64QaD_iNuFibDylWyPCxZkX2fMMTUfZ2JC_TeqA0"/>
+</div>
+<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100 tracking-wide uppercase">
+                            Entity Admin
+                        </span>
+</div>
+<div class="mt-auto">
+<h3 class="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors">Umbrella Corp</h3>
+<div class="flex items-center text-sm text-gray-500 gap-1.5">
+<span class="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+<span>82 Active Contracts</span>
+</div>
+</div>
+</div>
+<div class="group relative flex flex-col p-5 bg-white border border-gray-200 rounded-xl hover:border-primary/60 hover:shadow-md cursor-pointer transition-all duration-200">
+<div class="flex items-start justify-between mb-4">
+<div class="h-12 w-12 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 border border-gray-100">
+<img alt="Initech logo" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFE0HHLyPeoY2jyBJIP0WpT0uBXuTzW9rl2J7ttI25eITAoOPTgdAmt4Mnt1_4RXQ9Du7Q7r_uMr2t1xi8z_erJQGrJ_MjkgcLxHlxnrByasAZFc95d4Sb_u7BKX3CzfrpNZ5xI5eTqT4ggFUuPMi8e75tlYwUVrEKHcVhCtsJC9_I5BJ-8p8F2TJCrNL6tf6qdZrA2LdbB1wPQtscZZDPasOElubP2zyh58Hh3lNUisJ12DZM25LcHhldavKt2eHs1LuDBaiGF0w"/>
+</div>
+<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 tracking-wide uppercase">
+                            Finance Manager
+                        </span>
+</div>
+<div class="mt-auto">
+<h3 class="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors">Initech</h3>
+<div class="flex items-center text-sm text-gray-500 gap-1.5">
+<span class="material-symbols-outlined text-[18px]">gavel</span>
+<span>5 Pending Reviews</span>
+</div>
+</div>
+</div>
+<div class="group relative flex flex-col p-5 bg-white border border-gray-200 rounded-xl hover:border-primary/60 hover:shadow-md cursor-pointer transition-all duration-200">
+<div class="flex items-start justify-between mb-4">
+<div class="h-12 w-12 rounded-lg bg-gray-50 flex items-center justify-center overflow-hidden shrink-0 border border-gray-100">
+<img alt="Stark Industries logo" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUPn34SFdursuKMRj8HH_krxQnQ9JuSn1WCSUshARlJL9JtRK3VoyAvSrQ_3G6gw30z_9gv1ZkE8x9TEFZA3Bi_-8VH7Qz1HEcwV3jorwBMT-3py0MiFXPLfuezEdgiHqVv5U1r2WdSL-ikr2aorfden5AJscumbg9mJ2XRsCbbKiedgTG1QJSAcqnR0fYTQbdQkHi9cgwQ5g-hje3y9xqjp2ga6Z6C5IW3SSVafeZI8JIhh8NdvJ6d3vuYLl2Ct95IuTLSUaOlag"/>
+</div>
+<span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-100 tracking-wide uppercase">
+                            Super Admin
+                        </span>
+</div>
+<div class="mt-auto">
+<h3 class="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary transition-colors">Stark Ind</h3>
+<div class="flex items-center text-sm text-gray-500 gap-1.5">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+<span>120 Active Contracts</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex-none px-6 py-6 sm:px-10 bg-white border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-6 z-20">
+<label class="flex items-center gap-3 cursor-pointer group select-none">
+<div class="relative flex items-center">
+<input class="peer h-5 w-5 rounded border-gray-300 text-primary bg-white focus:ring-primary/30 cursor-pointer transition-all" type="checkbox"/>
+</div>
+<span class="text-sm text-gray-600 font-medium group-hover:text-gray-900 transition-colors">Remember my choice</span>
+</label>
+<button class="w-full sm:w-auto px-8 py-3 bg-primary hover:bg-indigo-800 text-white text-base font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 transform active:scale-95">
+<span>Continue to Workspace</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<footer class="mt-8 text-center text-gray-400 text-sm">
+<div class="flex items-center justify-center gap-2 mb-2">
+<span class="font-bold text-gray-500">CLM</span>
+<span class="w-1 h-1 rounded-full bg-gray-300"></span>
+<span class="font-medium">RPSG Group</span>
+</div>
+<p>© 2026 RPSG Group. All rights reserved.</p>
+</footer>
+
+</body></html>

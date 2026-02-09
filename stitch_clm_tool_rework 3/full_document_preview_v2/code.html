@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Full Document Preview V2</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3d2dd2", // Indigo-700 custom
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#141220",
+                        "paper-light": "#ffffff",
+                        "paper-dark": "#1e1c2e",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "document": ["Merriweather", "serif"],
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(156, 163, 175, 0.5); border-radius: 20px; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display h-screen flex flex-col overflow-hidden selection:bg-primary/20 selection:text-primary">
+<header class="h-16 bg-white dark:bg-[#1a1825] border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-6 shrink-0 sticky top-0 z-50 shadow-sm">
+<div class="flex items-center gap-3 w-64">
+<div class="size-9 text-primary bg-primary/10 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl">description</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">CLM</h1>
+</div>
+<div class="flex flex-1 justify-center items-center gap-6 max-w-4xl px-4">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-gray-400" placeholder="Search contracts, parties..." type="text"/>
+</div>
+<div class="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-2 hidden md:block"></div>
+<button class="flex items-center gap-3 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group">
+<div class="size-6 bg-orange-100 text-orange-700 rounded flex items-center justify-center text-xs font-bold border border-orange-200">AC</div>
+<div class="text-left">
+<p class="text-xs font-medium text-gray-500 uppercase leading-none mb-0.5">Organization</p>
+<p class="text-sm font-semibold text-slate-700 dark:text-slate-200 leading-none">Acme Corp</p>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors text-lg ml-2">unfold_more</span>
+</button>
+</div>
+<div class="flex items-center gap-5 w-64 justify-end">
+<button class="relative text-slate-500 hover:text-primary dark:text-slate-400 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 size-2 bg-red-500 rounded-full border-2 border-white dark:border-[#1a1825]"></span>
+</button>
+<div class="flex items-center gap-3 pl-5 border-l border-gray-200 dark:border-gray-700">
+<div class="text-right hidden xl:block">
+<p class="text-sm font-semibold text-slate-900 dark:text-white">Business User</p>
+<p class="text-xs text-slate-500">Legal Department</p>
+</div>
+<div class="size-10 rounded-full bg-gray-200 ring-2 ring-white dark:ring-gray-700 bg-cover bg-center shadow-sm cursor-pointer" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDYYGVNfTYtSKBkWI0bIZRpBF_TPBVFoS030RyTTAb0w2lLO64OLYedaBnhkLNKLZ-ITPU_XFA3NgwIcth5XWDcHE3uuIcDQtM0HKLax1dFB19A5-y-WS4epNIftBXXg8FKTbPEU7mV1La8KX1vvxcBStwGdD2QSqFZGP8VaE4Umm60BSCG94q7Vhq4sl1HzdhbjHnGMo9lcnb25YCEj1m1Vt915YYB0uXl7ixnSg-S_gRnWL0ID8coFNGSWYW_mhcneyasfOsWSyw');"></div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<aside class="w-64 bg-white dark:bg-[#1a1825] border-r border-gray-200 dark:border-gray-800 flex flex-col shrink-0 z-40 relative">
+<nav class="p-4 space-y-1.5 flex-1 mt-2">
+<a class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-gray-400 group-hover:text-primary transition-colors">dashboard</span>
+                    Dashboard
+                </a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-primary bg-primary/5 dark:bg-primary/20 rounded-lg transition-colors shadow-sm ring-1 ring-primary/10" href="#">
+<span class="material-symbols-outlined text-[22px] fill-1">description</span>
+                    Contracts
+                </a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] text-gray-400 group-hover:text-primary transition-colors">folder</span>
+                    Repository
+                </a>
+</nav>
+<div class="p-6 border-t border-gray-100 dark:border-gray-800">
+<div class="bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800/30">
+<p class="text-xs font-bold text-indigo-900 dark:text-indigo-300 mb-1">Need Help?</p>
+<p class="text-[11px] text-indigo-700 dark:text-indigo-400 leading-snug mb-3">Contact legal ops support for clause library access.</p>
+<button class="text-[11px] font-bold text-primary hover:underline">Contact Support</button>
+</div>
+<p class="text-[10px] text-slate-400 text-center mt-6">© 2026 CLM Platform v2.4.0</p>
+</div>
+</aside>
+<div class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark relative">
+<div class="h-16 bg-white dark:bg-[#1a1825] border-b border-gray-200 dark:border-gray-800 flex items-center justify-center shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.03)] z-30">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2.5 opacity-60">
+<div class="size-6 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center ring-1 ring-green-200 dark:ring-green-900">
+<span class="material-symbols-outlined text-sm font-bold">check</span>
+</div>
+<span class="text-sm font-medium text-slate-600 dark:text-slate-400">Details</span>
+</div>
+<div class="w-12 h-px bg-slate-200 dark:bg-slate-700"></div>
+<div class="flex items-center gap-2.5 opacity-60">
+<div class="size-6 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center ring-1 ring-green-200 dark:ring-green-900">
+<span class="material-symbols-outlined text-sm font-bold">check</span>
+</div>
+<span class="text-sm font-medium text-slate-600 dark:text-slate-400">Editor</span>
+</div>
+<div class="w-12 h-px bg-slate-200 dark:bg-slate-700"></div>
+<div class="flex items-center gap-2.5">
+<div class="size-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold shadow-md shadow-primary/30 ring-2 ring-primary/20 ring-offset-2 dark:ring-offset-[#1a1825]">3</div>
+<span class="text-sm font-bold text-slate-900 dark:text-white">Preview</span>
+</div>
+</div>
+</div>
+<div class="flex flex-1 overflow-hidden relative">
+<main class="flex-1 overflow-y-auto p-8 flex justify-center custom-scrollbar bg-slate-100/50 dark:bg-[#0f0e16] relative">
+<div class="fixed top-44 left-[54%] -translate-x-1/2 z-30 bg-slate-800/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 shadow-lg border border-white/10">
+<span class="material-symbols-outlined text-xs">lock</span>
+                        Read-only Preview
+                    </div>
+<div class="fixed bottom-28 left-[54%] -translate-x-1/2 z-30 bg-white dark:bg-[#252333] border border-gray-200 dark:border-gray-700 p-1 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex gap-0.5">
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400 transition-colors"><span class="material-symbols-outlined">remove</span></button>
+<span class="px-2 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 w-[56px] text-center tabular-nums">100%</span>
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400 transition-colors"><span class="material-symbols-outlined">add</span></button>
+<div class="w-px h-6 bg-gray-200 dark:bg-gray-700 my-auto mx-1.5"></div>
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400 transition-colors" title="Print"><span class="material-symbols-outlined">print</span></button>
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400 transition-colors" title="Download PDF"><span class="material-symbols-outlined">download</span></button>
+</div>
+<div class="bg-paper-light dark:bg-paper-dark w-full max-w-[850px] min-h-[1100px] shadow-2xl shadow-slate-200/50 dark:shadow-black/50 border border-gray-200/60 dark:border-gray-800 mb-16 px-20 py-24 text-slate-800 dark:text-slate-200 font-document transition-colors duration-300 relative group">
+<div class="border-b-2 border-slate-900 dark:border-slate-100 pb-8 mb-12 flex justify-between items-end">
+<div>
+<h1 class="text-3xl font-bold leading-tight mb-3">Master Service Agreement</h1>
+<p class="text-base italic opacity-70 font-serif text-slate-600 dark:text-slate-400">Combined View: Part A &amp; Part B</p>
+</div>
+<div class="text-right text-xs opacity-60 font-sans space-y-1">
+<p>Ref: MSA-2026-8842</p>
+<p>Date: October 24, 2026</p>
+</div>
+</div>
+<section class="mb-14">
+<div class="flex items-center gap-4 mb-8">
+<h2 class="text-lg font-bold uppercase tracking-widest text-primary border-b-2 border-primary/20 pb-1 font-sans">Part A: General Terms</h2>
+</div>
+<div class="space-y-6 text-[17px] leading-relaxed text-justify">
+<p><span class="font-bold">1. Definitions.</span> For purposes of this Agreement, "Confidential Information" means any data or information, oral or written, treated as confidential that relates to either party's (or, if either party is bound to protect the confidentiality of any third party's information, such third party's) past, present, or future research, development or business activities, including any unannounced products and services.</p>
+<p><span class="font-bold">2. Service Provision.</span> Provider agrees to perform the services described in the Statement of Work attached hereto as Exhibit A (the "Services"). Provider shall perform the Services in a professional and workmanlike manner, consistent with industry standards.</p>
+<p><span class="font-bold">3. Term and Termination.</span> This Agreement shall commence on the Effective Date and shall continue until terminated as provided herein. Either party may terminate this Agreement upon thirty (30) days' written notice if the other party breaches any material term or condition of this Agreement and fails to cure such breach within such notice period.</p>
+<p><span class="font-bold">4. Payment Terms.</span> Client shall pay Provider for the Services in accordance with the fees (in ₹ INR) set forth in the SOW. Unless otherwise specified, invoices are due within thirty (30) days of receipt. Late payments shall accrue interest at the lesser of 1.5% per month or the maximum rate permitted by law.</p>
+</div>
+</section>
+<div class="flex items-center gap-6 my-14 opacity-20">
+<div class="h-px bg-slate-900 flex-1"></div>
+<span class="material-symbols-outlined text-base">link</span>
+<div class="h-px bg-slate-900 flex-1"></div>
+</div>
+<section class="mb-14">
+<div class="flex items-center gap-4 mb-8">
+<h2 class="text-lg font-bold uppercase tracking-widest text-primary border-b-2 border-primary/20 pb-1 font-sans">Part B: Specific Provisions</h2>
+</div>
+<div class="space-y-6 text-[17px] leading-relaxed text-justify">
+<p><span class="font-bold">5. Intellectual Property Rights.</span> Upon full payment, Provider grants to Client a non-exclusive, worldwide, royalty-free license to use any deliverables created specifically for Client under this Agreement. Provider retains all right, title, and interest in and to its pre-existing intellectual property.</p>
+<div class="relative group/highlight">
+<div class="absolute -left-6 top-0 bottom-0 w-1 bg-violet-400/50 rounded-full"></div>
+<div class="bg-violet-50/50 dark:bg-violet-900/10 -mx-4 px-4 py-3 rounded-lg">
+<p><span class="font-bold">6. Indemnification.</span> Provider shall indemnify, defend, and hold harmless Client from and against any and all claims, damages, liabilities, costs, and expenses (including reasonable attorneys' fees) arising out of or related to any claim that the Services or deliverables infringe any third-party intellectual property rights.</p>
+<span class="absolute right-0 top-3 flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
+</span>
+</div>
+</div>
+<p><span class="font-bold">7. Limitation of Liability.</span> EXCEPT FOR INDEMNIFICATION OBLIGATIONS AND BREACHES OF CONFIDENTIALITY, NEITHER PARTY SHALL BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL OR PUNITIVE DAMAGES.</p>
+<p><span class="font-bold">8. Governing Law.</span> This Agreement shall be governed by and construed in accordance with the laws of the State of Delaware, without regard to its conflict of laws principles.</p>
+</div>
+</section>
+<div class="mt-24 pt-12 border-t border-slate-300 dark:border-slate-700">
+<div class="grid grid-cols-2 gap-24">
+<div>
+<div class="h-14 border-b-2 border-slate-900 dark:border-slate-400 mb-4"></div>
+<p class="font-bold text-lg">Client Representative</p>
+<p class="text-sm opacity-60 mt-1">Date: _______________</p>
+</div>
+<div>
+<div class="h-14 border-b-2 border-slate-900 dark:border-slate-400 mb-4"></div>
+<p class="font-bold text-lg">Provider Representative</p>
+<p class="text-sm opacity-60 mt-1">Date: _______________</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<aside class="w-[380px] bg-violet-50 dark:bg-[#1e1c2e] border-l border-violet-100 dark:border-gray-800 flex flex-col z-20 shadow-xl">
+<div class="p-5 border-b border-violet-200 dark:border-gray-800 flex items-center justify-between bg-white/50 dark:bg-white/5 backdrop-blur-sm">
+<div class="flex items-center gap-2 text-violet-700 dark:text-violet-300">
+<div class="size-6 rounded bg-violet-100 dark:bg-violet-900/50 flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">psychology</span>
+</div>
+<h2 class="font-bold text-sm tracking-wide">Oracle</h2>
+</div>
+<div class="flex gap-2">
+<button class="text-violet-400 hover:text-violet-700 dark:text-gray-500 dark:hover:text-white transition-colors"><span class="material-symbols-outlined text-lg">info</span></button>
+<button class="text-violet-400 hover:text-violet-700 dark:text-gray-500 dark:hover:text-white transition-colors"><span class="material-symbols-outlined text-lg">close</span></button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-6">
+<div class="bg-white dark:bg-[#252333] border border-violet-100 dark:border-gray-700 rounded-xl p-5 shadow-sm relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-100/50 to-transparent rounded-bl-full pointer-events-none transition-opacity group-hover:opacity-75"></div>
+<div class="flex justify-between items-center mb-4 relative z-10">
+<span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Risk Analysis</span>
+<span class="px-2.5 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400 text-[10px] font-bold rounded-full uppercase border border-yellow-200 dark:border-yellow-900/50">Medium Risk</span>
+</div>
+<div class="flex items-baseline gap-2 mb-4 relative z-10">
+<span class="text-5xl font-black text-slate-800 dark:text-white tracking-tighter">82</span>
+<span class="text-xs text-slate-400 font-medium uppercase">Health Score</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-gray-700 h-2 rounded-full overflow-hidden relative z-10">
+<div class="bg-gradient-to-r from-emerald-400 via-yellow-400 to-amber-500 h-full rounded-full transition-all duration-1000 ease-out" style="width: 82%"></div>
+</div>
+</div>
+<div class="space-y-6">
+<div class="flex gap-3">
+<div class="size-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 flex-shrink-0 flex items-center justify-center border border-violet-200 dark:border-violet-800">
+<span class="material-symbols-outlined text-sm">smart_toy</span>
+</div>
+<div class="space-y-2 max-w-[90%]">
+<div class="bg-white dark:bg-[#252333] p-4 rounded-2xl rounded-tl-none text-sm text-slate-600 dark:text-slate-300 shadow-sm border border-violet-100 dark:border-gray-700 leading-relaxed">
+<p>I've analyzed the combined document. Part A looks standard. I've flagged a potential risk in <span class="font-bold text-violet-600 dark:text-violet-400 cursor-help border-b border-dotted border-violet-400">Section 6 (Indemnification)</span> of Part B due to broad liability language.</p>
+</div>
+<span class="text-[10px] text-gray-400 ml-1">Analysis complete • 10:42 AM</span>
+</div>
+</div>
+<div class="flex gap-3 flex-row-reverse">
+<div class="size-8 rounded-full bg-slate-200 ring-2 ring-white dark:ring-gray-700 flex-shrink-0 overflow-hidden bg-cover bg-center" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAGXvvdmGYS9kCd_I2tR5qKsBUJknPL4_rBAICUcGjZp7Jtmn01TFBcQuGSMRJ-SCGEApm5u09VMTgsDvv9duUyAANs4ipwmJcK-DScGePSOEoF8EAdQOtE8wr9lgjXIlCgOvsyc3BvYhCynVBWZLNrM3Ybq2nlm8zqwwHXLlUkS5_pwiee46pmWhFfCDX4s9X4blp1Ouk76AD-OLgGff4XPod135YNQSD49QfOBf2zsd1G_CdUr0tOa_kIyfzCS0Dj9NHH8FrwHjA');"></div>
+<div class="space-y-1 text-right max-w-[90%]">
+<div class="bg-primary text-white p-3.5 rounded-2xl rounded-tr-none text-sm text-left shadow-md shadow-primary/20">
+<p>What's the risk level if we leave it as is?</p>
+</div>
+<span class="text-[10px] text-gray-400 mr-1">10:44 AM</span>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="size-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 flex-shrink-0 flex items-center justify-center border border-violet-200 dark:border-violet-800">
+<span class="material-symbols-outlined text-sm">smart_toy</span>
+</div>
+<div class="space-y-2 max-w-[90%]">
+<div class="bg-white dark:bg-[#252333] p-4 rounded-2xl rounded-tl-none text-sm text-slate-600 dark:text-slate-300 shadow-sm border border-violet-100 dark:border-gray-700 leading-relaxed">
+<p>The risk is moderate. Without a cap, Acme Corp could be liable for unlimited IP claims. Standard practice for this contract value (₹) suggests capping at 2x annual fees.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-4 bg-white/50 dark:bg-[#1e1c2e] border-t border-violet-200 dark:border-gray-800 backdrop-blur-sm">
+<div class="relative group">
+<input class="w-full pl-4 pr-11 py-3 bg-white dark:bg-[#252333] border border-violet-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all shadow-sm group-hover:border-violet-300" placeholder="Ask Oracle about this contract..." type="text"/>
+<button class="absolute right-2 top-1/2 -translate-y-1/2 text-violet-500 hover:bg-violet-50 p-1.5 rounded-lg transition-colors"><span class="material-symbols-outlined text-xl">send</span></button>
+</div>
+<p class="text-[10px] text-center mt-2 text-slate-400">AI insights are for reference only.</p>
+</div>
+</aside>
+</div>
+<footer class="h-20 bg-white dark:bg-[#1a1825] border-t border-gray-200 dark:border-gray-800 px-8 flex items-center justify-between shrink-0 z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
+<div>
+<button class="flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white font-medium transition-colors px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+<span class="material-symbols-outlined">arrow_back</span>
+                        Back to Editor
+                     </button>
+</div>
+<div class="flex items-center gap-6">
+<span class="text-xs text-gray-500 flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 px-3 py-1.5 rounded-full border border-gray-100 dark:border-gray-700">
+<span class="material-symbols-outlined text-sm text-green-600">cloud_done</span>
+                        Auto-saved
+                     </span>
+<button class="bg-primary hover:bg-[#3224b0] text-white px-8 py-3 rounded-lg font-semibold shadow-lg shadow-primary/20 transition-all flex items-center gap-2 transform active:scale-95">
+                         Save as Draft
+                         <span class="material-symbols-outlined text-sm">save</span>
+</button>
+</div>
+</footer>
+</div>
+</div>
+
+</body></html>

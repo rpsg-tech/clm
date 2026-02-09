@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Org Selector (Redirect) V2</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+                indigo: {
+                    700: '#4338ca',
+                    800: '#3730a3',
+                }
+            },
+            animation: {
+                'progress': 'progress 2.5s ease-in-out forwards',
+            },
+            keyframes: {
+                progress: {
+                    '0%': { width: '0%' },
+                    '50%': { width: '70%' },
+                    '100%': { width: '100%' },
+                }
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-4">
+<div class="w-full max-w-[440px] bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden text-center relative p-10">
+<div class="flex flex-col items-center mb-8">
+<div class="relative mb-3">
+<div class="h-16 w-16 rounded-xl bg-white border border-slate-100 p-1 shadow-sm">
+<img alt="RPSG Group logo" class="w-full h-full object-cover rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBquFfWIP0nuYsnwJDs2BsEyEY0Vlnd-bZD_kb5wBONzQaPABmxsIdmRuY4CMdEq-3uJCTi5yWJxQx-wnapMIV4j7U8XyRwDG-Q2xHSxJTmNt34MLjFzmPFOZz6Vs1ryQm9t3wHhTYPM89xglF4zBRB7DMIPBTJdo_4HWbD2GNDzs0m8k9clFqbBIGbAKxnET_cwqcJqDPh06Mj227VqiRLcnNJuPy2slK2yfj-M_LwKmLaHSQG255bwnf0P4BzqSmvlGxCJJ26rGE"/>
+</div>
+<div class="absolute -bottom-1.5 -right-1.5 bg-green-500 text-white p-0.5 rounded-full border-2 border-white">
+<span class="material-symbols-outlined text-[14px] font-bold block">check</span>
+</div>
+</div>
+<span class="text-xs font-bold tracking-widest text-slate-400 uppercase">CLM Platform</span>
+</div>
+<h1 class="text-2xl font-bold text-slate-900 tracking-tight mb-8">Welcome back, Alex</h1>
+<div class="w-full bg-white border border-slate-200 rounded-xl p-4 mb-8 text-left shadow-sm hover:border-indigo-200 transition-colors duration-200 group">
+<div class="flex items-start justify-between mb-1">
+<h3 class="text-base font-semibold text-slate-900">RPSG Group</h3>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 uppercase tracking-wide">
+                    Active
+                </span>
+</div>
+<div class="flex items-center text-sm text-slate-500 font-medium">
+<span>45 Active Contracts</span>
+</div>
+</div>
+<div class="w-full flex flex-col items-center gap-2 mb-8">
+<div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-indigo-700 rounded-full animate-progress"></div>
+</div>
+<p class="text-slate-500 text-xs font-medium animate-pulse">Entering your workspace...</p>
+</div>
+<button class="w-full py-2.5 px-4 bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2">
+<span>Go to Dashboard</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+<div class="mt-8 text-slate-400 text-xs font-medium">
+        © 2026 RPSG Group
+    </div>
+
+</body></html>

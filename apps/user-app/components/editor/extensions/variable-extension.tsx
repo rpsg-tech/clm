@@ -1,13 +1,17 @@
 import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper } from '@tiptap/react';
+import type { ReactNodeViewProps } from '@tiptap/react';
 
 // --- The React Component for the Node ---
-const VariableComponent = (props: any) => {
+const VariableComponent = ({ node }: ReactNodeViewProps) => {
+    const attrs = node.attrs as { id?: string | null; label?: string | null };
+    const label = attrs.label ?? 'Variable';
+
     return (
         <NodeViewWrapper className="inline-block mx-1 align-middle">
-            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-orange-100 text-orange-800 border border-orange-200 text-sm font-medium select-none shadow-sm data-[selected=true]:ring-2 ring-orange-400">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 border border-indigo-200 text-sm font-medium select-none shadow-sm data-[selected=true]:ring-2 ring-indigo-400">
                 <span className="opacity-50 mr-1 text-[10px] uppercase font-bold tracking-wider">VAR</span>
-                {props.node.attrs.label}
+                {label}
             </span>
         </NodeViewWrapper>
     );

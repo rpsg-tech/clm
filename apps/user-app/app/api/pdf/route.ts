@@ -15,6 +15,15 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'HTML content is required' }, { status: 400 });
         }
 
+        type ChromiumRuntime = {
+            args: string[];
+            defaultViewport?: { width: number; height: number } | null;
+            executablePath: () => Promise<string>;
+            headless?: boolean | 'new';
+        };
+
+        const chromiumRuntime = chromium as ChromiumRuntime;
+
         let browser;
 
         // Determine environment and launch appropriate browser
@@ -30,15 +39,14 @@ export async function POST(req: NextRequest) {
             });
         } else {
             // PRODUCTION (Vercel): Use sparticuz/chromium
+            const headlessMode =
+                chromiumRuntime.headless === 'new' ? true : chromiumRuntime.headless;
+
             browser = await puppeteer.launch({
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                args: (chromium as any).args,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                defaultViewport: (chromium as any).defaultViewport,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                executablePath: await (chromium as any).executablePath(),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                headless: (chromium as any).headless,
+                args: chromiumRuntime.args,
+                defaultViewport: chromiumRuntime.defaultViewport,
+                executablePath: await chromiumRuntime.executablePath(),
+                headless: headlessMode,
             });
         }
 
@@ -66,8 +74,14 @@ export async function POST(req: NextRequest) {
         await browser.close();
 
         // Return PDF stream
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return new NextResponse(pdfBuffer as any, {
+        const stream = new ReadableStream<Uint8Array>({
+            start(controller) {
+                controller.enqueue(pdfBuffer);
+                controller.close();
+            },
+        });
+
+        return new NextResponse(stream, {
             headers: {
                 'Content-Type': 'application/pdf',
                 'Content-Disposition': 'attachment; filename="contract.pdf"',

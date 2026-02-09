@@ -5,29 +5,46 @@ import { OIDCStrategy } from 'passport-azure-ad';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../auth.service';
 
+// Helper to check if Azure AD is properly configured
+function isAzureAdConfigured(configService: ConfigService): boolean {
+    const clientId = configService.get('AZURE_AD_CLIENT_ID');
+    // Check if it looks like a valid GUID (basic check)
+    const guidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return clientId && guidRegex.test(clientId);
+}
+
 @Injectable()
 export class AzureAdStrategy extends PassportStrategy(OIDCStrategy, 'azure-ad') {
     constructor(
         private configService: ConfigService,
         private authService: AuthService,
     ) {
+        const clientId = configService.get('AZURE_AD_CLIENT_ID');
+        const isConfigured = isAzureAdConfigured(configService);
+
+        // Use a placeholder GUID if not configured - strategy won't be used anyway
+        const safeClientId = isConfigured ? clientId : '00000000-0000-0000-0000-000000000000';
+
         super({
-            identityMetadata: `https://login.microsoftonline.com/${configService.get('AZURE_AD_TENANT_ID')}/v2.0/.well-known/openid-configuration`,
-            clientID: configService.get('AZURE_AD_CLIENT_ID'),
+            identityMetadata: `https://login.microsoftonline.com/${configService.get('AZURE_AD_TENANT_ID') || 'common'}/v2.0/.well-known/openid-configuration`,
+            clientID: safeClientId,
             responseType: 'code id_token',
             responseMode: 'form_post',
-            redirectUrl: configService.get('AZURE_AD_CALLBACK_URL') || 'http://localhost:3000/api/auth/azure/callback',
+            redirectUrl: configService.get('AZURE_AD_CALLBACK_URL') || 'http://localhost:3001/api/auth/azure/callback',
             allowHttpForRedirectUrl: true,
-            clientSecret: configService.get('AZURE_AD_CLIENT_SECRET'),
-            validateIssuer: false, // Set to true in production if strictly single tenant
-            // passReqToCallback: false, // Default is false, explicit false causes type overlap with WithRequest interface
+            clientSecret: configService.get('AZURE_AD_CLIENT_SECRET') || 'placeholder-secret',
+            validateIssuer: false,
             scope: ['email', 'profile', 'openid', 'offline_access'],
-            loggingLevel: 'info',
+            loggingLevel: 'warn',
             useCookieInsteadOfSession: false,
             cookieEncryptionKeys: [
                 { 'key': '12345678901234567890123456789012', 'iv': '123456789012' },
             ],
         } as any);
+
+        if (!isConfigured) {
+            console.warn('⚠️  Azure AD SSO is not configured. Set AZURE_AD_CLIENT_ID to a valid GUID to enable.');
+        }
     }
 
     async validate(profile: any): Promise<any> {

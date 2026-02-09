@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Signed Version Upload (Standardized)</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        indigo: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                        },
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+<div class="w-full max-w-3xl bg-white rounded-xl shadow-xl border border-slate-200 flex flex-col max-h-[95vh] overflow-hidden relative">
+<div class="px-8 py-6 border-b border-slate-100 flex justify-between items-start bg-white sticky top-0 z-10">
+<div class="flex flex-col gap-1">
+<h2 class="text-2xl font-bold text-indigo-700 tracking-tight">Upload Signed Agreement</h2>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-400 text-lg">description</span>
+<p class="text-slate-500 text-sm font-medium">Contract ID: CTR-2023-8492</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-slate-600 transition-colors rounded-full p-1 hover:bg-slate-50">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto px-8 py-6">
+<div class="group relative flex flex-col items-center justify-center w-full h-48 rounded-lg border-2 border-dashed border-slate-300 hover:border-indigo-500 transition-all bg-slate-50 hover:bg-indigo-50/30 cursor-pointer">
+<div class="flex flex-col items-center justify-center pt-5 pb-6">
+<div class="bg-white p-3 rounded-full shadow-sm mb-3 group-hover:scale-110 transition-transform duration-200 border border-slate-100">
+<span class="material-symbols-outlined text-indigo-700 text-3xl">cloud_upload</span>
+</div>
+<p class="mb-2 text-lg font-semibold text-slate-700">Upload Document</p>
+<p class="mb-4 text-sm text-slate-500">Drag and drop your signed PDF here</p>
+<button class="px-4 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-sm font-bold rounded-lg shadow-sm transition-colors">
+                        Browse Files
+                    </button>
+</div>
+<input class="hidden" id="dropzone-file" type="file"/>
+</div>
+<div class="mt-6 flex gap-4 p-4 rounded-lg bg-amber-50 border border-amber-200">
+<span class="material-symbols-outlined text-amber-600 shrink-0">warning</span>
+<div class="flex flex-col gap-1">
+<h4 class="text-sm font-bold text-amber-800">Existing Approvals</h4>
+<p class="text-sm text-amber-700 leading-relaxed">
+                        This contract has existing approvals. Uploading a new version will flag reviewers to check changes.
+                    </p>
+</div>
+</div>
+<div class="mt-8">
+<h3 class="text-lg font-bold text-slate-900 mb-4">Select Signature Status</h3>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<label class="cursor-pointer group relative">
+<input class="peer sr-only" name="status" type="radio"/>
+<div class="h-full flex flex-col gap-3 p-5 rounded-lg border border-slate-300 bg-white hover:border-indigo-400 peer-checked:border-indigo-600 peer-checked:ring-1 peer-checked:ring-indigo-600 peer-checked:bg-indigo-50/10 transition-all">
+<div class="flex justify-between items-start">
+<div class="p-2 rounded-md bg-slate-100 text-slate-600 peer-checked:bg-indigo-100 peer-checked:text-indigo-700 transition-colors">
+<span class="material-symbols-outlined">person_edit</span>
+</div>
+<div class="w-5 h-5 rounded-full border border-slate-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 flex items-center justify-center transition-colors">
+<div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100"></div>
+</div>
+</div>
+<div>
+<p class="font-bold text-slate-900 peer-checked:text-indigo-700 text-sm">Signed by Counterparty</p>
+<p class="text-xs text-slate-500 mt-1">Pending internal signature</p>
+</div>
+</div>
+</label>
+<label class="cursor-pointer group relative">
+<input class="peer sr-only" name="status" type="radio"/>
+<div class="h-full flex flex-col gap-3 p-5 rounded-lg border border-slate-300 bg-white hover:border-indigo-400 peer-checked:border-indigo-600 peer-checked:ring-1 peer-checked:ring-indigo-600 peer-checked:bg-indigo-50/10 transition-all">
+<div class="flex justify-between items-start">
+<div class="p-2 rounded-md bg-slate-100 text-slate-600 peer-checked:bg-indigo-100 peer-checked:text-indigo-700 transition-colors">
+<span class="material-symbols-outlined">domain</span>
+</div>
+<div class="w-5 h-5 rounded-full border border-slate-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 flex items-center justify-center transition-colors">
+<div class="w-2 h-2 rounded-full bg-white opacity-0 peer-checked:opacity-100"></div>
+</div>
+</div>
+<div>
+<p class="font-bold text-slate-900 peer-checked:text-indigo-700 text-sm">Signed by Our Company</p>
+<p class="text-xs text-slate-500 mt-1">Pending counterparty</p>
+</div>
+</div>
+</label>
+<label class="cursor-pointer group relative">
+<input checked="" class="peer sr-only" name="status" type="radio"/>
+<div class="h-full flex flex-col gap-3 p-5 rounded-lg border border-slate-300 bg-white hover:border-indigo-400 peer-checked:border-indigo-600 peer-checked:ring-1 peer-checked:ring-indigo-600 peer-checked:bg-indigo-50/30 transition-all shadow-sm">
+<div class="flex justify-between items-start">
+<div class="p-2 rounded-md bg-slate-100 text-slate-600 peer-checked:bg-indigo-700 peer-checked:text-white shadow-sm transition-colors">
+<span class="material-symbols-outlined">verified</span>
+</div>
+<div class="w-5 h-5 rounded-full border border-slate-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-600 flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-white text-[14px] opacity-0 peer-checked:opacity-100">check</span>
+</div>
+</div>
+<div>
+<p class="font-bold text-slate-900 peer-checked:text-indigo-700 text-sm">Fully Executed</p>
+<p class="text-xs text-slate-500 peer-checked:text-indigo-700/80 mt-1">All parties have signed</p>
+</div>
+</div>
+</label>
+</div>
+</div>
+<div class="mt-8">
+<div class="flex justify-between mb-2">
+<label class="text-sm font-semibold text-slate-900" for="execution-note">
+                        Execution Note <span class="text-red-500">*</span>
+</label>
+<span class="text-xs text-slate-400">Min 10 characters</span>
+</div>
+<div class="relative">
+<textarea class="w-full rounded-lg border border-slate-300 bg-white text-slate-900 p-3 focus:ring-2 focus:ring-indigo-600 focus:border-transparent placeholder-slate-400 resize-none shadow-sm transition-shadow" id="execution-note" placeholder="Please provide details about the execution context..." rows="4"></textarea>
+<div class="absolute bottom-3 right-3 text-xs text-slate-400 bg-white px-1 rounded">
+                        0/500 (Min 10)
+                    </div>
+</div>
+</div>
+</div>
+<div class="px-8 py-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 rounded-b-xl">
+<button class="px-6 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-white hover:text-slate-900 hover:shadow-sm transition-all">
+                Cancel
+            </button>
+<button class="px-6 py-2.5 rounded-lg bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-sm shadow-md shadow-indigo-700/20 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+                Upload &amp; Save
+            </button>
+</div>
+</div>
+<div class="fixed inset-0 -z-10 pointer-events-none opacity-40 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-200/50 via-slate-50 to-white"></div>
+
+</body></html>

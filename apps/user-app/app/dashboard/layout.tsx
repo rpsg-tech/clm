@@ -3,6 +3,7 @@
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { AppShell } from '@/components/layout/app-shell';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const { isAuthenticated, isLoading, currentOrg } = useAuth();
@@ -20,7 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-                <div className="animate-pulse text-neutral-400">Loading…</div>
+                <div className="animate-pulse text-neutral-400">Loading...</div>
             </div>
         );
     }
@@ -29,10 +30,5 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         return null;
     }
 
-    // Sidebar + header shell will be built in Phase 1.4
-    return (
-        <div className="min-h-screen bg-neutral-50">
-            {children}
-        </div>
-    );
+    return <AppShell>{children}</AppShell>;
 }

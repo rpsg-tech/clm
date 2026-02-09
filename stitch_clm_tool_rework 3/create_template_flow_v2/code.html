@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CLM - Create Template</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#4338ca", // Indigo-700
+                        "primary-hover": "#3730a3", // Indigo-800
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#121022",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }.custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark overflow-hidden h-screen flex flex-col font-display antialiased text-gray-900 dark:text-white">
+<div class="relative flex h-full w-full flex-col overflow-hidden opacity-30 pointer-events-none select-none filter blur-[1px]">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e8e7f3] dark:border-gray-800 px-6 py-3 bg-white dark:bg-[#1a182d]">
+<div class="flex items-center gap-4 text-[#0f0d1b] dark:text-white">
+<div class="size-6 text-primary flex items-center justify-center">
+<span class="material-symbols-outlined">gavel</span>
+</div>
+<h2 class="text-[#0f0d1b] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">CLM</h2>
+</div>
+<div class="flex flex-1 justify-end gap-6">
+<div class="hidden md:flex items-center gap-6 text-sm font-medium text-gray-500">
+<span class="text-primary">Templates</span>
+<span>Repository</span>
+<span>Compliance</span>
+</div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-9 border border-gray-200" data-alt="User profile photo" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD3rsnW3AXnZQmv8nZslnrMK_YKfoQf5K-t3mZTYcw-0LSTEOpUW2rCGPyEvJ9JKY2D7NS9KU-ZOgBj5YWVtnPT4K_dgakXfpoeQe-ZVkGhLKf6XwknQfDDSYFsgQW5MKhHhIgvx7JtJf3IXxPVPr1AT2bR0E0vgYifbQK3pEaGq7P11zy2rOtC4epOWQC3IGZWPXgl7Qo9rq_ou0amZkz4UR6Q0qixnb40a6baYUafCsoTHr6iZ5AA0PYDRC7S2adNrETeCW9Ua5o");'></div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<div class="w-64 flex flex-col border-r border-[#e8e7f3] dark:border-gray-800 bg-white dark:bg-[#1a182d] p-4 gap-4">
+<div class="flex flex-col gap-1">
+<h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Library</h3>
+<div class="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-400">
+<span class="material-symbols-outlined text-[20px]">folder_open</span>
+<span class="text-sm font-medium">All Templates</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-400">
+<span class="material-symbols-outlined text-[20px]">history</span>
+<span class="text-sm font-medium">Recent</span>
+</div>
+</div>
+<div class="flex flex-col gap-1 mt-4">
+<h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Categories</h3>
+<div class="flex items-center justify-between px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 rounded-lg">
+<span class="text-sm">NDA</span>
+<span class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-500">12</span>
+</div>
+<div class="flex items-center justify-between px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 rounded-lg">
+<span class="text-sm">MSA</span>
+<span class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-500">8</span>
+</div>
+<div class="flex items-center justify-between px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 rounded-lg">
+<span class="text-sm">SOW</span>
+<span class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-500">24</span>
+</div>
+</div>
+<div class="mt-auto px-3">
+<p class="text-[10px] text-gray-400">© 2026 Acme Corp.</p>
+</div>
+</div>
+<div class="flex-1 flex flex-col bg-[#f8f8fc] dark:bg-background-dark p-6 overflow-hidden">
+<div class="flex items-center justify-between mb-6">
+<h1 class="text-2xl font-bold text-[#0f0d1b] dark:text-white">Template Library</h1>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 shadow-sm">Import</button>
+<button class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                            New Template
+                        </button>
+</div>
+</div>
+<div class="bg-white dark:bg-[#1a182d] rounded-lg border border-gray-200 dark:border-gray-700 flex-1 overflow-hidden shadow-sm">
+<table class="w-full text-left border-collapse">
+<thead class="bg-gray-50 dark:bg-gray-800">
+<tr>
+<th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Template Name</th>
+<th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
+<th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Value</th>
+<th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+<th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Last Modified</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+<tr>
+<td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">Standard NDA</td>
+<td class="px-6 py-4 text-sm text-gray-500">NDA-001</td>
+<td class="px-6 py-4 text-sm text-gray-500">-</td>
+<td class="px-6 py-4"><span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Active</span></td>
+<td class="px-6 py-4 text-sm text-gray-500">2 hours ago</td>
+</tr>
+<tr>
+<td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">Master Service Agreement</td>
+<td class="px-6 py-4 text-sm text-gray-500">MSA-V2</td>
+<td class="px-6 py-4 text-sm text-gray-500">₹ 2.5 Cr</td>
+<td class="px-6 py-4"><span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Draft</span></td>
+<td class="px-6 py-4 text-sm text-gray-500">Yesterday</td>
+</tr>
+<tr>
+<td class="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">Sales Contract (Regional)</td>
+<td class="px-6 py-4 text-sm text-gray-500">SC-REG-04</td>
+<td class="px-6 py-4 text-sm text-gray-500">₹ 75 Lakhs</td>
+<td class="px-6 py-4"><span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Active</span></td>
+<td class="px-6 py-4 text-sm text-gray-500">Oct 24, 2023</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div class="absolute inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+<div class="w-full max-w-4xl bg-white dark:bg-[#1e1c30] rounded-xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-gray-100 dark:border-gray-700 animate-in zoom-in-95 duration-200">
+<div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-[#1e1c30]">
+<div>
+<h2 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Create Contract Template</h2>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Define metadata, structure, and permissions for the new template.</p>
+</div>
+<button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-gray-50/50 dark:bg-[#121022]/50">
+<div class="grid grid-cols-12 gap-6">
+<div class="col-span-12 lg:col-span-8 space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+<div class="space-y-1.5">
+<label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Template Name <span class="text-red-500">*</span></label>
+<input class="w-full h-10 px-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-gray-400 transition-all" placeholder="e.g., Enterprise SaaS Agreement" type="text"/>
+</div>
+<div class="space-y-1.5">
+<label class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                                    Template Code
+                                    <span class="material-symbols-outlined text-[14px] text-gray-400 cursor-help" title="Auto-generated unique identifier">info</span>
+</label>
+<div class="relative">
+<input class="w-full h-10 px-3 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 text-sm text-gray-600 dark:text-gray-400 focus:ring-0 focus:border-gray-300 cursor-not-allowed" readonly="" type="text" value="SaaS-024-Draft"/>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-[18px] text-gray-400">lock</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 gap-5">
+<div class="space-y-1.5">
+<label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Category</label>
+<div class="relative">
+<select class="w-full h-10 px-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary text-gray-900 dark:text-white appearance-none">
+<option disabled="" selected="" value="">Select a category...</option>
+<option value="legal">Legal &amp; Compliance</option>
+<option value="sales">Sales &amp; Commercial</option>
+<option value="hr">Human Resources</option>
+<option value="procurement">Procurement</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-[20px] text-gray-500 pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Upload Part A Content</label>
+<div class="relative group border-2 border-dashed border-primary/30 hover:border-primary/60 bg-primary/5 dark:bg-primary/10 rounded-xl p-8 transition-all cursor-pointer">
+<div class="flex flex-col items-center justify-center text-center gap-3">
+<div class="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">cloud_upload</span>
+</div>
+<div class="space-y-1">
+<p class="text-sm font-medium text-gray-900 dark:text-white">
+<span class="text-primary hover:underline">Click to upload</span> or drag and drop
+                                        </p>
+<p class="text-xs text-gray-500 dark:text-gray-400">
+                                            Supported formats: .DOCX or Raw HTML (Max 10MB)
+                                        </p>
+</div>
+<div class="flex gap-2 mt-2">
+<span class="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-[10px] font-medium text-gray-500 uppercase">Word</span>
+<span class="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded text-[10px] font-medium text-gray-500 uppercase">HTML 5</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-4 space-y-6">
+<div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm h-full flex flex-col">
+<div class="flex items-center justify-between mb-3">
+<h3 class="text-sm font-semibold text-gray-900 dark:text-white">Annexure Structure</h3>
+<button class="text-primary hover:text-primary-hover text-xs font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">add</span> Add
+                                </button>
+</div>
+<div class="flex-1 space-y-2 mb-4">
+<div class="group flex items-center gap-2 p-2 rounded-md border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 hover:border-primary/30 transition-colors cursor-move">
+<span class="material-symbols-outlined text-gray-400 text-[16px]">drag_indicator</span>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-medium text-gray-900 dark:text-white truncate">Standard Terms</p>
+<p class="text-[10px] text-gray-500">Mandatory</p>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+<div class="group flex items-center gap-2 p-2 rounded-md border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 hover:border-primary/30 transition-colors cursor-move">
+<span class="material-symbols-outlined text-gray-400 text-[16px]">drag_indicator</span>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-medium text-gray-900 dark:text-white truncate">Pricing Schedule</p>
+<p class="text-[10px] text-gray-500">Editable</p>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+<div class="border-t border-gray-100 dark:border-gray-700 pt-4 mt-auto">
+<h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Org Access</h3>
+<div class="space-y-2">
+<label class="flex items-center gap-2 cursor-pointer group">
+<input checked="" class="rounded border-gray-300 text-primary focus:ring-primary/20 w-4 h-4 transition-all" type="checkbox"/>
+<span class="text-xs text-gray-700 dark:text-gray-300 group-hover:text-gray-900">Legal Department</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input checked="" class="rounded border-gray-300 text-primary focus:ring-primary/20 w-4 h-4 transition-all" type="checkbox"/>
+<span class="text-xs text-gray-700 dark:text-gray-300 group-hover:text-gray-900">Sales (North America)</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="rounded border-gray-300 text-primary focus:ring-primary/20 w-4 h-4 transition-all" type="checkbox"/>
+<span class="text-xs text-gray-700 dark:text-gray-300 group-hover:text-gray-900">Procurement</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer group">
+<input class="rounded border-gray-300 text-primary focus:ring-primary/20 w-4 h-4 transition-all" type="checkbox"/>
+<span class="text-xs text-gray-700 dark:text-gray-300 group-hover:text-gray-900">Human Resources</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="px-6 py-4 bg-gray-50 dark:bg-[#151322] border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
+<button class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                    Cancel
+                </button>
+<button class="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-hover rounded-lg shadow-sm shadow-primary/30 flex items-center gap-2 transition-all">
+<span>Create &amp; Configure</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+
+</body></html>

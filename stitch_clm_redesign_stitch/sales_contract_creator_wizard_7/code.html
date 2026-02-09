@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Legal Editor &amp; Review Flow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#463acb",
+                        "primary-dark": "#372db5",
+                        "background-light": "#f0f2f5",
+                        "background-dark": "#14131f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "serif": ["Merriweather", "serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
+        }::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8; 
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white h-screen flex flex-col font-display antialiased overflow-hidden">
+<header class="flex-none z-50 w-full border-b border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+<div class="px-6 h-16 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-9 text-white flex items-center justify-center rounded bg-primary shadow-sm">
+<span class="material-symbols-outlined text-[24px]">gavel</span>
+</div>
+<div>
+<h1 class="text-base font-bold tracking-tight text-slate-900 dark:text-white leading-tight">Legal Review Console</h1>
+<p class="text-xs text-slate-500 font-medium">Matter #4920: Acme Corp SaaS Agreement</p>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 rounded-md px-3 py-1.5 border border-slate-200 dark:border-slate-700">
+<span class="size-2 rounded-full bg-green-500 animate-pulse"></span>
+<span class="text-sm font-semibold text-slate-700 dark:text-slate-200">Live Editing</span>
+</div>
+<div class="h-8 w-px bg-slate-300 dark:bg-slate-700"></div>
+<button class="flex items-center gap-2 rounded-full pl-1 pr-3 py-1 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<div class="size-8 rounded-full bg-cover bg-center border border-slate-300 dark:border-slate-600 shadow-sm" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB_5UGxn_7WtGlbpJtSynRNppYg6mkPIcGu4LR1v_eeH7TMnAtN3zM20BoVT4-dvKgghyivJqHcpBi_K4Gx3gnhzkgQYbLt2VGOGhCF-s_3mGFkm0IJvj2SJ0BppW3vjzVzUIZsHjfo_WHxWXJojMFziAuuqAokF9YbUoJ5isnRmLddkbf-qoIXc2i6qhnn59yzzc_Pw-WasHfBK7IhUEocv_ivUoZTmypXHXcPC2qvREOa9uvY-Hj6htOB8RWU5sTxPi5CW0p6Vrg');"></div>
+<span class="text-sm font-bold text-slate-800 dark:text-slate-200">Alex Morgan</span>
+<span class="material-symbols-outlined text-slate-400 text-[18px]">expand_more</span>
+</button>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<main class="flex-1 flex flex-col min-w-0 bg-slate-100/50 dark:bg-black/20">
+<div class="flex-none h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between shadow-sm z-20">
+<div class="flex items-center gap-4">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="size-5 rounded border-slate-300 text-primary focus:ring-primary transition-all shadow-sm" type="checkbox"/>
+<span class="text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Require Finance Review</span>
+</label>
+<span class="text-slate-300 dark:text-slate-700 text-2xl font-light">|</span>
+<div class="flex items-center gap-2 text-sm text-slate-500">
+<span class="material-symbols-outlined text-[18px]">history</span>
+<span>Last saved 2 mins ago</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-semibold rounded shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400">
+<span class="material-symbols-outlined text-[20px]">rate_review</span>
+                        Request Revision
+                    </button>
+<button class="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary-dark text-white font-semibold rounded shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+                        Approve Contract
+                    </button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-8 flex justify-center bg-slate-100 dark:bg-[#0f0f13]">
+<div class="w-full max-w-[850px] bg-white dark:bg-slate-900 shadow-xl border border-slate-200 dark:border-slate-800 min-h-[1100px] flex flex-col">
+<div class="sticky top-0 z-10 flex flex-wrap items-center gap-1 p-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+<div class="flex items-center gap-0.5 border-r border-slate-300 dark:border-slate-600 pr-2 mr-1">
+<button class="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400" title="Undo"><span class="material-symbols-outlined text-[20px]">undo</span></button>
+<button class="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400" title="Redo"><span class="material-symbols-outlined text-[20px]">redo</span></button>
+</div>
+<div class="flex items-center gap-0.5 border-r border-slate-300 dark:border-slate-600 pr-2 mr-1">
+<button class="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-sm">
+                                Normal <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+</button>
+</div>
+<div class="flex items-center gap-0.5 border-r border-slate-300 dark:border-slate-600 pr-2 mr-1">
+<button class="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold font-serif" title="Bold">B</button>
+<button class="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 italic font-serif" title="Italic">I</button>
+<button class="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 underline font-serif" title="Underline">U</button>
+</div>
+<div class="flex items-center gap-0.5 pr-2">
+<button class="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400" title="Align Left"><span class="material-symbols-outlined text-[20px]">format_align_left</span></button>
+<button class="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400" title="Align Center"><span class="material-symbols-outlined text-[20px]">format_align_center</span></button>
+<button class="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400" title="Bulleted List"><span class="material-symbols-outlined text-[20px]">format_list_bulleted</span></button>
+</div>
+<div class="ml-auto flex items-center gap-2">
+<button class="flex items-center gap-1 px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-primary dark:text-indigo-300 rounded border border-indigo-100 dark:border-indigo-800 text-xs font-semibold uppercase tracking-wider">
+<span class="material-symbols-outlined text-[16px]">auto_awesome</span> AI Assist
+                            </button>
+</div>
+</div>
+<div class="p-12 md:p-16 text-slate-900 dark:text-slate-100 font-serif leading-relaxed text-[17px]">
+<h1 class="text-3xl font-bold text-center mb-12 uppercase tracking-wide">Master Services Agreement</h1>
+<p class="mb-6 text-justify">This Master Services Agreement ("Agreement") is made and entered into as of October 24, 2023 (the "Effective Date"), by and between <strong>Acme Corp Inc.</strong>, a Delaware corporation with its principal place of business at 123 Tech Blvd, San Francisco, CA ("Client"), and <strong>Service Provider Ltd.</strong>, a California corporation ("Provider").</p>
+<h2 class="text-lg font-bold mb-4 mt-8">1. SERVICES AND RESPONSIBILITIES</h2>
+<p class="mb-4 text-justify">1.1 <u>Scope of Services.</u> Provider agrees to perform the services described in one or more Statements of Work ("SOW") attached hereto or subsequently executed by the parties (the "Services").</p>
+<div class="relative group my-6 bg-yellow-50/50 dark:bg-yellow-900/10 -mx-2 px-2 py-1 rounded border-l-4 border-yellow-400">
+<p class="mb-0 text-justify">1.2 <u>Performance Standard.</u> Provider warrants that the Services will be performed in a professional and workmanlike manner consistent with industry standards. In the event of a breach of this warranty, Provider shall re-perform the Services at no additional cost to Client.</p>
+<div class="absolute -right-12 top-0">
+<div class="size-8 bg-yellow-400 text-white rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform">
+<span class="text-xs font-bold">AI</span>
+</div>
+</div>
+</div>
+<h2 class="text-lg font-bold mb-4 mt-8">2. COMPENSATION AND PAYMENT</h2>
+<p class="mb-4 text-justify">2.1 <u>Fees.</u> Client shall pay Provider the fees set forth in the applicable SOW. Unless otherwise stated, all fees are quoted in U.S. Dollars.</p>
+<div class="relative group my-6 bg-green-50/50 dark:bg-green-900/10 -mx-2 px-2 py-1 rounded border-l-4 border-green-500">
+<p class="mb-0 text-justify">2.2 <u>Payment Terms.</u> Invoices shall be payable within <span class="font-bold text-slate-900 dark:text-white bg-green-200 dark:bg-green-800 px-1">forty-five (45)</span> days of receipt. Late payments shall accrue interest at a rate of 1.5% per month or the maximum rate permitted by law, whichever is lower.</p>
+<div class="absolute -right-12 top-0">
+<div class="size-8 bg-green-500 text-white rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+</div>
+</div>
+</div>
+<h2 class="text-lg font-bold mb-4 mt-8">3. CONFIDENTIALITY</h2>
+<p class="mb-4 text-justify">3.1 <u>Definition.</u> "Confidential Information" means any non-public information disclosed by one party to the other party, either directly or indirectly, in writing, orally, or by inspection of tangible objects.</p>
+<p class="mb-4 text-justify">3.2 <u>Obligations.</u> Receiving Party agrees to hold Confidential Information in strict confidence and not to disclose such Confidential Information to any third party.</p>
+</div>
+</div>
+</div>
+</main>
+<aside class="w-80 flex-none bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col z-30 shadow-lg">
+<div class="h-16 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+<h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">smart_toy</span>
+                    AI Change Summary
+                </h3>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-5 space-y-6">
+<div class="rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 p-4">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-300">Analysis</span>
+<span class="bg-indigo-100 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded-full">v2.4</span>
+</div>
+<p class="text-sm text-slate-700 dark:text-slate-300 leading-snug">
+                        Comparison against <strong>Standard SaaS Template</strong>. 
+                        <br/><br/>
+<span class="font-semibold text-primary">3 clauses modified</span> significantly. Risk score is low.
+                    </p>
+</div>
+<div>
+<h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Detected Changes</h4>
+<div class="space-y-4">
+<div class="group cursor-pointer">
+<div class="flex items-start gap-3">
+<div class="mt-0.5 flex-none size-6 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 flex items-center justify-center border border-yellow-200 dark:border-yellow-700">
+<span class="text-xs font-bold">1</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-slate-800 dark:text-white group-hover:text-primary transition-colors">Clause 1.2 Performance</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Added re-performance warranty.</p>
+<div class="mt-1.5 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                        Favorable to Client
+                                    </div>
+</div>
+</div>
+</div>
+<div class="group cursor-pointer">
+<div class="flex items-start gap-3">
+<div class="mt-0.5 flex-none size-6 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center border border-green-200 dark:border-green-700">
+<span class="text-xs font-bold">2</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-slate-800 dark:text-white group-hover:text-primary transition-colors">Clause 2.2 Payment</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Extended from Net 30 to Net 45.</p>
+</div>
+</div>
+</div>
+<div class="group cursor-pointer">
+<div class="flex items-start gap-3">
+<div class="mt-0.5 flex-none size-6 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center border border-red-200 dark:border-red-700">
+<span class="text-xs font-bold">3</span>
+</div>
+<div>
+<p class="text-sm font-semibold text-slate-800 dark:text-white group-hover:text-primary transition-colors">Clause 4.1 Indemnity</p>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Cap removed on liability.</p>
+<div class="mt-1.5 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-100 dark:border-red-800">
+                                        Needs Review
+                                    </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+<button class="w-full flex items-center justify-center gap-2 py-2 px-4 rounded border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
+                        Show Original Version
+                    </button>
+</div>
+</div>
+<div class="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-center">
+<p class="text-[10px] text-slate-400">AI analysis generated by ContractIQ™</p>
+</div>
+</aside>
+</div>
+
+</body></html>
