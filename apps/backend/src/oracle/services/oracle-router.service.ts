@@ -44,12 +44,30 @@ export class OracleRouterService {
         {
             pattern: /(?:show|list|get|find).*(?:pending|awaiting).*legal|legal.*(?:pending|awaiting)|(?:sent|submitted).*legal/i,
             intent: 'LIST_BY_STATUS',
-            extract: () => ({ status: [ContractStatus.SENT_TO_LEGAL] })
+            extract: () => ({
+                status: [
+                    ContractStatus.SENT_TO_LEGAL,
+                    ContractStatus.LEGAL_REVIEW_IN_PROGRESS,
+                    ContractStatus.SENT_TO_FINANCE,
+                    ContractStatus.FINANCE_REVIEW_IN_PROGRESS,
+                    ContractStatus.IN_REVIEW,
+                    ContractStatus.REVISION_REQUESTED
+                ]
+            })
         },
         {
             pattern: /(?:show|list|get|find).*(?:pending|awaiting).*finance|finance.*(?:pending|awaiting)|(?:sent|submitted).*finance/i,
             intent: 'LIST_BY_STATUS',
-            extract: () => ({ status: [ContractStatus.SENT_TO_FINANCE] })
+            extract: () => ({
+                status: [
+                    ContractStatus.SENT_TO_FINANCE,
+                    ContractStatus.FINANCE_REVIEW_IN_PROGRESS,
+                    ContractStatus.SENT_TO_LEGAL,
+                    ContractStatus.LEGAL_REVIEW_IN_PROGRESS,
+                    ContractStatus.IN_REVIEW,
+                    ContractStatus.REVISION_REQUESTED
+                ]
+            })
         },
         {
             pattern: /(?:show|list|get|find).*(?:legal|legally).*approved|approved.*(?:by )?legal/i,
@@ -76,6 +94,21 @@ export class OracleRouterService {
             pattern: /(?:show|list|get|find).*rejected.*contracts?|contracts?.*rejected/i,
             intent: 'LIST_BY_STATUS',
             extract: () => ({ status: [ContractStatus.REJECTED] })
+        },
+        // General Pending (Catch-all for "Pending Contracts")
+        {
+            pattern: /(?:show|list|get|find).*pending.*contracts?|contracts?.*pending/i,
+            intent: 'LIST_BY_STATUS',
+            extract: () => ({
+                status: [
+                    ContractStatus.SENT_TO_LEGAL,
+                    ContractStatus.LEGAL_REVIEW_IN_PROGRESS,
+                    ContractStatus.SENT_TO_FINANCE,
+                    ContractStatus.FINANCE_REVIEW_IN_PROGRESS,
+                    ContractStatus.IN_REVIEW,
+                    ContractStatus.REVISION_REQUESTED
+                ]
+            })
         },
         // Terminated Status
         {
@@ -260,12 +293,12 @@ export class OracleRouterService {
 
         // Contract version queries
         {
-            pattern: /(?:how many|count).*versions?.*(?:of|for)?\s*(?:contract\s*)?([A-Z]{3}-\d{4}-\d{3,})/i,
+            pattern: /(?:how many|count).*versions?.*(?:of|for)?\s*(?:contract\s*)?\b([A-Z]+-\d{4}-\d{3,})/i,
             intent: 'COUNT_VERSIONS',
             extract: (match) => ({ reference: match[1] })
         },
         {
-            pattern: /(?:show|list|get).*version.*(?:history|list).*(?:of|for)?\s*(?:contract\s*)?([A-Z]{3}-\d{4}-\d{3,})/i,
+            pattern: /(?:show|list|get).*versions?(?:.*(?:history|list))?.*(?:of|for)?\s*(?:contract\s*)?\b([A-Z]+-\d{4}-\d{3,})/i,
             intent: 'LIST_VERSIONS',
             extract: (match) => ({ reference: match[1] })
         },
@@ -275,7 +308,7 @@ export class OracleRouterService {
             extract: (match) => ({ versionNumber: parseInt(match[1]) })
         },
         {
-            pattern: /latest.*version.*(?:of|for)?\s*(?:contract\s*)?([A-Z]{3}-\d{4}-\d{3,})/i,
+            pattern: /latest.*version.*(?:of|for)?\s*(?:contract\s*)?\b([A-Z]+-\d{4}-\d{3,})/i,
             intent: 'GET_LATEST_VERSION',
             extract: (match) => ({ reference: match[1] })
         },
@@ -283,7 +316,7 @@ export class OracleRouterService {
         // Specific contract by reference (Strict View Only)
         // Explicitly requires "show/view/get/open" to avoid capturing "summarize"
         {
-            pattern: /(?:show|view|get|open|detail).*(?:contract)?\s*#?\s*([A-Z]{3}-\d{4}-\d{3,})/i,
+            pattern: /(?:show|view|get|open|detail).*(?:contract)?\s*#?\s*\b([A-Z]+-\d{4}-\d{3,})/i,
             intent: 'GET_BY_REFERENCE',
             extract: (match) => ({ reference: match[1] })
         },

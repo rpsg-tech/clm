@@ -9,6 +9,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { OracleSecurityService } from './oracle-security.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ContractStatus } from '@prisma/client';
+import { RagService } from '../../ai/rag/rag.service';
 
 @Injectable()
 export class OracleExecutorService {
@@ -16,7 +17,8 @@ export class OracleExecutorService {
 
     constructor(
         private securityService: OracleSecurityService,
-        private prisma: PrismaService
+        private prisma: PrismaService,
+        private ragService: RagService,
     ) { }
 
     /**
@@ -367,7 +369,7 @@ export class OracleExecutorService {
             reference: string;
             limit?: number;
         }
-    ): Promise<{ versions: any[]; scope: string; error?: string }> {
+    ): Promise<{ versions: any[]; scope: string; reference?: string; error?: string }> {
         // Check access
         const scope = this.securityService.determineScope(permissions);
         const contracts = await this.securityService.fetchAllowedContracts(
@@ -378,7 +380,12 @@ export class OracleExecutorService {
         );
 
         if (contracts.length === 0) {
-            return { versions: [], scope: 'DENIED', error: 'Contract not found or access denied' };
+            this.logger.warn(`Contract ${args.reference} not found for user ${userId} (Scope: ${scope})`);
+            return {
+                versions: [],
+                scope,
+                error: `Contract ${args.reference} not found (Scope: ${scope})`
+            };
         }
 
         const contract = contracts[0];
@@ -400,13 +407,14 @@ export class OracleExecutorService {
         const sanitized = versions.map(v => ({
             version: v.versionNumber,
             changes: v.changeLog ? (typeof v.changeLog === 'string' ? v.changeLog : JSON.stringify(v.changeLog)) : 'No changelog',
+            changeLog: v.changeLog,
             createdAt: v.createdAt,
             createdBy: v.createdByUserId,
             contractId: contract.id   // Added for frontend navigation
         }));
 
         this.logger.log(`Listed ${versions.length} versions for contract ${args.reference}`);
-        return { versions: sanitized, scope: 'ORG_WIDE' };
+        return { versions: sanitized, scope: 'ORG_WIDE', reference: args.reference };
     }
 
     /**
@@ -452,6 +460,7 @@ export class OracleExecutorService {
             contractReference: v.contract.reference, // Include ref
             contractId: v.contract.id,
             changes: v.changeLog ? (typeof v.changeLog === 'string' ? v.changeLog : JSON.stringify(v.changeLog)) : 'No changes recorded',
+            changeLog: v.changeLog,
             createdAt: v.createdAt,
             createdBy: v.createdByUserId
         }));
@@ -518,6 +527,60 @@ export class OracleExecutorService {
     }
 
     /**
+     * Execute search_contracts function (RAG)
+     */
+    async searchContracts(
+        userId: string,
+        organizationId: string,
+        permissions: string[],
+        args: {
+            query: string;
+            limit?: number;
+        }
+    ): Promise<{ results: any[]; scope: string; error?: string }> {
+        // Enforce RBAC fence first
+        const scope = this.securityService.determineScope(permissions);
+
+        // Fetch ALL allowed contract IDs for this user
+        const contracts = await this.securityService.fetchAllowedContracts(
+            userId,
+            organizationId,
+            scope,
+            {}
+        );
+
+        if (contracts.length === 0) {
+            return { results: [], scope, error: "No contracts found or access denied" };
+        }
+
+        const allowedIds = contracts.map(c => c.id);
+
+        // Perform Vector Search
+        const chunks = await this.ragService.search(args.query, allowedIds, args.limit || 5);
+
+        if (chunks.length === 0) {
+            return { results: [], scope };
+        }
+
+        // Enrich with contract metadata
+        const hitContractIds = [...new Set(chunks.map(c => c.contractId))];
+        const hitContracts = await this.prisma.contract.findMany({
+            where: { id: { in: hitContractIds } },
+            select: { id: true, title: true, reference: true }
+        });
+        const contractMap = new Map(hitContracts.map(c => [c.id, c]));
+
+        const results = chunks.map(chunk => ({
+            text: chunk.content,
+            contract: contractMap.get(chunk.contractId) || { id: chunk.contractId, title: 'Unknown' },
+            similarity: chunk.similarity
+        }));
+
+        this.logger.log(`Semantic search found ${chunks.length} chunks for user ${userId}`);
+        return { results, scope };
+    }
+
+    /**
      * Route and execute function call
      */
     async execute(
@@ -559,6 +622,9 @@ export class OracleExecutorService {
 
             case 'get_version_changelog':
                 return this.getVersionChangelog(userId, organizationId, permissions, args);
+
+            case 'search_contracts':
+                return this.searchContracts(userId, organizationId, permissions, args);
 
             default:
                 throw new Error(`Unknown function: ${functionName}`);

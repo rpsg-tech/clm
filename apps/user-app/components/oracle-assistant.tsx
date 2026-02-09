@@ -36,6 +36,7 @@ interface OracleMessage {
         cached?: boolean;
         functionCalled?: string;
         scope?: string;
+        sources?: any[];
     };
     timestamp: Date;
 }
@@ -243,11 +244,78 @@ export function OracleAssistant() {
                 <h4 className="font-semibold text-slate-100 text-xs group-hover:text-purple-400 transition-colors">v{version.version}</h4>
                 <span className="text-[10px] text-slate-500 ml-auto">{new Date(version.createdAt).toLocaleDateString()}</span>
             </div>
-            {version.changes && (
-                <p className="text-[10px] text-slate-400 line-clamp-2">{version.changes}</p>
-            )}
+            {renderVersionChanges(version)}
         </button>
     );
+
+    const renderVersionChanges = (version: any) => {
+        try {
+            // 1. Try to use raw changeLog object if available, otherwise parse string
+            let log = version.changeLog;
+            if (!log && typeof version.changes === 'string' && version.changes.startsWith('{')) {
+                log = JSON.parse(version.changes);
+            }
+
+            // If we still don't have a structured log, fall back to plain text
+            if (!log || !log.changes) {
+                return version.changes ? (
+                    <p className="text-[10px] text-slate-400 line-clamp-2">{version.changes}</p>
+                ) : null;
+            }
+
+            // 2. Aggregate Stats
+            const stats = log.changes.reduce((acc: any, change: any) => {
+                const diff = change.diffStats || { additions: 0, deletions: 0 };
+                acc.add += diff.additions || 0;
+                acc.del += diff.deletions || 0;
+                return acc;
+            }, { add: 0, del: 0 });
+
+            // 3. Extract Field Names (if any field changes)
+            const fieldChanges = log.changes
+                .filter((c: any) => c.changeType === 'field' || c.fieldName)
+                .map((c: any) => c.fieldName || 'Content')
+                .slice(0, 3);
+
+            return (
+                <div className="mt-1.5 space-y-1.5">
+                    {/* Stats Badges */}
+                    <div className="flex items-center gap-2">
+                        {stats.add > 0 && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-green-500/10 border border-green-500/20 text-[9px] font-medium text-green-400">
+                                +{stats.add}
+                            </span>
+                        )}
+                        {stats.del > 0 && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-[9px] font-medium text-red-400">
+                                -{stats.del}
+                            </span>
+                        )}
+                        {stats.add === 0 && stats.del === 0 && (
+                            <span className="text-[9px] text-slate-500 italic">No content changes</span>
+                        )}
+                    </div>
+
+                    {/* Field Changes Summary */}
+                    {fieldChanges.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                            {fieldChanges.map((field: string, i: number) => (
+                                <span key={i} className="px-1.5 py-0.5 bg-slate-700/50 rounded text-[9px] text-slate-300 border border-slate-600/50">
+                                    {field}
+                                </span>
+                            ))}
+                            {fieldChanges.length > 2 && (
+                                <span className="text-[9px] text-slate-500 self-center">+ more</span>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        } catch (e) {
+            // Fallback for parsing errors
+            return <p className="text-[10px] text-slate-400 line-clamp-2">{String(version.changes)}</p>;
+        }
+    };
 
     const renderQuickActionChip = (action: any) => {
         const Icon = action.icon;
@@ -296,8 +364,18 @@ export function OracleAssistant() {
 
         // Version Context
         if (msg.data?.versions && msg.data.versions.length > 0) {
-            suggestions.push({ label: 'Compare latest', query: 'compare the last two versions' });
-            suggestions.push({ label: 'Details', query: 'show details of the latest version' });
+            // Use reference from payload if available, or try to extract from first version's contractId (less reliable without map)
+            // Fallback to generic query only if absolutely necessary, but prefer specific.
+            const ref = (msg.data as any).reference;
+
+            if (ref) {
+                suggestions.push({ label: 'Compare latest', query: `compare the last two versions of ${ref}` });
+                suggestions.push({ label: 'Details', query: `show details of the latest version of ${ref}` });
+            } else {
+                // If backend hasn't updated yet or reference missing, try to be safe or prompt user
+                suggestions.push({ label: 'Compare latest', query: 'compare the last two versions' });
+                suggestions.push({ label: 'Details', query: 'show details of the latest version' });
+            }
         }
 
         // User Context
@@ -446,6 +524,37 @@ export function OracleAssistant() {
                                             {msg.data?.versions && msg.data.versions.length > 0 && (
                                                 <div className="mt-1 space-y-1">
                                                     {msg.data.versions.slice(0, 3).map(renderVersionCard)}
+                                                </div>
+                                            )}
+
+                                            {/* RAG Sources / Citations */}
+                                            {msg.meta?.sources && msg.meta.sources.length > 0 && (
+                                                <div className="mt-2 text-left">
+                                                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                                        <Sparkles className="w-3 h-3 text-orange-400" />
+                                                        Sources Used
+                                                    </p>
+                                                    <div className="space-y-1.5">
+                                                        {msg.meta.sources.map((source: any, idx: number) => (
+                                                            <button
+                                                                key={idx}
+                                                                onClick={() => handleContractClick(source.contract.id)}
+                                                                className="w-full bg-slate-800/40 border border-slate-700/50 rounded-lg p-2 hover:border-orange-500/50 hover:bg-slate-800/60 transition-all text-left group"
+                                                            >
+                                                                <div className="flex justify-between items-start mb-1">
+                                                                    <h4 className="font-semibold text-slate-200 text-[11px] group-hover:text-orange-400 transition-colors line-clamp-1">
+                                                                        {source.contract?.title || 'Unknown Contract'}
+                                                                    </h4>
+                                                                    <span className="text-[9px] px-1.5 py-0.5 bg-green-500/10 text-green-400 rounded-full border border-green-500/20 shrink-0 ml-2">
+                                                                        {(source.similarity * 100).toFixed(0)}% Match
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-[10px] text-slate-400 line-clamp-2 italic border-l-2 border-slate-700 pl-2">
+                                                                    "{source.text}"
+                                                                </p>
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
 
