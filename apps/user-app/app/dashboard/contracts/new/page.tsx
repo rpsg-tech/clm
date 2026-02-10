@@ -90,6 +90,7 @@ export default function NewContractPage() {
     // Initialize editor content and annexures when template is selected
     const loadFullTemplate = async (template: Template) => {
         try {
+            console.log('Loading full template for:', template.id, template.name);
             // Fetch full template details to get annexure content (list view is optimized/slim)
             const fullTemplate = await api.templates.get(template.id) as any;
             setEditorContent(fullTemplate.baseContent || "");
@@ -143,28 +144,28 @@ export default function NewContractPage() {
             return;
         }
 
-        // Initialize Workspace for Upload
+        // Initialize Upload State
         setPendingUploadFile(file);
-        setSelectedTemplate(thirdPartyTemplate);
 
         // Create Preview URL
         const url = URL.createObjectURL(file);
         setFilePreviewUrl(url);
 
-        // Pre-fill details from file (Preserve existing inputs)
-        setContractDetails((prev: any) => ({
-            ...prev,
-            title: prev.title || file.name.replace(/\.[^/.]+$/, ""), // Only auto-fill title if empty
-        }));
+        // Pre-fill details from file
+        const initialDetails = {
+            title: file.name.replace(/\.[^/.]+$/, ""), // Auto-fill title
+            startDate: new Date().toISOString().split('T')[0] // Default to today
+        };
 
-        // Clear editor content (we'll show preview instead)
-        setEditorContent("");
+        // Trigger Metadata Dialog
+        setPendingTemplate(thirdPartyTemplate);
+        setContractDetails(initialDetails); // Pre-fill for the dialog
+        setIsMetadataDialogOpen(true);
 
-        // No annexures for raw file upload by default
-        setAnnexures([]);
-
-        // AI ANALYSIS TRIGGER
+        // AI ANALYSIS (Background) - DISABLED PER USER REQUEST
         // We upload to temp storage to let AI analyze dates
+        // This will update contractDetails in background if successful
+        /*
         try {
             showSuccess("Analyzing...", "AI is reading the contract dates");
 
@@ -188,8 +189,6 @@ export default function NewContractPage() {
                 setContractDetails((prev: any) => ({
                     ...prev,
                     endDate: isoDate,
-                    // If we found an end date, maybe set start date to today if missing?
-                    startDate: prev.startDate || new Date().toISOString().split('T')[0]
                 }));
                 showSuccess("AI Analysis Complete", `Found expiry date: ${isoDate}`);
             }
@@ -197,6 +196,7 @@ export default function NewContractPage() {
             console.error("AI Analysis failed:", err);
             // Non-blocking, just log
         }
+        */
     };
 
     // Dialog State

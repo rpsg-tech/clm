@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Download, ArrowRight, FileCheck } from "lucide-react";
+import { Check, Download, ArrowRight, FileCheck, Calendar, User, IndianRupee, FileText } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface FinalReviewViewProps {
     content: string;
@@ -134,8 +135,9 @@ export function FinalReviewView({ content, details, templateName, filePreviewUrl
         });
 
         // 2. Match TipTap node format: Any span with data-type="variable"
-        processed = processed.replace(/<span([^>]*data-type="variable"[^>]*)>.*?<\/span>/g, (match, attrs) => {
-            const idMatch = attrs.match(/id="([^"]+)"/);
+        processed = processed.replace(/<span[^>]*data-type="variable"[^>]*>.*?<\/span>/g, (match, attrs) => {
+            // Need to extract ID from the match string more reliably if attributes are mixed
+            const idMatch = match.match(/id="([^"]+)"/);
             const key = idMatch ? idMatch[1] : null;
             if (key) {
                 const val = replacer(key);
@@ -153,211 +155,202 @@ export function FinalReviewView({ content, details, templateName, filePreviewUrl
     };
 
     const processedContent = processVariables(content, details);
-    // Continuous View: Pages are not split visually in the web view.
-
 
     return (
-        <div className={`flex flex-col h-full bg-slate-100/50 border border-slate-200 rounded-3xl overflow-hidden shadow-sm animate-in fade-in zoom-in-95 duration-300 ${className}`}>
-            {/* Header */}
-            <div className="px-8 py-5 border-b border-slate-200/60 flex items-center justify-between bg-white/95 backdrop-blur-xl z-10 sticky top-0 shadow-sm supports-[backdrop-filter]:bg-white/60">
-                <div className="flex items-center gap-5">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-orange-500/20 ring-1 ring-orange-100">
-                        <FileCheck size={24} className="drop-shadow-sm" />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-900 tracking-tight leading-tight">Final Document Preview</h2>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 uppercase tracking-wide border border-green-100/50">
-                                Ready for Submission
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <p className="text-xs text-slate-500 font-medium truncate max-w-[200px] capitalize" title={templateName}>
-                                {templateName || "Custom Contract"}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+        <div className={cn("flex flex-col h-full bg-slate-50/50 relative", className)}>
 
-                <div className="flex gap-3">
-                    <div className="text-right hidden sm:block">
-                        <p className="text-[10px] uppercase font-bold text-slate-400">Current Status</p>
-                        <p className="text-xs font-semibold text-slate-900">Drafting Complete</p>
+            {/* Metadata Header - Floating Card Style */}
+            <div className="px-6 py-6 sticky top-0 z-10 pointer-events-none">
+                <div className="bg-white/90 backdrop-blur-xl border border-slate-200/60 p-5 rounded-2xl shadow-sm pointer-events-auto grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+
+                    {/* Title & Template */}
+                    <div className="space-y-1.5 md:col-span-1">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            <FileText size={12} />
+                            <span>Contract Title</span>
+                        </div>
+                        <h3 className="text-sm font-bold text-slate-900 truncate pr-4" title={details.title}>
+                            {details.title || "Untitled Contract"}
+                        </h3>
+                        <p className="text-[10px] text-slate-500 font-medium truncate flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                            {templateName || "Custom Template"}
+                        </p>
+                    </div>
+
+                    {/* Counterparty */}
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            <User size={12} />
+                            <span>Counterparty</span>
+                        </div>
+                        <p className="text-sm font-semibold text-slate-900 truncate">
+                            {details.counterpartyName || "-"}
+                        </p>
+                    </div>
+
+                    {/* Value */}
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            <IndianRupee size={12} />
+                            <span>Total Value</span>
+                        </div>
+                        <p className="text-sm font-mono font-semibold text-slate-900">
+                            {details.amount ? `₹${Number(details.amount).toLocaleString('en-IN')}` : "-"}
+                        </p>
+                    </div>
+
+                    {/* Term */}
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            <Calendar size={12} />
+                            <span>Term</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
+                            <span>{details.startDate ? new Date(details.startDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: '2-digit' }) : "-"}</span>
+                            <ArrowRight size={10} className="text-slate-300" />
+                            <span>{details.endDate ? new Date(details.endDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: '2-digit' }) : "-"}</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Document Workspace */}
-            <div className="flex-1 overflow-y-auto bg-slate-50/50 flex justify-center p-6 lg:p-10 relative scroll-smooth">
+            <div className="flex-1 overflow-y-auto px-4 pb-32 pt-2 flex justify-center scroll-smooth">
                 {/* Contract Paper Container */}
-                {/* Contract Paper Container */}
-                <div className="w-full max-w-[800px] flex flex-col gap-8 pb-20">
+                <div className="w-full max-w-[800px] relative">
 
-                    {/* Metadata Banner */}
-                    <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4">
-                        <div className="space-y-1">
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Contract Title</p>
-                            <p className="text-sm font-bold text-slate-900 truncate leading-snug" title={details.title}>{details.title || "Untitled Contract"}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Counterparty</p>
-                            <p className="text-sm font-bold text-slate-900 truncate leading-snug">{details.counterpartyName || "-"}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Total Value</p>
-                            <p className="text-sm font-bold text-slate-900 font-mono tracking-tight">{details.amount ? `₹${Number(details.amount).toLocaleString('en-IN')}` : "-"}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Term</p>
-                            <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
-                                <span>{details.startDate ? new Date(details.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : "-"}</span>
-                                <span className="text-slate-300">→</span>
-                                <span>{details.endDate ? new Date(details.endDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : "-"}</span>
-                            </div>
-                        </div>
-                    </div>
+                    {/* Realistic Paper Shadow Effect */}
+                    <div className="relative group">
+                        {/* Layered shadows for depth */}
+                        <div className="absolute top-2 left-2 w-full h-full bg-slate-900/5 rounded-[2px] blur-sm transform translate-y-2"></div>
 
-                    {/* Single Continuous Page View */}
-                    <div className="bg-white shadow-xl border border-slate-200 min-h-[1000px] h-fit relative flow-root">
-                        {/* Header Effect */}
-                        <div className="h-1.5 bg-gradient-to-r from-orange-500 via-orange-400 to-orange-500 opacity-90" />
+                        <div className="bg-white min-h-[1000px] relative z-0 shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col">
 
-                        <div className="p-12 md:p-20">
-                            <style jsx global>{`
-                                .contract-content {
-                                    font-family: 'Times New Roman', serif;
-                                    font-size: 12pt;
-                                    line-height: 1.6;
-                                    color: #000;
-                                    width: 100%;
-                                }
-                                /* Reset for safety */
-                                .contract-content * {
-                                    max-width: 100%;
-                                    box-sizing: border-box;
-                                }
-                                .contract-content h1, 
-                                .contract-content h2, 
-                                .contract-content h3, 
-                                .contract-content h4 {
-                                    font-weight: bold;
-                                    margin-top: 1.5em;
-                                    margin-bottom: 0.8em;
-                                    line-height: 1.3;
-                                    page-break-after: avoid;
-                                }
-                                .contract-content p {
-                                    margin-bottom: 1em;
-                                    orphans: 3;
-                                    widows: 3;
-                                }
-                                .contract-content table {
-                                    width: 100%;
-                                    border-collapse: collapse;
-                                    margin: 1.5em 0;
-                                    table-layout: fixed; /* Ensures table stays within bounds */
-                                    background-color: white; 
-                                }
-                                .contract-content td, 
-                                .contract-content th {
-                                    border: 1px solid #000;
-                                    padding: 8px 12px;
-                                    vertical-align: top;
-                                    background-color: white; 
-                                    word-wrap: break-word; /* Prevents long words breaking layout */
-                                }
-                                .contract-content th {
-                                    background-color: #f3f3f3;
-                                    font-weight: bold;
-                                    text-align: left;
-                                }
-                                .contract-content ul, 
-                                .contract-content ol {
-                                    margin-left: 1.5em;
-                                    margin-bottom: 1em;
-                                    padding-left: 1.5em;
-                                }
-                                .contract-content li {
-                                    margin-bottom: 0.5em;
-                                }
-                                /* Visual separator for page breaks in web view */
-                                .page-break { 
-                                    border-bottom: 2px dashed #eee;
-                                    margin: 2rem 0;
-                                    position: relative;
-                                    display: block; /* Ensure it takes space */
-                                    width: 100%;
-                                }
-                                .page-break::after {
-                                    content: 'PAGE BREAK';
-                                    position: absolute;
-                                    right: 0;
-                                    top: -10px;
-                                    font-size: 8px;
-                                    color: #cbd5e1;
-                                    background: white;
-                                    padding-left: 8px;
-                                }
-                            `}</style>
-                            <div className="contract-content max-w-none text-slate-800">
-                                {filePreviewUrl ? (
-                                    <div className="w-full h-[800px] bg-slate-100 flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200">
-                                        <iframe
-                                            src={filePreviewUrl}
-                                            className="w-full h-full"
-                                            title="Document Preview"
+                            {/* Decorative Head (Subtle) */}
+                            <div className="h-1 bg-gradient-to-r from-orange-500/80 via-orange-400/80 to-orange-500/80 w-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+
+                            {/* Content */}
+                            <div className="p-16 md:p-20 flex-1">
+                                <style jsx global>{`
+                                    .contract-content {
+                                        font-family: 'Times New Roman', serif;
+                                        font-size: 12pt;
+                                        line-height: 1.6;
+                                        color: #1a1a1a;
+                                        width: 100%;
+                                    }
+                                    .contract-content h1, 
+                                    .contract-content h2, 
+                                    .contract-content h3 {
+                                        font-weight: 700;
+                                        color: #000;
+                                        line-height: 1.3;
+                                    }
+                                    .contract-content p {
+                                        margin-bottom: 1.2em;
+                                        text-align: justify;
+    
+                                    }
+                                    /* Web View Page Break Indicator */
+                                    .page-break { 
+                                        border-bottom: 1px dashed #e2e8f0;
+                                        margin: 3rem 0;
+                                        position: relative;
+                                        display: block;
+                                        width: 100%;
+                                    }
+                                    .page-break::after {
+                                        content: 'PAGE BREAK';
+                                        position: absolute;
+                                        right: 0;
+                                        top: -9px;
+                                        font-size: 9px;
+                                        color: #94a3b8;
+                                        background: white;
+                                        padding-left: 8px;
+                                        font-family: sans-serif;
+                                        font-weight: 600;
+                                        letter-spacing: 0.05em;
+                                    }
+                                `}</style>
+
+                                <div className="contract-content">
+                                    {filePreviewUrl ? (
+                                        <div className="w-full h-[800px] bg-slate-50 flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 border-dashed">
+                                            <iframe
+                                                src={filePreviewUrl}
+                                                className="w-full h-full rounded shadow-sm"
+                                                title="Document Preview"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div
+                                            dangerouslySetInnerHTML={{ __html: processedContent || "<p class='text-slate-400 italic text-center py-20'>Content generation pending...</p>" }}
                                         />
-                                    </div>
-                                ) : (
-                                    <div
-                                        dangerouslySetInnerHTML={{ __html: processedContent || "<p class='text-slate-400 italic text-center py-20'>Content generation pending...</p>" }}
-                                    />
-                                )}
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Footer: Page Number Simulation */}
+                            <div className="absolute bottom-6 left-0 w-full text-center pointer-events-none">
+                                <span className="text-[10px] text-slate-300 font-serif">Page 1</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Footer Action Bar */}
-            <div className="p-4 border-t border-slate-200 bg-white z-20 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.05)]">
-                <div className="flex items-center justify-between gap-4">
-                    <div className="hidden md:flex flex-col">
-                        <span className="text-xs font-bold text-slate-900 uppercase tracking-wide">Ready for Review</span>
-                        <span className="text-[10px] text-slate-500 font-medium">This will submit the contract for internal approval.</span>
-                    </div>
+            {/* Sticky Action Footer */}
+            <div className="absolute bottom-0 inset-x-0 z-30">
+                {/* Gradient Fade to Content */}
+                <div className="h-12 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
 
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <button
-                            onClick={handleDownload}
-                            disabled={isDownloading}
-                            className="flex-1 md:flex-none px-6 py-2.5 bg-white border-2 border-slate-100 hover:border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-all shadow-sm text-xs uppercase tracking-wide inline-flex items-center justify-center disabled:opacity-50"
-                        >
-                            {isDownloading ? (
-                                <span className="animate-pulse">Saving...</span>
-                            ) : (
-                                <>
-                                    <Download size={14} className="mr-2 text-slate-400" />
-                                    Download PDF
-                                </>
-                            )}
-                        </button>
-                        <button
-                            onClick={onSubmit}
-                            disabled={loading}
-                            className="flex-[2] md:flex-none px-8 py-2.5 bg-slate-900 hover:bg-orange-600 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-orange-500/20 disabled:opacity-70 disabled:cursor-not-allowed text-xs uppercase tracking-wide inline-flex items-center justify-center min-w-[160px]"
-                        >
-                            {loading ? (
-                                <span className="inline-flex items-center animate-pulse">Processing...</span>
-                            ) : (
-                                <>
-                                    Submit Contract
-                                    <ArrowRight size={14} className="ml-2 opacity-90" />
-                                </>
-                            )}
-                        </button>
+                <div className="bg-white/80 backdrop-blur-md border-t border-slate-200 p-4 md:px-8">
+                    <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+                        <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Ready for Review</span>
+                            </div>
+                            <span className="text-[10px] text-slate-500 font-medium pl-4 hidden sm:inline-block">Document analysis complete. Ready to initiate approval workflow.</span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleDownload}
+                                disabled={isDownloading}
+                                className="group px-4 py-2.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-lg transition-all shadow-sm text-xs uppercase tracking-wide inline-flex items-center justify-center disabled:opacity-50"
+                            >
+                                {isDownloading ? (
+                                    <span className="flex items-center gap-2"><div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div> Saving...</span>
+                                ) : (
+                                    <>
+                                        <Download size={14} className="mr-2 text-slate-400 group-hover:text-slate-600 transition-colors" />
+                                        Download Draft
+                                    </>
+                                )}
+                            </button>
+
+                            <button
+                                onClick={onSubmit}
+                                disabled={loading}
+                                className="group px-6 py-2.5 bg-slate-900 hover:bg-black text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none text-xs uppercase tracking-wide inline-flex items-center justify-center"
+                            >
+                                {loading ? (
+                                    <span className="flex items-center gap-2"><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Processing...</span>
+                                ) : (
+                                    <>
+                                        Submit for Approval
+                                        <ArrowRight size={14} className="ml-2 opacity-80 group-hover:translate-x-0.5 transition-transform" />
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     );
 }
+

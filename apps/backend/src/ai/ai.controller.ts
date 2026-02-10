@@ -4,7 +4,7 @@
  * Endpoints for AI-powered contract analysis and suggestions.
  */
 
-import { Controller, Post, Get, Body, Param, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, BadRequestException, Logger } from '@nestjs/common';
 import { AiService, ContractAnalysis, ClauseSuggestion } from './ai.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../common/storage/storage.service';
@@ -19,6 +19,7 @@ import { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
 @Controller('ai')
 @UseGuards(JwtAuthGuard, OrgContextGuard, PermissionsGuard)
 export class AiController {
+    private readonly logger = new Logger(AiController.name);
     constructor(
         private readonly aiService: AiService,
         private readonly prisma: PrismaService,
@@ -159,15 +160,22 @@ export class AiController {
 
         // 2. OCR Extraction
         let text = '';
-        if (this.ocrService.isSupported('image/png') || this.ocrService.isSupported('image/jpeg')) {
-            // Assume image if supported extension or just try? 
-            // OcrService.extractText handles images. PDF handling might differ.
-            // Using OcrService for now - assumes image. 
-            // TODO: Add PDF text extraction support if needed.
+        // Basic mime type detection from key or header would be better, but assuming extension from key
+        const key = body.key;
+        const ext = key.split('.').pop()?.toLowerCase();
+        let mimeType = 'application/octet-stream';
+        if (ext === 'pdf') mimeType = 'application/pdf';
+        else if (ext === 'png') mimeType = 'image/png';
+        else if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+
+
+        if (this.ocrService.isSupported(mimeType)) {
             try {
-                text = await this.ocrService.extractText(buffer);
+                this.logger.log(`Processing OCR for file key: ${key}, mime: ${mimeType}`);
+                text = await this.ocrService.extractText(buffer, mimeType);
             } catch (e) {
-                // Ignore OCR error, maybe file is not image
+                this.logger.error(`OCR failed: ${(e as Error).message}`);
+                // Ignore OCR error, proceed
             }
         }
 

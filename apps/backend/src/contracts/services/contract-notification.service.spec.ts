@@ -68,7 +68,7 @@ describe('ContractNotificationService', () => {
         it('should send email to finance approver when finance approval needed', async () => {
             // Arrange
             const contractWithUser = {
-                ...mock Contract,
+                ...mockContract,
                 createdByUser: mockUser,
             };
 

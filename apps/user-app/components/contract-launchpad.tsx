@@ -33,15 +33,18 @@ export function ContractLaunchpad({ templates, onSelect, onUpload, isLoading = f
     const [searchQuery, setSearchQuery] = useState("");
     const [showAll, setShowAll] = useState(false);
 
+    // Global Filter: Hide internal/system templates like THIRD_PARTY
+    const visibleTemplates = useMemo(() => templates.filter(t => t.code !== 'THIRD_PARTY'), [templates]);
+
     // Filter Logic
     const { topMatches, otherMatches } = useMemo(() => {
         if (!searchQuery.trim()) {
-            return { topMatches: [], otherMatches: templates };
+            return { topMatches: [], otherMatches: visibleTemplates };
         } // ... rest of logic stays same
 
 
         const lowerQ = searchQuery.toLowerCase().trim();
-        let filtered = templates;
+        let filtered = templates.filter(t => t.code !== 'THIRD_PARTY');
 
         // Smart Mapping
         const matchedCategories = Object.entries(KEYWORD_MAPPINGS)
@@ -141,7 +144,7 @@ export function ContractLaunchpad({ templates, onSelect, onUpload, isLoading = f
 
 
                     {/* C. Templates (Dynamic) */}
-                    {(isSearching ? topMatches : (showAll ? templates : templates.slice(0, 3))).map((template) => (
+                    {(isSearching ? topMatches : (showAll ? visibleTemplates : visibleTemplates.slice(0, 3))).map((template) => (
                         <button
                             key={template.id}
                             onClick={() => onSelect(template)}

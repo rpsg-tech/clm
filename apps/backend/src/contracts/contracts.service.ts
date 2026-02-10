@@ -186,7 +186,7 @@ export class ContractsService {
             try {
                 this.logger.log(`Processing OCR for file: ${filename}`);
                 const fileBuffer = await this.storageService.getFile(key);
-                extractedText = await this.ocrService.extractText(fileBuffer);
+                extractedText = await this.ocrService.extractText(fileBuffer, mimeType);
                 this.logger.log(`OCR successful for ${filename}, extracted ${extractedText.length} chars`);
             } catch (error) {
                 this.logger.error(`OCR failed for ${filename}: ${(error as Error).message}`);
