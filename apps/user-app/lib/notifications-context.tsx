@@ -27,36 +27,73 @@ interface NotificationsContextType {
 const NotificationsContext = createContext<NotificationsContextType | null>(null);
 
 const NOTIFICATIONS_QUERY_KEY = ['notifications'];
+const CACHE_KEY = 'clm_notifications_cache';
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+// LocalStorage helpers
+function getStoredNotifications(): { notifications: Notification[]; unreadCount: number; timestamp: number } | undefined {
+    if (typeof window === 'undefined') return undefined;
+    try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (!cached) return undefined;
+        return JSON.parse(cached);
+    } catch (error) {
+        console.error('Failed to parse cached notifications:', error);
+        return undefined;
+    }
+}
+
+function setStoredNotifications(data: { notifications: Notification[]; unreadCount: number }) {
+    if (typeof window === 'undefined') return;
+    try {
+        localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({ ...data, timestamp: Date.now() })
+        );
+    } catch (error) {
+        console.error('Failed to cache notifications:', error);
+    }
+}
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
     const { isAuthenticated } = useAuth();
     const queryClient = useQueryClient();
+
+    // Load initial data from storage
+    const cachedData = getStoredNotifications();
 
     // Use React Query to fetch notifications with automatic polling
     const { data } = useQuery({
         queryKey: NOTIFICATIONS_QUERY_KEY,
         queryFn: async () => {
             try {
-                return await api.notifications.list();
+                const result = await api.notifications.list();
+                // Cache successful result
+                setStoredNotifications(result);
+                return result;
             } catch (error: any) {
-                // Silently handle auth errors (401) - user is logging out or not authenticated
+                // Silently handle auth errors
                 if (error?.statusCode === 401 || error?.status === 401) {
                     return { notifications: [], unreadCount: 0 };
                 }
                 console.error('Failed to fetch notifications:', error);
+                // Return empty if no cache, else throw to let React Query handle it (or use placeholder data)
                 return { notifications: [], unreadCount: 0 };
             }
         },
-        staleTime: 2 * 60 * 1000, // 2 minutes
-        refetchInterval: 60 * 1000, // Poll every 60 seconds (reduced from 30s)
+        // Use cached data as initial data
+        initialData: cachedData ? { notifications: cachedData.notifications, unreadCount: cachedData.unreadCount } : undefined,
+        initialDataUpdatedAt: cachedData?.timestamp,
+        staleTime: CACHE_TTL, // Considered fresh for 2 minutes
+        refetchInterval: 60 * 1000, // Poll every 60 seconds
         enabled: isAuthenticated, // Only fetch when authenticated
-        retry: false, // Don't retry on auth failures
+        retry: false,
     });
 
     const notifications = data?.notifications || [];
     const unreadCount = data?.unreadCount || 0;
 
-    // Client-side add notification (e.g., for optimistic updates or testing)
+    // Client-side adding
     const addNotification = useCallback(
         (notification: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) => {
             const newNotification: Notification = {
@@ -66,11 +103,18 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
                 createdAt: new Date().toISOString(),
             };
 
+            const newData = (old: any) => {
+                const updated = {
+                    notifications: [newNotification, ...(old?.notifications || [])],
+                    unreadCount: (old?.unreadCount || 0) + 1,
+                };
+                // Update cache immediately
+                setStoredNotifications(updated);
+                return updated;
+            };
+
             // Optimistically update cache
-            queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: any) => ({
-                notifications: [newNotification, ...(old?.notifications || [])],
-                unreadCount: (old?.unreadCount || 0) + 1,
-            }));
+            queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, newData);
         },
         [queryClient]
     );
@@ -78,17 +122,20 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     const markAsRead = useCallback(
         async (id: string) => {
             // Optimistic update
-            queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: any) => ({
-                notifications: old?.notifications?.map((n: Notification) =>
-                    n.id === id ? { ...n, isRead: true } : n
-                ) || [],
-                unreadCount: Math.max(0, (old?.unreadCount || 0) - 1),
-            }));
+            queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: any) => {
+                const updated = {
+                    notifications: old?.notifications?.map((n: Notification) =>
+                        n.id === id ? { ...n, isRead: true } : n
+                    ) || [],
+                    unreadCount: Math.max(0, (old?.unreadCount || 0) - 1),
+                };
+                setStoredNotifications(updated);
+                return updated;
+            });
 
             try {
                 await api.notifications.markRead(id);
-                // Refetch to stay in sync with server
-                queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
+                // No refetch needed if successful, cache is already updated optimistically
             } catch (error) {
                 console.error('Failed to mark read:', error);
                 // Refetch to revert on failure
@@ -100,14 +147,17 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
     const markAllAsRead = useCallback(async () => {
         // Optimistic update
-        queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: any) => ({
-            notifications: old?.notifications?.map((n: Notification) => ({ ...n, isRead: true })) || [],
-            unreadCount: 0,
-        }));
+        queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, (old: any) => {
+            const updated = {
+                notifications: old?.notifications?.map((n: Notification) => ({ ...n, isRead: true })) || [],
+                unreadCount: 0,
+            };
+            setStoredNotifications(updated);
+            return updated;
+        });
 
         try {
             await api.notifications.markAllRead();
-            queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
         } catch (error) {
             console.error('Failed to mark all read:', error);
             queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
@@ -115,10 +165,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }, [queryClient]);
 
     const clearAll = useCallback(() => {
-        queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, {
+        const empty = {
             notifications: [],
             unreadCount: 0,
-        });
+        };
+        queryClient.setQueryData(NOTIFICATIONS_QUERY_KEY, empty);
+        setStoredNotifications(empty);
     }, [queryClient]);
 
     return (
