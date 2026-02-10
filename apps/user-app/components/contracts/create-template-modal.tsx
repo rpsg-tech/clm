@@ -79,7 +79,7 @@ export function CreateTemplateModal({
   }, [isOpen, onClose]);
 
   const handleAddAnnexure = () => {
-    const newId = String(parseInt(annexures[annexures.length - 1].id) + 1);
+    const newId = annexures.length > 0 ? String(parseInt(annexures[annexures.length - 1].id) + 1) : '1';
     setAnnexures([
       ...annexures,
       { id: newId, name: 'New Annexure', type: 'Editable' },

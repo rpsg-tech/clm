@@ -69,7 +69,7 @@ export function LoginForm() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="w-full rounded-md border-neutral-300 bg-white text-neutral-900 h-11 px-3 text-sm placeholder:text-neutral-400 focus:border-indigo-700 focus:ring-indigo-700/20 transition-all"
+                        className="w-full rounded-md border border-neutral-300 bg-white text-neutral-900 h-11 px-3 text-sm placeholder:text-neutral-400 focus:border-indigo-700 focus:ring-indigo-700/20 transition-all"
                     />
                 </label>
 
@@ -81,7 +81,7 @@ export function LoginForm() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="w-full rounded-md border-neutral-300 bg-white text-neutral-900 h-11 px-3 text-sm placeholder:text-neutral-400 focus:border-indigo-700 focus:ring-indigo-700/20 transition-all"
+                        className="w-full rounded-md border border-neutral-300 bg-white text-neutral-900 h-11 px-3 text-sm placeholder:text-neutral-400 focus:border-indigo-700 focus:ring-indigo-700/20 transition-all"
                     />
                 </label>
 
@@ -98,7 +98,7 @@ export function LoginForm() {
                 <button
                     type="submit"
                     disabled={isLoading}
-                    className="mt-2 w-full bg-white border border-neutral-300 hover:bg-neutral-50 text-neutral-700 h-11 rounded-md font-semibold text-sm transition-all active:scale-[0.98] disabled:opacity-50"
+                    className="mt-2 w-full bg-indigo-700 hover:bg-indigo-800 text-white h-11 rounded-md font-semibold text-sm transition-all active:scale-[0.98] disabled:opacity-50"
                 >
                     {isLoading ? 'Signing in...' : 'Sign in with Email'}
                 </button>

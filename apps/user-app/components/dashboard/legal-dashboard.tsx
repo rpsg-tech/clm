@@ -288,10 +288,10 @@ export function LegalDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
-              {recentContracts.slice(0, 4).map((contract) => {
+              {recentContracts.slice(0, 4).map((contract, index) => {
                 const initials = (contract.counterpartyName || 'UK').substring(0, 2).toUpperCase();
                 const colors = ['bg-indigo-100 text-indigo-700', 'bg-emerald-100 text-emerald-700', 'bg-amber-100 text-amber-700', 'bg-purple-100 text-purple-700'];
-                const colorClass = colors[Math.floor(Math.random() * colors.length)];
+                const colorClass = colors[index % colors.length];
 
                 return (
                   <tr key={contract.id} className="hover:bg-neutral-50">
@@ -319,7 +319,7 @@ export function LegalDashboard() {
                       {contract.effectiveDate ? new Date(contract.effectiveDate).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="px-6 py-4 text-right font-mono text-sm text-neutral-900">
-                      ₹{(Math.random() * 10).toFixed(1)}L
+                      {contract.amount ? `₹${(contract.amount / 100000).toFixed(1)}L` : '—'}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link href={`/dashboard/contracts/${contract.id}`}>

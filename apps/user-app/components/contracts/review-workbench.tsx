@@ -43,6 +43,7 @@ export function ReviewWorkbench({ approval, canEdit, reviewerRole = 'legal', onA
     const [showApproveDropdown, setShowApproveDropdown] = useState(false);
 
     const editorRef = useRef<TipTapEditorRef>(null);
+    const [editedContent, setEditedContent] = useState<string | null>(null);
 
     type SerializedAuditLog = Omit<AuditLog, 'createdAt' | 'updatedAt'> & {
         createdAt: string;
@@ -130,7 +131,8 @@ export function ReviewWorkbench({ approval, canEdit, reviewerRole = 'legal', onA
         );
     }
 
-    const editorContent = c?.annexureData ?? c?.content ?? '';
+    const baseContent = c?.annexureData ?? c?.content ?? '';
+    const editorContent = editedContent ?? baseContent;
     const totalValue = c?.amount ? `₹${Number(c.amount).toLocaleString('en-IN')}` : '—';
 
     const tabs: { key: Tab; label: string; icon: string; badge?: number }[] = [
@@ -228,7 +230,7 @@ export function ReviewWorkbench({ approval, canEdit, reviewerRole = 'legal', onA
                             <TipTapEditor
                                 ref={editorRef}
                                 content={editorContent}
-                                onChange={() => {}}
+                                onChange={(html) => setEditedContent(html)}
                                 editable={canEdit}
                                 placeholder="Contract content..."
                             />

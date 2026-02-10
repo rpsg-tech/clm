@@ -1,7 +1,8 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useContract } from '@/lib/hooks/use-contract';
 import { useAuth } from '@/lib/auth-context';
@@ -16,6 +17,7 @@ import { UploadSignedDialog } from '@/components/contracts/upload-signed-dialog'
 import { ActivityTimeline } from '@/components/contracts/activity-timeline';
 import { DocumentPreviewTab } from '@/components/contracts/document-preview-tab';
 import { Skeleton, cn, Badge } from '@repo/ui';
+import DOMPurify from 'isomorphic-dompurify';
 import type { Contract } from '@repo/types';
 
 interface PageProps {
@@ -77,6 +79,21 @@ export default function ContractDetailPage({ params }: PageProps) {
     const { role } = useAuth();
     const { success, error: showError } = useToast();
     const { data: contract, isLoading } = useContract(id);
+    const router = useRouter();
+
+    // Smart Redirect: If user is legal/admin and contract is editable, go straight to editor
+    useEffect(() => {
+        if (!isLoading && contract && role) {
+            const LEGAL_ROLES = ['LEGAL_HEAD', 'LEGAL_MANAGER', 'SUPER_ADMIN', 'ENTITY_ADMIN'];
+            const isLegal = LEGAL_ROLES.includes(role);
+            const targetContract = contract as Contract;
+            const isEditable = targetContract.status === 'DRAFT' || targetContract.status === 'REVISION_REQUESTED';
+
+            if (isLegal && isEditable) {
+                router.replace(`/dashboard/contracts/${id}/edit`);
+            }
+        }
+    }, [isLoading, contract, role, id, router]);
 
     const [showSendDialog, setShowSendDialog] = useState(false);
     const [showUploadSignedDialog, setShowUploadSignedDialog] = useState(false);
@@ -372,7 +389,7 @@ export default function ContractDetailPage({ params }: PageProps) {
                                 </div>
                                 {c.content ? (
                                     <div className="prose prose-sm max-w-none line-clamp-6 text-neutral-600">
-                                        <div dangerouslySetInnerHTML={{ __html: c.content.substring(0, 200) + '...' }} />
+                                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c.content.substring(0, 200) + '...') }} />
                                     </div>
                                 ) : (
                                     <p className="text-sm text-neutral-500">No document content available yet.</p>

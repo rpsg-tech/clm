@@ -8,7 +8,7 @@ import { MaterialIcon } from '@/components/ui/material-icon';
 
 const ROLE_BADGE_STYLES: Record<string, string> = {
     LEGAL_HEAD: 'bg-indigo-700 text-white shadow-sm',
-    BUSINESS_USER: 'bg-gray-100 text-gray-600 border border-gray-200',
+    BUSINESS_USER: 'bg-neutral-100 text-neutral-600 border border-neutral-200',
     LEGAL_MANAGER: 'bg-blue-50 text-blue-700 border border-blue-100',
     ENTITY_ADMIN: 'bg-purple-50 text-purple-700 border border-purple-100',
     FINANCE_MANAGER: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
@@ -16,7 +16,7 @@ const ROLE_BADGE_STYLES: Record<string, string> = {
 };
 
 function getRoleBadgeStyle(role: string): string {
-    return ROLE_BADGE_STYLES[role] || 'bg-gray-100 text-gray-600 border border-gray-200';
+    return ROLE_BADGE_STYLES[role] || 'bg-neutral-100 text-neutral-600 border border-neutral-200';
 }
 
 function formatRoleLabel(role: string | undefined | null): string {
@@ -148,24 +148,24 @@ export default function SelectOrgPage() {
     // Multi-org: grid view
     return (
         <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 bg-neutral-50">
-            <div className="w-full max-w-5xl h-[85vh] max-h-[800px] bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col overflow-hidden">
+            <div className="w-full max-w-5xl h-[85vh] max-h-[800px] bg-white rounded-2xl shadow-xl border border-neutral-200 flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="flex-none bg-white z-20 border-b border-gray-100 px-6 pt-8 pb-6 sm:px-10">
+                <div className="flex-none bg-white z-20 border-b border-neutral-100 px-6 pt-8 pb-6 sm:px-10">
                     <div className="flex flex-col gap-1 mb-6">
-                        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                        <h1 className="text-3xl font-bold text-neutral-900 tracking-tight">
                             Welcome back, {user.name?.split(' ')[0]}
                         </h1>
-                        <p className="text-gray-500 text-lg">Select an organization to access your dashboard.</p>
+                        <p className="text-neutral-500 text-lg">Select an organization to access your dashboard.</p>
                     </div>
                     <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-700 transition-colors">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-400 group-focus-within:text-indigo-700 transition-colors">
                             <MaterialIcon name="search" size={20} />
                         </div>
                         <input
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="block w-full pl-12 pr-4 py-3.5 border border-gray-200 bg-gray-50 rounded-xl text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-indigo-700 focus:border-transparent focus:bg-white transition-all text-base font-medium shadow-sm hover:bg-white"
+                            className="block w-full pl-12 pr-4 py-3.5 border border-neutral-200 bg-neutral-50 rounded-xl text-neutral-900 placeholder-neutral-500 focus:ring-2 focus:ring-indigo-700 focus:border-transparent focus:bg-white transition-all text-base font-medium shadow-sm hover:bg-white"
                             placeholder="Search by organization name..."
                         />
                     </div>
@@ -175,11 +175,11 @@ export default function SelectOrgPage() {
                 <div className="flex-1 overflow-y-auto px-6 py-6 sm:px-10 bg-white">
                     {filteredOrgs.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                            <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                                <MaterialIcon name="domain_disabled" size={32} className="text-gray-400" />
+                            <div className="h-16 w-16 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
+                                <MaterialIcon name="domain_disabled" size={32} className="text-neutral-400" />
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-2">No organizations found</h3>
-                            <p className="text-gray-500 max-w-sm">We couldn&apos;t find any organizations matching your search.</p>
+                            <h3 className="text-lg font-bold text-neutral-900 mb-2">No organizations found</h3>
+                            <p className="text-neutral-500 max-w-sm">We couldn&apos;t find any organizations matching your search.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 pb-4">
@@ -192,22 +192,22 @@ export default function SelectOrgPage() {
                                         className={`group relative flex flex-col p-5 rounded-xl cursor-pointer transition-all duration-200 text-left ${
                                             isSelected
                                                 ? 'bg-indigo-50 border-2 border-indigo-700 shadow-sm'
-                                                : 'bg-white border border-gray-200 hover:border-indigo-400 hover:shadow-md'
+                                                : 'bg-white border border-neutral-200 hover:border-indigo-400 hover:shadow-md'
                                         }`}
                                     >
                                         <div className="flex items-start justify-between mb-4">
-                                            <div className="h-12 w-12 rounded-lg bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100">
-                                                <span className="text-xl font-bold text-gray-600">{org.name.charAt(0)}</span>
+                                            <div className="h-12 w-12 rounded-lg bg-neutral-50 flex items-center justify-center shrink-0 border border-neutral-100">
+                                                <span className="text-xl font-bold text-neutral-600">{org.name.charAt(0)}</span>
                                             </div>
                                             <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold tracking-wide uppercase ${getRoleBadgeStyle(org.role)}`}>
                                                 {formatRoleLabel(org.role)}
                                             </span>
                                         </div>
                                         <div className="mt-auto">
-                                            <h3 className={`text-lg font-bold mb-1 transition-colors ${isSelected ? 'text-indigo-700' : 'text-gray-900 group-hover:text-indigo-700'}`}>
+                                            <h3 className={`text-lg font-bold mb-1 transition-colors ${isSelected ? 'text-indigo-700' : 'text-neutral-900 group-hover:text-indigo-700'}`}>
                                                 {org.name}
                                             </h3>
-                                            <div className="flex items-center text-sm text-gray-500 gap-1.5">
+                                            <div className="flex items-center text-sm text-neutral-500 gap-1.5">
                                                 <MaterialIcon name="description" size={18} />
                                                 <span>#{org.code}</span>
                                             </div>
@@ -225,10 +225,10 @@ export default function SelectOrgPage() {
                 </div>
 
                 {/* Footer */}
-                <div className="flex-none px-6 py-6 sm:px-10 bg-white border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-6 z-20">
+                <div className="flex-none px-6 py-6 sm:px-10 bg-white border-t border-neutral-200 flex flex-col sm:flex-row items-center justify-between gap-6 z-20">
                     <label className="flex items-center gap-3 cursor-pointer group select-none">
-                        <input type="checkbox" className="h-5 w-5 rounded border-gray-300 text-indigo-700 focus:ring-indigo-700/30 cursor-pointer" />
-                        <span className="text-sm text-gray-600 font-medium group-hover:text-gray-900 transition-colors">Remember my choice</span>
+                        <input type="checkbox" className="h-5 w-5 rounded border-neutral-300 text-indigo-700 focus:ring-indigo-700/30 cursor-pointer" />
+                        <span className="text-sm text-neutral-600 font-medium group-hover:text-neutral-900 transition-colors">Remember my choice</span>
                     </label>
                     <button
                         onClick={() => selectedOrg && handleSelectOrg(selectedOrg)}
@@ -247,10 +247,10 @@ export default function SelectOrgPage() {
                 </div>
             </div>
 
-            <footer className="mt-8 text-center text-gray-400 text-sm">
+            <footer className="mt-8 text-center text-neutral-400 text-sm">
                 <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="font-bold text-gray-500">CLM</span>
-                    <span className="w-1 h-1 rounded-full bg-gray-300" />
+                    <span className="font-bold text-neutral-500">CLM</span>
+                    <span className="w-1 h-1 rounded-full bg-neutral-300" />
                     <span className="font-medium">Enterprise Platform</span>
                 </div>
                 <p>© 2026 CLM Enterprise. All rights reserved.</p>
