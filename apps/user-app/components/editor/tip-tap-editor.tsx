@@ -144,19 +144,7 @@ export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(({ co
             {editable && (
                 <div className="flex flex-col shrink-0">
                     <EditorToolbar editor={editor} />
-                    {/* Variable Toolbar (Quick Insert) */}
-                    <div className="flex gap-2 p-2 bg-slate-50 border-b border-slate-100 text-xs overflow-x-auto">
-                        <span className="text-slate-400 font-bold uppercase tracking-wider py-1">Insert Vars:</span>
-                        <button onClick={() => insertVariable('Counterparty Name')} className="px-2 py-1 bg-white border border-slate-200 rounded-md hover:border-orange-300 hover:text-orange-600 transition-colors shadow-sm">
-                            Client Name
-                        </button>
-                        <button onClick={() => insertVariable('Effective Date')} className="px-2 py-1 bg-white border border-slate-200 rounded-md hover:border-orange-300 hover:text-orange-600 transition-colors shadow-sm">
-                            Date
-                        </button>
-                        <button onClick={() => insertVariable('Total Amount')} className="px-2 py-1 bg-white border border-slate-200 rounded-md hover:border-orange-300 hover:text-orange-600 transition-colors shadow-sm">
-                            Amount
-                        </button>
-                    </div>
+
                 </div>
             )}
 

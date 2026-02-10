@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import {
-    List, Plus, Trash2, ChevronDown, ChevronUp
+    List, Plus, Trash2, ChevronDown, ChevronUp, Maximize2, Minimize2
 } from "lucide-react";
 import { ContractEditorView } from "@/components/contract-editor-view";
 
@@ -24,6 +24,7 @@ interface AnnexuresViewProps {
 
 export function AnnexuresView({ annexures, onAnnexureChange, onUpdate, onAdd, onRemove, onTitleChange }: AnnexuresViewProps) {
     const [activeAnnexureId, setActiveAnnexureId] = useState<string>(annexures[0]?.id || "");
+    const [isMaximized, setIsMaximized] = useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     // Sync active ID if annexures change and active is gone
@@ -36,67 +37,74 @@ export function AnnexuresView({ annexures, onAnnexureChange, onUpdate, onAdd, on
     // Auto-scroll to active tab logic could be added here
 
     return (
-        <div className="flex flex-col h-[700px] border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm relative animate-in fade-in zoom-in-95 duration-300">
+        <div className={`
+            flex flex-col border border-slate-200 bg-white shadow-sm overflow-hidden transition-all duration-300
+            ${isMaximized
+                ? 'fixed inset-0 z-50 h-screen w-screen rounded-none'
+                : 'h-[700px] rounded-2xl relative animate-in fade-in zoom-in-95'}
+        `}>
 
-            {/* Top Bar: Tabs */}
-            <div className="flex items-center bg-slate-50 border-b border-slate-200 px-2 h-12 flex-shrink-0">
-                <div
-                    ref={scrollContainerRef}
-                    className="flex-1 flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth pr-2"
-                >
-                    {annexures.map((annexure, index) => {
-                        const isActive = activeAnnexureId === annexure.id;
-                        return (
-                            <div
-                                key={annexure.id}
-                                onClick={() => setActiveAnnexureId(annexure.id)}
-                                className={`
-                                    group relative flex items-center gap-2 px-4 py-2 rounded-t-lg cursor-pointer transition-all duration-200 border-b-2 border-transparent hover:bg-white min-w-[140px] max-w-[200px] h-full mt-1
-                                    ${isActive
-                                        ? 'bg-white text-orange-600 border-orange-500 font-medium shadow-[0_1px_3px_rgba(0,0,0,0.05)]'
-                                        : 'text-slate-500 hover:text-slate-700'
-                                    }
-                                `}
-                            >
-                                <span className={`
-                                    text-[10px] font-bold px-1.5 py-0.5 rounded
-                                    ${isActive ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-500'}
-                                `}>
-                                    {index + 1}
-                                </span>
-                                <span className="text-xs truncate flex-1 block select-none">
-                                    {annexure.title || "Untitled"}
-                                </span>
-
-                                {/* Close Button (visible on hover or active) */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onRemove(annexure.id);
-                                    }}
-                                    disabled={annexures.length <= 1}
+            {/* Top Bar: Tabs (Hidden in Focus Mode) */}
+            {!isMaximized && (
+                <div className="flex items-center bg-slate-50 border-b border-slate-200 px-2 h-12 flex-shrink-0">
+                    <div
+                        ref={scrollContainerRef}
+                        className="flex-1 flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth pr-2"
+                    >
+                        {annexures.map((annexure, index) => {
+                            const isActive = activeAnnexureId === annexure.id;
+                            return (
+                                <div
+                                    key={annexure.id}
+                                    onClick={() => setActiveAnnexureId(annexure.id)}
                                     className={`
-                                        p-1 rounded-full hover:bg-rose-100 hover:text-rose-500 transition-opacity
-                                        ${isActive ? 'opacity-100 text-slate-400' : 'opacity-0 group-hover:opacity-100 text-slate-300'}
-                                        ${annexures.length <= 1 ? 'hidden' : ''}
+                                        group relative flex items-center gap-2 px-4 py-2 rounded-t-lg cursor-pointer transition-all duration-200 border-b-2 border-transparent hover:bg-white min-w-[140px] max-w-[200px] h-full mt-1
+                                        ${isActive
+                                            ? 'bg-white text-orange-600 border-orange-500 font-medium shadow-[0_1px_3px_rgba(0,0,0,0.05)]'
+                                            : 'text-slate-500 hover:text-slate-700'
+                                        }
                                     `}
                                 >
-                                    <Trash2 size={12} />
-                                </button>
-                            </div>
-                        );
-                    })}
+                                    <span className={`
+                                        text-[10px] font-bold px-1.5 py-0.5 rounded
+                                        ${isActive ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-500'}
+                                    `}>
+                                        {index + 1}
+                                    </span>
+                                    <span className="text-xs truncate flex-1 block select-none">
+                                        {annexure.title || "Untitled"}
+                                    </span>
 
-                    {/* Add Button inline with tabs */}
-                    <button
-                        onClick={onAdd}
-                        className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-orange-50 hover:text-orange-600 text-slate-400 transition-colors ml-1 flex-shrink-0"
-                        title="Add New Annexure"
-                    >
-                        <Plus size={18} />
-                    </button>
+                                    {/* Close Button (visible on hover or active) */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onRemove(annexure.id);
+                                        }}
+                                        disabled={annexures.length <= 1}
+                                        className={`
+                                            p-1 rounded-full hover:bg-rose-100 hover:text-rose-500 transition-opacity
+                                            ${isActive ? 'opacity-100 text-slate-400' : 'opacity-0 group-hover:opacity-100 text-slate-300'}
+                                            ${annexures.length <= 1 ? 'hidden' : ''}
+                                        `}
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+                                </div>
+                            );
+                        })}
+
+                        {/* Add Button inline with tabs */}
+                        <button
+                            onClick={onAdd}
+                            className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-orange-50 hover:text-orange-600 text-slate-400 transition-colors ml-1 flex-shrink-0"
+                            title="Add New Annexure"
+                        >
+                            <Plus size={18} />
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Main: Editor Area */}
             <div className="flex-1 flex flex-col bg-white min-w-0 min-h-0">
@@ -116,11 +124,31 @@ export function AnnexuresView({ annexures, onAnnexureChange, onUpdate, onAdd, on
                                     placeholder="Enter Annexure Title..."
                                 />
                             </div>
+
+                            {/* Focus Mode Toggle */}
+                            <button
+                                onClick={() => setIsMaximized(!isMaximized)}
+                                className="p-2 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors flex items-center gap-2 group"
+                                title={isMaximized ? "Exit Focus Mode" : "Enter Focus Mode"}
+                            >
+                                {isMaximized ? (
+                                    <>
+                                        <Minimize2 size={20} />
+                                        <span className="text-xs font-semibold">Exit Focus</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Focus Mode</span>
+                                        <Maximize2 size={20} />
+                                    </>
+                                )}
+                            </button>
                         </div>
 
                         {/* Editor Content */}
-                        <div className="flex-1 overflow-hidden flex flex-col min-h-0 bg-slate-50/30">
-                            <div className="h-full px-8 py-6">
+                        {/* In maximized mode, use a different background or padding to ensure readability */}
+                        <div className={`flex-1 overflow-hidden flex flex-col min-h-0 ${isMaximized ? 'bg-slate-50' : 'bg-slate-50/30'}`}>
+                            <div className={`h-full ${isMaximized ? 'max-w-4xl mx-auto w-full py-8' : 'px-8 py-6'}`}>
                                 <div className="bg-white border border-slate-100 rounded-xl shadow-sm h-full overflow-hidden">
                                     <ContractEditorView
                                         content={activeAnnexure.content}
