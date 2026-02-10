@@ -177,7 +177,19 @@ export class RolesController {
             throw new NotFoundException('Role not found');
         }
 
-        if (role.isSystem) {
+        // Check if user is SUPER_ADMIN
+        const userOrgRole = await this.prisma.userOrganizationRole.findFirst({
+            where: {
+                userId: user.id,
+                organizationId: user.orgId,
+                isActive: true
+            },
+            include: { role: true }
+        });
+
+        const isSuperAdmin = userOrgRole?.role.code === 'SUPER_ADMIN';
+
+        if (role.isSystem && !isSuperAdmin) {
             throw new ForbiddenException('System roles cannot be modified');
         }
 

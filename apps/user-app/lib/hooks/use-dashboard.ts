@@ -18,6 +18,7 @@ export function useDashboardData(orgId?: string) {
                     activeValue: snapshot.stats.value || 0,
                     draftContracts: snapshot.stats.draft || 0,
                     pendingApprovals: snapshot.stats.pending || 0,
+                    trend: snapshot.stats.trend,
                 },
                 recentContracts: snapshot.recent || [],
                 expiringContracts: snapshot.attention.expiring || [],

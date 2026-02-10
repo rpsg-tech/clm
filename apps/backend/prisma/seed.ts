@@ -36,6 +36,7 @@ async function main() {
         { name: 'Edit Templates', code: 'template:edit', module: 'Templates', description: 'Modify existing templates.' },
         { name: 'Delete Templates', code: 'template:delete', module: 'Templates', description: 'Remove templates from the library.' },
         { name: 'Publish Templates', code: 'template:publish', module: 'Templates', description: 'Make templates available for general use.' },
+        { name: 'Manage Global Templates', code: 'template:global', module: 'Templates', description: 'Create and edit global templates visible to all organizations.' },
 
         // Approvals (Workflows)
         { name: 'Legal Review: View', code: 'approval:legal:view', module: 'Approvals', description: 'View contracts pending legal review.' },
@@ -132,7 +133,7 @@ async function main() {
         'org:view', 'org:manage',
         'user:view', 'user:manage',
         'role:view', 'role:manage',
-        'template:view', 'template:create', 'template:edit', 'template:publish',
+        'template:view', 'template:create', 'template:edit', 'template:publish', 'template:global',
         'system:audit', 'analytics:view', 'system:settings', 'admin:config_modules',
         // Can also view contracts to manage them
         'contract:view', 'contract:history'
@@ -279,7 +280,8 @@ async function main() {
 
     const adminUser = await prisma.user.findUnique({ where: { email: 'admin@clm.com' } });
 
-    const templatesData = [
+    const templatesData: any[] = [
+        /*
         {
             name: 'Non-Disclosure Agreement',
             code: 'NDA',
@@ -321,6 +323,7 @@ async function main() {
             baseContent: `<p>This contract was uploaded from an external source.</p>`,
             isGlobal: true,
         },
+        */
     ];
 
     for (const template of templatesData) {

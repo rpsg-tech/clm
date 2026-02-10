@@ -57,7 +57,7 @@ export function DraftingWorkspace({
     onBack
 }: DraftingWorkspaceProps) {
     const [activeTab, setActiveTab] = useState<"editor" | "annexures">("editor");
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
 
     // Simple Form Handler
     const handleDetailChange = (field: string, value: any) => {

@@ -25,7 +25,10 @@ interface GroupedPermissions {
     [module: string]: Permission[];
 }
 
+import { useAuth } from '@/lib/auth-context';
+
 export default function RoleDetailPage() {
+    const { user, role: userRole } = useAuth();
     const params = useParams();
     const router = useRouter();
     const roleId = params.id as string;
@@ -71,7 +74,8 @@ export default function RoleDetailPage() {
     };
 
     const togglePermission = (permissionId: string) => {
-        if (role?.isSystem) return; // Can't edit system roles
+        const isSuperAdmin = userRole === 'SUPER_ADMIN';
+        if (role?.isSystem && !isSuperAdmin) return; // Can't edit system roles unless Super Admin
 
         const newSet = new Set(selectedPermissions);
         if (newSet.has(permissionId)) {
@@ -119,7 +123,8 @@ export default function RoleDetailPage() {
         );
     }
 
-    const isReadOnly = role?.isSystem;
+    const isSuperAdmin = userRole === 'SUPER_ADMIN';
+    const isReadOnly = role?.isSystem && !isSuperAdmin;
 
     return (
         <div className="space-y-8 pb-20 selection:bg-orange-100 max-w-5xl mx-auto relative animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -135,14 +140,16 @@ export default function RoleDetailPage() {
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                            {isNew ? 'New Configuration' : (isReadOnly ? 'System Role' : 'Custom Role')}
+                            {isNew ? 'New Configuration' : (isReadOnly ? 'System Role' : (role?.isSystem ? 'System Role (Unlocked)' : 'Custom Role'))}
                         </span>
                     </div>
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
                         {isNew ? 'Create New Role' : (isReadOnly ? `View ${role.name}` : `Edit ${role.name}`)}
                     </h1>
                     <p className="text-slate-500 font-medium text-sm">
-                        {isReadOnly ? 'Standard system roles are immutable to ensure security.' : 'Configure custom access levels and permissions.'}
+                        {isReadOnly
+                            ? 'Standard system roles are immutable to ensure security.'
+                            : (role?.isSystem ? '⚠️ You are editing a System Role as Super Admin.' : 'Configure custom access levels and permissions.')}
                     </p>
                 </div>
                 {!isReadOnly && (

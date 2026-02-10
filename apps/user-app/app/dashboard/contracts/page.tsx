@@ -115,9 +115,14 @@ export default function ContractsListPage() {
                     <p className="text-slate-500">Manage and track your contracts.</p>
                 </div>
                 {canCreate && (
-                    <Button onClick={handleCreateContract} className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm w-full md:w-auto">
-                        <Plus className="w-4 h-4 mr-2" />
-                        New Contract
+                    <Button
+                        onClick={handleCreateContract}
+                        className="bg-orange-600 hover:bg-orange-500 text-white rounded-xl px-6 h-11 shadow-lg shadow-orange-600/30 transition-all hover:scale-[1.02] hover:shadow-orange-600/40 font-bold tracking-tight text-sm group relative overflow-hidden flex items-center gap-2 w-full md:w-auto"
+                        size="lg"
+                    >
+                        <Plus className="w-5 h-5 transition-transform duration-300 group-hover:rotate-90" />
+                        Create New Contract
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                     </Button>
                 )}
             </div>

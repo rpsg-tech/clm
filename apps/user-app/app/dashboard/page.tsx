@@ -67,7 +67,8 @@ export default function DashboardPage() {
         activeContracts: 0,
         activeValue: 0,
         draftContracts: 0,
-        pendingApprovals: 0
+        pendingApprovals: 0,
+        trend: undefined
     };
 
     const recentContracts = (dashboardData?.recentContracts || []) as RecentContract[];
@@ -156,7 +157,7 @@ export default function DashboardPage() {
                     title="Total Volume"
                     value={stats.totalContracts}
                     icon={FileText}
-                    trend={{ value: "12%", label: "from last month", positive: true }}
+                    trend={stats.trend}
                     variant="blue"
                     delay={100}
                 />

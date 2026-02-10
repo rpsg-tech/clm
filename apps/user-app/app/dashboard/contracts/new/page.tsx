@@ -8,6 +8,7 @@ import { ContractLaunchpad } from "@/components/contract-launchpad";
 import { DraftingWorkspace } from "@/components/drafting-workspace";
 import { FinalReviewView } from "@/components/final-review-view";
 import { ContractAssistantSidebar } from "@/components/contract-assistant-sidebar";
+import { ContractMetadataDialog } from "@/components/contract-metadata-dialog";
 import { api } from "@/lib/api-client";
 import { Template } from "@repo/types";
 import { Button, Spinner } from '@repo/ui';
@@ -198,15 +199,29 @@ export default function NewContractPage() {
         }
     };
 
+    // Dialog State
+    const [isMetadataDialogOpen, setIsMetadataDialogOpen] = useState(false);
+    const [pendingTemplate, setPendingTemplate] = useState<Template | null>(null);
+
     const handleTemplateSelect = (template: Template) => {
-        setSelectedTemplate(template);
-        loadFullTemplate(template);
+        setPendingTemplate(template);
+        setIsMetadataDialogOpen(true);
+    };
+
+    const handleMetadataConfirm = (data: any) => {
+        if (pendingTemplate) {
+            setContractDetails(data);
+            setSelectedTemplate(pendingTemplate);
+            loadFullTemplate(pendingTemplate); // Triggers content load
+            setIsMetadataDialogOpen(false);
+        }
     };
 
     const resetSelection = () => {
         setSelectedTemplate(null);
         setContractDetails({});
         setEditorContent("");
+        setPendingTemplate(null);
     };
 
     // --- Dynamic Annexure Handlers ---
@@ -574,6 +589,13 @@ export default function NewContractPage() {
                     </>
                 )}
             </div>
+
+            <ContractMetadataDialog
+                isOpen={isMetadataDialogOpen}
+                onClose={() => setIsMetadataDialogOpen(false)}
+                onConfirm={handleMetadataConfirm}
+                templateName={pendingTemplate?.name}
+            />
         </div>
     );
 }

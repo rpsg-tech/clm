@@ -313,21 +313,14 @@ export class AnalyticsService {
             }
 
             // Parallel Execution of Independent Queries
-            const [
-                contractCounts,
-                activeValueResult,
-                recentContracts,
-                expiringContracts,
-                rejectedContracts,
-                pendingLegal,
-                pendingFinance
-            ] = await Promise.all([
+            const results = await Promise.all([
                 // 1. Status Counts
                 this.prisma.contract.groupBy({
                     by: ['status'],
                     where: whereClause,
                     _count: true,
                 }),
+                // ... (other promises are accessed via index in updated code)
 
                 // 2. Active Value
                 this.prisma.contract.aggregate({
@@ -399,29 +392,68 @@ export class AnalyticsService {
                         contract: { organizationId }
                     }
                 }) : Promise.resolve(0),
+
+                // 8. Trend Calculation (This Month)
+                this.prisma.contract.count({
+                    where: {
+                        ...whereClause,
+                        createdAt: {
+                            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+                        }
+                    }
+                }),
+
+                // 9. Trend Calculation (Last Month)
+                this.prisma.contract.count({
+                    where: {
+                        ...whereClause,
+                        createdAt: {
+                            gte: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
+                            lt: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+                        }
+                    }
+                })
             ]);
+
+            // Trend Calculation Logic
+            const thisMonth = results[7];
+            const lastMonth = results[8];
+            let trendValue = 0;
+            let trendPositive = true;
+
+            if (lastMonth === 0) {
+                trendValue = thisMonth > 0 ? 100 : 0;
+            } else {
+                trendValue = ((thisMonth - lastMonth) / lastMonth) * 100;
+            }
+            trendPositive = trendValue >= 0;
 
             // Process Counts
             const statusMap: Record<string, number> = {};
-            contractCounts.forEach(c => statusMap[c.status] = c._count);
+            (results[0] as any[]).forEach(c => statusMap[c.status] = c._count);
 
             return {
                 stats: {
-                    total: contractCounts.reduce((acc, c) => acc + c._count, 0),
+                    total: (results[0] as any[]).reduce((acc, c) => acc + c._count, 0),
                     active: (statusMap['ACTIVE'] || 0) + (statusMap['COUNTERSIGNED'] || 0) + (statusMap['APPROVED'] || 0),
                     draft: statusMap['DRAFT'] || 0,
                     pending: (statusMap['SENT_TO_LEGAL'] || 0) + (statusMap['SENT_TO_FINANCE'] || 0),
-                    value: activeValueResult._sum.amount || 0,
+                    value: (results[1] as any)._sum.amount || 0,
+                    trend: {
+                        value: `${Math.abs(Math.round(trendValue))}%`,
+                        label: "from last month",
+                        positive: trendPositive
+                    },
                     // Granular status map for frontend specific needs
                     byStatus: statusMap
                 },
-                recent: recentContracts,
+                recent: results[2],
                 attention: {
-                    expiring: expiringContracts,
-                    rejected: rejectedContracts,
+                    expiring: results[3],
+                    rejected: results[4],
                     approvals: {
-                        legal: pendingLegal,
-                        finance: pendingFinance
+                        legal: results[5],
+                        finance: results[6]
                     }
                 },
                 meta: {
