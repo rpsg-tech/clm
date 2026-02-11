@@ -58,7 +58,7 @@ export function ContractNavigationSidebar({
                 <div className="px-4 py-3 bg-gradient-to-br from-slate-50 to-white border-b border-slate-100 shrink-0">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                            <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden flex-1 max-w-[120px]">
+                            <div className="w-24 bg-slate-200 rounded-full h-1.5 overflow-hidden">
                                 <div
                                     className="h-full transition-all duration-500 rounded-full bg-gradient-to-r from-green-400 to-green-500"
                                     style={{ width: `${totalCount === 0 ? 0 : (visitedCount / totalCount) * 100}%` }}
