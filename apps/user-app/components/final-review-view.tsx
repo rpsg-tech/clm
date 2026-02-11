@@ -157,26 +157,34 @@ export function FinalReviewView({ content, details, templateName, filePreviewUrl
     const processedContent = processVariables(content, details);
 
     return (
-        <div className={cn("flex flex-col h-full bg-slate-50/50 relative", className)}>
+        <div className={cn("flex h-full bg-slate-50 relative", className)}>
 
-            {/* Metadata Header - Floating Card Style */}
-            <div className="px-4 md:px-5 py-3 sticky top-0 z-10 pointer-events-none">
-                <div className="bg-white/90 backdrop-blur-xl border border-slate-200/60 p-3 md:p-4 rounded-2xl shadow-sm pointer-events-auto grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4 items-center">
+            {/* LEFT SIDEBAR: Details & Actions */}
+            <div className="w-[320px] bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 h-full">
+                {/* Header */}
+                <div className="p-5 border-b border-slate-100">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Contract Review</h3>
+                    <p className="text-[10px] text-slate-400 mt-1">Review details before submission</p>
+                </div>
 
-                    {/* Title & Template */}
-                    <div className="space-y-1.5 md:col-span-1">
+                {/* Details List */}
+                <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                    {/* Title */}
+                    <div className="space-y-1.5">
                         <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                             <FileText size={12} />
                             <span>Contract Title</span>
                         </div>
-                        <h3 className="text-sm font-bold text-slate-900 truncate pr-4" title={details.title}>
+                        <h3 className="text-sm font-bold text-slate-900 leading-tight" title={details.title}>
                             {details.title || "Untitled Contract"}
                         </h3>
-                        <p className="text-[10px] text-slate-500 font-medium truncate flex items-center gap-1">
+                        <p className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 mt-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
                             {templateName || "Custom Template"}
                         </p>
                     </div>
+
+                    <div className="h-px bg-slate-100 w-full" />
 
                     {/* Counterparty */}
                     <div className="space-y-1.5">
@@ -184,7 +192,7 @@ export function FinalReviewView({ content, details, templateName, filePreviewUrl
                             <User size={12} />
                             <span>Counterparty</span>
                         </div>
-                        <p className="text-sm font-semibold text-slate-900 truncate">
+                        <p className="text-sm font-semibold text-slate-900">
                             {details.counterpartyName || "-"}
                         </p>
                     </div>
@@ -212,14 +220,59 @@ export function FinalReviewView({ content, details, templateName, filePreviewUrl
                             <span>{details.endDate ? new Date(details.endDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: '2-digit' }) : "-"}</span>
                         </div>
                     </div>
+
+                    {/* Status Indicator */}
+                    <div className="mt-4 p-3 bg-emerald-50 rounded-lg border border-emerald-100 flex items-start gap-3">
+                        <div className="mt-0.5 w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                            <Check size={10} className="text-emerald-600" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-emerald-800">Ready for Review</p>
+                            <p className="text-[10px] text-emerald-600 leading-relaxed mt-0.5">
+                                Document analysis complete. Ready to initiate approval workflow.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Actions Footer */}
+                <div className="p-4 border-t border-slate-100 bg-slate-50 space-y-3">
+                    <button
+                        onClick={onSubmit}
+                        disabled={loading}
+                        className="w-full group py-2.5 bg-slate-900 hover:bg-black text-white font-bold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none text-xs uppercase tracking-wide flex items-center justify-center"
+                    >
+                        {loading ? (
+                            <span className="flex items-center gap-2"><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Processing...</span>
+                        ) : (
+                            <>
+                                Submit for Approval
+                                <ArrowRight size={14} className="ml-2 opacity-80 group-hover:translate-x-0.5 transition-transform" />
+                            </>
+                        )}
+                    </button>
+
+                    <button
+                        onClick={handleDownload}
+                        disabled={isDownloading}
+                        className="w-full group py-2.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 font-semibold rounded-xl transition-all text-[10px] uppercase tracking-wide flex items-center justify-center disabled:opacity-50"
+                    >
+                        {isDownloading ? (
+                            <span className="flex items-center gap-2"><div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div> Saving...</span>
+                        ) : (
+                            <>
+                                <Download size={14} className="mr-2 text-slate-400 group-hover:text-slate-600 transition-colors" />
+                                Download Draft
+                            </>
+                        )}
+                    </button>
                 </div>
             </div>
 
-            {/* Document Workspace */}
-            <div className="flex-1 overflow-y-auto px-4 pb-14 pt-1 flex justify-center scroll-smooth">
+            {/* MAIN CONTENT: Document Workspace */}
+            <div className="flex-1 h-full overflow-y-auto bg-slate-100/50 relative flex justify-center p-4 md:p-8 scroll-smooth">
                 {/* Contract Paper Container */}
-                <div className="w-full max-w-[800px] relative">
-
+                <div className="w-full max-w-[800px] relative pb-20">
                     {/* Realistic Paper Shadow Effect */}
                     <div className="relative group">
                         {/* Layered shadows for depth */}
@@ -231,7 +284,7 @@ export function FinalReviewView({ content, details, templateName, filePreviewUrl
                             <div className="h-1 bg-gradient-to-r from-orange-500/80 via-orange-400/80 to-orange-500/80 w-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
 
                             {/* Content */}
-                            <div className="p-8 md:p-10 flex-1">
+                            <div className="p-8 md:p-12 flex-1">
                                 <style jsx global>{`
                                     .contract-content {
                                         font-family: 'Times New Roman', serif;
@@ -279,7 +332,7 @@ export function FinalReviewView({ content, details, templateName, filePreviewUrl
                                     {filePreviewUrl ? (
                                         <div className="w-full h-[800px] bg-slate-50 flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 border-dashed">
                                             <iframe
-                                                src={filePreviewUrl}
+                                                src={filePreviewUrl || ""}
                                                 className="w-full h-full rounded shadow-sm"
                                                 title="Document Preview"
                                             />
@@ -296,56 +349,6 @@ export function FinalReviewView({ content, details, templateName, filePreviewUrl
                             <div className="absolute bottom-6 left-0 w-full text-center pointer-events-none">
                                 <span className="text-[10px] text-slate-300 font-serif">Page 1</span>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Sticky Action Footer */}
-            <div className="absolute bottom-0 inset-x-0 z-30">
-                {/* Gradient Fade to Content */}
-                <div className="h-6 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
-
-                <div className="bg-white/80 backdrop-blur-md border-t border-slate-200 p-2 md:px-5">
-                    <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Ready for Review</span>
-                            </div>
-                            <span className="text-[10px] text-slate-500 font-medium pl-4 hidden sm:inline-block">Document analysis complete. Ready to initiate approval workflow.</span>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={handleDownload}
-                                disabled={isDownloading}
-                                className="group px-3 py-2 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-lg transition-all shadow-sm text-[10px] uppercase tracking-wide inline-flex items-center justify-center disabled:opacity-50"
-                            >
-                                {isDownloading ? (
-                                    <span className="flex items-center gap-2"><div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div> Saving...</span>
-                                ) : (
-                                    <>
-                                        <Download size={14} className="mr-2 text-slate-400 group-hover:text-slate-600 transition-colors" />
-                                        Download Draft
-                                    </>
-                                )}
-                            </button>
-
-                            <button
-                                onClick={onSubmit}
-                                disabled={loading}
-                                className="group px-5 py-2 bg-slate-900 hover:bg-black text-white font-bold rounded-lg transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none text-[10px] uppercase tracking-wide inline-flex items-center justify-center"
-                            >
-                                {loading ? (
-                                    <span className="flex items-center gap-2"><div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Processing...</span>
-                                ) : (
-                                    <>
-                                        Submit for Approval
-                                        <ArrowRight size={14} className="ml-2 opacity-80 group-hover:translate-x-0.5 transition-transform" />
-                                    </>
-                                )}
-                            </button>
                         </div>
                     </div>
                 </div>
