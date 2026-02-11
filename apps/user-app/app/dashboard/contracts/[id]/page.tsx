@@ -256,6 +256,20 @@ function ContractDetailContent() {
             } else if (action === 'request_revision') {
                 await api.approvals.requestRevision(payload.id, payload.comment);
                 toast.success('Request Sent', 'Revision requested successfully');
+            } else if (action === 'approve_legal' || action === 'approve_finance') {
+                const approvalType = action === 'approve_legal' ? 'LEGAL' : 'FINANCE';
+                const approval = contract.approvals?.find((a: any) => a.type === approvalType && a.status === 'PENDING');
+                if (approval) {
+                    await api.approvals.approve(approval.id, payload?.comment || '');
+                    toast.success('Approved', `Contract approved (${approvalType})`);
+                }
+            } else if (action === 'reject_legal' || action === 'reject_finance') {
+                const approvalType = action === 'reject_legal' ? 'LEGAL' : 'FINANCE';
+                const approval = contract.approvals?.find((a: any) => a.type === approvalType && a.status === 'PENDING');
+                if (approval) {
+                    await api.approvals.reject(approval.id, payload?.comment || 'Rejected');
+                    toast.success('Rejected', `Contract rejected (${approvalType})`);
+                }
             } else if (action === 'escalate_to_legal_head') {
                 // Open dialog instead of directly escalating
                 setShowEscalateDialog(true);

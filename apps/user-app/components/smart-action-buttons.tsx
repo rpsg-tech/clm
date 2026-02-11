@@ -159,6 +159,11 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
 
     const [showRevisionDialog, setShowRevisionDialog] = useState(false);
     const [revisionComment, setRevisionComment] = useState("");
+    const [showApproveDialog, setShowApproveDialog] = useState(false);
+    const [showRejectDialog, setShowRejectDialog] = useState(false);
+    const [approvalComment, setApprovalComment] = useState("");
+    const [rejectComment, setRejectComment] = useState("");
+    const [activeApprovalType, setActiveApprovalType] = useState<'LEGAL' | 'FINANCE' | null>(null);
 
     const handleRequestRevision = () => {
         // Identify which approval we are acting on
@@ -180,6 +185,28 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
             console.error('No pending approval found for user');
             // Optionally show error toast or disable button if logic allows
         }
+    };
+
+    const handleApprove = () => {
+        if (activeApprovalType === 'LEGAL') {
+            onAction('approve_legal', { comment: approvalComment });
+        } else if (activeApprovalType === 'FINANCE') {
+            onAction('approve_finance', { comment: approvalComment });
+        }
+        setShowApproveDialog(false);
+        setApprovalComment("");
+        setActiveApprovalType(null);
+    };
+
+    const handleReject = () => {
+        if (activeApprovalType === 'LEGAL') {
+            onAction('reject_legal', { comment: rejectComment });
+        } else if (activeApprovalType === 'FINANCE') {
+            onAction('reject_finance', { comment: rejectComment });
+        }
+        setShowRejectDialog(false);
+        setRejectComment("");
+        setActiveApprovalType(null);
     };
 
     return (
@@ -296,12 +323,26 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
 
                                     {/* Show Finance Approve ONLY if Sent to Finance OR Generic Review */}
                                     {permissions.canApproveFinance && isFinancePending && (
-                                        <ActionButton
-                                            icon={CheckCircle}
-                                            label="Approve (Finance)"
-                                            variant="primary"
-                                            onClick={() => router.push(`/dashboard/approvals/finance?id=${contract.id}&action=approve`)}
-                                        />
+                                        <>
+                                            <ActionButton
+                                                icon={CheckCircle}
+                                                label="Approve (Finance)"
+                                                variant="primary"
+                                                onClick={() => {
+                                                    setActiveApprovalType('FINANCE');
+                                                    setShowApproveDialog(true);
+                                                }}
+                                            />
+                                            <ActionButton
+                                                icon={XCircle}
+                                                label="Reject"
+                                                className="text-red-500 hover:bg-red-50 hover:border-red-200"
+                                                onClick={() => {
+                                                    setActiveApprovalType('FINANCE');
+                                                    setShowRejectDialog(true);
+                                                }}
+                                            />
+                                        </>
                                     )}
 
                                     {/* Show Legal Approve ONLY if Sent to Legal OR Generic Review */}
@@ -311,7 +352,19 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                                                 icon={CheckCircle}
                                                 label="Approve (Legal)"
                                                 variant="primary"
-                                                onClick={() => router.push(`/dashboard/approvals/legal?id=${contract.id}&action=approve`)}
+                                                onClick={() => {
+                                                    setActiveApprovalType('LEGAL');
+                                                    setShowApproveDialog(true);
+                                                }}
+                                            />
+                                            <ActionButton
+                                                icon={XCircle}
+                                                label="Reject"
+                                                className="text-red-500 hover:bg-red-50 hover:border-red-200"
+                                                onClick={() => {
+                                                    setActiveApprovalType('LEGAL');
+                                                    setShowRejectDialog(true);
+                                                }}
                                             />
 
                                             {/* Escalate to Legal Head - only for Legal Managers */}
@@ -462,6 +515,79 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                             className="bg-amber-600 hover:bg-amber-700 text-white"
                         >
                             Request Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Approve Dialog */}
+            <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-green-600">
+                            <CheckCircle className="w-5 h-5" />
+                            Approve Contract ({activeApprovalType})
+                        </DialogTitle>
+                        <DialogDescription>
+                            Approve this contract for {activeApprovalType === 'LEGAL' ? 'legal compliance' : 'financial review'}. You may add optional comments.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <Textarea
+                            placeholder="Add approval notes (optional)..."
+                            value={approvalComment}
+                            onChange={(e) => setApprovalComment(e.target.value)}
+                            className="resize-none"
+                            rows={4}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowApproveDialog(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleApprove}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Confirm Approval
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reject Dialog */}
+            <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-red-600">
+                            <XCircle className="w-5 h-5" />
+                            Reject Contract ({activeApprovalType})
+                        </DialogTitle>
+                        <DialogDescription>
+                            Reject this contract and explain the reason. The contract creator will be notified.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <Textarea
+                            placeholder="Reason for rejection (required)..."
+                            value={rejectComment}
+                            onChange={(e) => setRejectComment(e.target.value)}
+                            className="resize-none"
+                            rows={4}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowRejectDialog(false)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleReject}
+                            disabled={!rejectComment.trim()}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                            <XCircle className="w-4 h-4 mr-2" />
+                            Confirm Rejection
                         </Button>
                     </DialogFooter>
                 </DialogContent>
