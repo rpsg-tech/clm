@@ -11,7 +11,6 @@ import { ApprovalStatus, ApprovalType, ContractStatus } from '@prisma/client';
 import { EmailService, EmailTemplate } from '../common/email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AnalyticsService } from '../analytics/analytics.service';
-import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class ApprovalsService {
@@ -266,7 +265,6 @@ export class ApprovalsService {
                 });
             }
         } catch (error) {
-        } catch (error) {
             this.logger.error(`Failed to send rejection notifications: ${(error as Error).message}`);
         }
 
@@ -353,7 +351,6 @@ export class ApprovalsService {
                     link: `/dashboard/contracts/${updatedContract.id}`,
                 });
             }
-        } catch (error) {
         } catch (error) {
             this.logger.error(`Failed to send revision notifications: ${(error as Error).message}`);
         }
@@ -490,7 +487,6 @@ export class ApprovalsService {
                     link: `/dashboard/contracts/${contractId}`,
                 });
             }
-        } catch (error) {
         } catch (error) {
             this.logger.error(`Failed to send escalation notifications: ${(error as Error).message}`);
         }
