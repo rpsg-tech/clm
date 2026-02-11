@@ -24,6 +24,7 @@ async function main() {
         { name: 'Create Contracts', code: 'contract:create', module: 'Contracts', description: 'Create new contracts from templates.' },
         { name: 'Edit Contracts', code: 'contract:edit', module: 'Contracts', description: 'Modify contract details and draft content.' },
         { name: 'Delete Contracts', code: 'contract:delete', module: 'Contracts', description: 'Permanently remove contracts.' },
+        { name: 'Cancel Contracts', code: 'contract:cancel', module: 'Contracts', description: 'Cancel or void contracts that are in draft or review state.' },
         { name: 'Submit for Approval', code: 'contract:submit', module: 'Contracts', description: 'Submit drafted contracts for internal review.' },
         { name: 'Send to Counterparty', code: 'contract:send', module: 'Contracts', description: 'Email contracts to external parties for signing.' },
         { name: 'Upload Signed Copy', code: 'contract:upload', module: 'Contracts', description: 'Upload final signed documents.' },
@@ -111,6 +112,7 @@ async function main() {
     // 1. Business User (NO Admin Access)
     const businessUserPerms = [
         'contract:view', 'contract:create', 'contract:edit', 'contract:submit', 'contract:history',
+        'contract:cancel',
         'template:view',
         'ai:analyze', 'ai:chat'
     ];
@@ -118,7 +120,7 @@ async function main() {
     // 2. Legal Manager
     const legalManagerPerms = [
         'contract:view', 'contract:edit', 'contract:send', 'contract:upload', 'contract:history', 'contract:download',
-        'contract:escalate', // Escalate contracts to Legal Head
+        'contract:cancel', 'contract:escalate',
         'approval:legal:view', 'approval:legal:act', 'approval:finance:request',
         'system:audit',
         'template:view', 'template:create', 'template:edit',

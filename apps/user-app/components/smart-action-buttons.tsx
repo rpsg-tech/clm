@@ -18,6 +18,7 @@ interface SmartActionButtonsProps {
         canApproveLegal: boolean;
         canApproveFinance: boolean;
         canSend: boolean;
+        canCancel: boolean;
     };
     loading: boolean;
     onAction: (action: string, payload?: any) => void;
@@ -232,12 +233,14 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                                 />
                             )}
 
-                            <GhostAction
-                                icon={Ban}
-                                label="Cancel"
-                                variant="destructive"
-                                onClick={() => setShowCancelDialog(true)}
-                            />
+                            {permissions.canCancel && (
+                                <GhostAction
+                                    icon={Ban}
+                                    label="Cancel"
+                                    variant="destructive"
+                                    onClick={() => setShowCancelDialog(true)}
+                                />
+                            )}
                         </>
                     )}
 

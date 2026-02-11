@@ -188,6 +188,7 @@ function ContractDetailContent() {
         canApproveLegal: usePermission('approval:legal:act'),
         canApproveFinance: usePermission('approval:finance:act'),
         canRestore: usePermission('contract:restore'),
+        canCancel: usePermission('contract:cancel'),
     };
 
     const [contract, setContract] = useState<Contract | null>(null);
