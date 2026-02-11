@@ -479,7 +479,6 @@ export default function NewContractPage() {
             <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-start md:justify-between">
                 <div className="flex flex-col space-y-1">
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Create New Contract</h1>
-                    <p className="text-slate-500 font-medium text-sm">Unified workspace for seamless drafting.</p>
                 </div>
 
                 <div className="flex items-center gap-4">
