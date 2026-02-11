@@ -21,6 +21,7 @@ interface DraftingWorkspaceProps {
     errors?: Record<string, string>;
     mainContentReadOnly?: boolean;
     filePreviewUrl?: string | null;
+    isUploadedContract?: boolean; // Skip workflow enforcement for uploads
 
     // Handlers
     onValidate?: (field: string, value: any) => void;
@@ -47,6 +48,7 @@ export function DraftingWorkspace({
     errors = {},
     mainContentReadOnly = false,
     filePreviewUrl,
+    isUploadedContract = false,
     onValidate,
     onDetailsChange,
     onEditorChange,
@@ -87,8 +89,11 @@ export function DraftingWorkspace({
         ...annexures.map(a => ({ id: a.id, title: a.title, type: 'annexure' as const }))
     ];
 
-    // Check if all annexures visited
-    const allAnnexuresVisited = annexures.length === 0 || annexures.every(a => visitedAnnexures.has(a.id));
+    // Skip workflow enforcement for uploaded contracts
+    const skipWorkflowEnforcement = isUploadedContract;
+
+    // Check if all annexures visited (or skip check for uploads)
+    const allAnnexuresVisited = skipWorkflowEnforcement || annexures.length === 0 || annexures.every(a => visitedAnnexures.has(a.id));
 
     // Find active annexure
     const activeAnnexure = annexures.find(a => a.id === activeDocId);
@@ -204,6 +209,7 @@ export function DraftingWorkspace({
                         items={navItems}
                         activeId={activeDocId}
                         visitedIds={visitedAnnexures}
+                        skipWorkflowEnforcement={skipWorkflowEnforcement}
                         onSelect={handleSelectDocument}
                         onAddAnnexure={onAddAnnexure}
                         onRemoveAnnexure={onRemoveAnnexure}

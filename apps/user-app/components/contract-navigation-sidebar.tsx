@@ -12,6 +12,7 @@ interface ContractNavigationSidebarProps {
     items: NavItem[];
     activeId: string;
     visitedIds: Set<string>;
+    skipWorkflowEnforcement?: boolean; // Hide visit tracking for uploads
     onSelect: (id: string) => void;
     onAddAnnexure: () => void;
     onRemoveAnnexure: (id: string) => void;
@@ -22,6 +23,7 @@ export function ContractNavigationSidebar({
     items,
     activeId,
     visitedIds,
+    skipWorkflowEnforcement = false,
     onSelect,
     onAddAnnexure,
     onRemoveAnnexure,
@@ -48,18 +50,17 @@ export function ContractNavigationSidebar({
                 </button>
             </div>
 
-            {/* Progress Indicator (Top) */}
-            {totalCount > 0 && (
-                <div className="px-4 py-3 bg-white border-b border-slate-200">
-                    <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">
-                        Review Progress
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500 ease-out"
-                                style={{ width: `${totalCount > 0 ? (visitedCount / totalCount) * 100 : 0}%` }}
-                            />
+            {/* Progress Section - Only show for template-based workflows */}
+            {!skipWorkflowEnforcement && totalCount > 0 && (
+                <div className="px-4 py-3 bg-gradient-to-br from-slate-50 to-white border-b border-slate-100 shrink-0">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden flex-1 max-w-[120px]">
+                                <div
+                                    className="h-full transition-all duration-500 rounded-full bg-gradient-to-r from-green-400 to-green-500"
+                                    style={{ width: `${totalCount === 0 ? 0 : (visitedCount / totalCount) * 100}%` }}
+                                />
+                            </div>
                         </div>
                         <span className="text-xs font-bold text-slate-700 tabular-nums min-w-[2.5rem] text-right">
                             {visitedCount}/{totalCount}
@@ -90,14 +91,16 @@ export function ContractNavigationSidebar({
                                     : 'bg-transparent border-transparent hover:bg-white hover:border-slate-200 hover:shadow-sm'}
                             `}
                         >
-                            {/* Visit Status Indicator */}
-                            <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
-                                {isMain || visitedIds.has(item.id) ? (
-                                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                ) : (
-                                    <Circle className="w-4 h-4 text-slate-300" />
-                                )}
-                            </div>
+                            {/* Visit Status Indicator - Only show for template workflows */}
+                            {!skipWorkflowEnforcement && (
+                                <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                                    {isMain || visitedIds.has(item.id) ? (
+                                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                    ) : (
+                                        <Circle className="w-4 h-4 text-slate-300" />
+                                    )}
+                                </div>
+                            )}
 
                             {/* Icon / Number */}
                             <span className={`

@@ -46,6 +46,7 @@ export default function NewContractPage() {
     // Upload Flow State
     const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
     const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+    const [isUploadedContract, setIsUploadedContract] = useState(false);
 
     // Cleanup object URL on unmount or file change
     useEffect(() => {
@@ -207,6 +208,7 @@ export default function NewContractPage() {
     const handleTemplateSelect = (template: Template) => {
         setPendingTemplate(template);
         setIsMetadataDialogOpen(true);
+        setIsUploadedContract(false); // Template-based = enforce workflow
     };
 
     const handleMetadataConfirm = (data: any) => {
@@ -215,6 +217,10 @@ export default function NewContractPage() {
             setSelectedTemplate(pendingTemplate);
             loadFullTemplate(pendingTemplate); // Triggers content load
             setIsMetadataDialogOpen(false);
+            // If there's a pendingUploadFile, this is an upload contract
+            if (pendingUploadFile) {
+                setIsUploadedContract(true);
+            }
         }
     };
 
@@ -520,12 +526,12 @@ export default function NewContractPage() {
                 ) : (
                     <>
                         {viewMode === "draft" && (
-                                    <DraftingWorkspace
-                                        contractDetails={contractDetails}
-                                        editorContent={editorContent}
-                                        annexures={annexures}
-                                        attachedFiles={attachedFiles}
-                                        templateName={selectedTemplate?.name}
+                            <DraftingWorkspace
+                                contractDetails={contractDetails}
+                                editorContent={editorContent}
+                                annexures={annexures}
+                                attachedFiles={attachedFiles}
+                                templateName={selectedTemplate?.name}
                                 // Core Logic for Unified View:
                                 startWithLaunchpad={!selectedTemplate}
                                 renderLaunchpad={() => (
@@ -539,6 +545,7 @@ export default function NewContractPage() {
                                 errors={errors}
                                 mainContentReadOnly={true} // Main Agreement matches template, strictly read-only per user request
                                 filePreviewUrl={filePreviewUrl} // Pass preview URL
+                                isUploadedContract={isUploadedContract} // Skip workflow for uploads
                                 onValidate={handleValidateField}
                                 onDetailsChange={(data) => {
                                     setContractDetails(data);
@@ -552,14 +559,14 @@ export default function NewContractPage() {
                                 }}
                                 onEditorChange={setEditorContent}
                                 onAnnexuresChange={handleAnnexureChange}
-                                        onAnnexuresUpdate={setAttachedFiles}
-                                        onAddAnnexure={handleAddAnnexure}
-                                        onRemoveAnnexure={handleRemoveAnnexure}
-                                        onAnnexureTitleChange={handleTitleChange}
-                                        onStepChange={setDraftStep}
-                                        onNext={handleProceedToReview}
-                                        onBack={resetSelection}
-                                    />
+                                onAnnexuresUpdate={setAttachedFiles}
+                                onAddAnnexure={handleAddAnnexure}
+                                onRemoveAnnexure={handleRemoveAnnexure}
+                                onAnnexureTitleChange={handleTitleChange}
+                                onStepChange={setDraftStep}
+                                onNext={handleProceedToReview}
+                                onBack={resetSelection}
+                            />
                         )}
 
                         {viewMode === "review" && (
