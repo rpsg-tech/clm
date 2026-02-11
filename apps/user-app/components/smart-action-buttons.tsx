@@ -266,7 +266,6 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                             <ActionButton
                                 icon={Shield}
                                 label="Send to Legal"
-                                subLabel="Recommended"
                                 variant="primary"
                                 onClick={() => onAction('submit', { target: 'LEGAL' })}
                             />
