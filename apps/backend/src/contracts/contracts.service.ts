@@ -693,12 +693,11 @@ export class ContractsService {
                 approvalsData.push({ contractId: id, type: 'FINANCE' });
             } else {
                 // Default: Parallel if Finance enabled, else Legal
-                newStatus = ContractStatus.IN_REVIEW; // Or SENT_TO_LEGAL if only legal?
+                // ALWAYS prioritize SENT_TO_LEGAL in status when both are pending
+                newStatus = ContractStatus.SENT_TO_LEGAL;
                 approvalsData.push({ contractId: id, type: 'LEGAL' });
                 if (financeEnabled) {
                     approvalsData.push({ contractId: id, type: 'FINANCE' });
-                } else {
-                    newStatus = ContractStatus.SENT_TO_LEGAL; // fallback to specific if only one
                 }
             }
 

@@ -85,11 +85,17 @@ export class ApprovalsService {
                     // Should be covered by isFullyApproved, but safety check
                     newStatus = ContractStatus.APPROVED;
                 } else if (isLegalApproved) {
+                    // Legal approved, but finance pending/exists → Show finance-specific status
                     newStatus = ContractStatus.LEGAL_APPROVED;
                 } else if (isFinanceApproved) {
-                    newStatus = ContractStatus.FINANCE_REVIEWED;
+                    // Finance approved, but legal is still pending
+                    // PRIORITY: Show SENT_TO_LEGAL if legal exists and is pending
+                    const legalExists = legal && legal.status === ApprovalStatus.PENDING;
+                    newStatus = legalExists ? ContractStatus.SENT_TO_LEGAL : ContractStatus.FINANCE_REVIEWED;
                 } else {
-                    newStatus = ContractStatus.IN_REVIEW;
+                    // Neither approved yet - prioritize legal in status
+                    const legalExists = legal && legal.status === ApprovalStatus.PENDING;
+                    newStatus = legalExists ? ContractStatus.SENT_TO_LEGAL : ContractStatus.IN_REVIEW;
                 }
             }
 
