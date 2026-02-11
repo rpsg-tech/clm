@@ -10,6 +10,8 @@ import { ApprovalStatus, ApprovalType, ContractStatus } from '@prisma/client';
 
 import { EmailService, EmailTemplate } from '../common/email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AnalyticsService } from '../analytics/analytics.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class ApprovalsService {
@@ -19,7 +21,40 @@ export class ApprovalsService {
         private prisma: PrismaService,
         private emailService: EmailService,
         private notificationsService: NotificationsService,
+        private analyticsService: AnalyticsService,
     ) { }
+
+    /**
+     * Approve a contract (Legal or Finance)
+     */
+    async approve(
+        approvalId: string,
+        actorId: string,
+        organizationId: string,
+        userPermissions: string[],
+        comment?: string,
+    ) {
+        // ... (existing implementation) ...
+        const approval = await this.findApproval(approvalId, organizationId);
+        // ...
+
+        // Inside transaction or after
+        const result = await this.prisma.$transaction(async (tx) => {
+            // ... existing transaction logic ...
+            // (Copying logic to ensure context - but tool asks for replacementChunk)
+            // I will use multiple chunks to be safe and precise.
+            return { contract: updatedContract, approval };
+        });
+
+        // Invalidate Analytics Cache
+        await this.analyticsService.invalidateOrganizationCache(organizationId);
+
+        // ... notifications ...
+        return result;
+    }
+    // Wait, I need to be careful with replace_file_content. I should use MultiReplaceFileContent since I'm touching multiple methods.
+    // I will switch to multi_replace_file_content for this.
+
 
     /**
      * Approve a contract (Legal or Finance)
@@ -148,6 +183,10 @@ export class ApprovalsService {
             // Don't throw, successful approval is more important
         }
 
+        // [Cache Invalidation] Ensure dashboard reflects new status immediately
+        await this.analyticsService.invalidateOrganizationCache(organizationId);
+
+
         return result;
     }
 
@@ -227,8 +266,13 @@ export class ApprovalsService {
                 });
             }
         } catch (error) {
+        } catch (error) {
             this.logger.error(`Failed to send rejection notifications: ${(error as Error).message}`);
         }
+
+        // [Cache Invalidation] Ensure dashboard reflects new status immediately
+        await this.analyticsService.invalidateOrganizationCache(organizationId);
+
 
         return result;
     }
@@ -310,8 +354,13 @@ export class ApprovalsService {
                 });
             }
         } catch (error) {
+        } catch (error) {
             this.logger.error(`Failed to send revision notifications: ${(error as Error).message}`);
         }
+
+        // [Cache Invalidation] Ensure dashboard reflects new status immediately
+        await this.analyticsService.invalidateOrganizationCache(organizationId);
+
 
         return result;
     }
@@ -442,8 +491,13 @@ export class ApprovalsService {
                 });
             }
         } catch (error) {
+        } catch (error) {
             this.logger.error(`Failed to send escalation notifications: ${(error as Error).message}`);
         }
+
+        // [Cache Invalidation] Ensure dashboard reflects new status immediately
+        await this.analyticsService.invalidateOrganizationCache(organizationId);
+
 
         return result.contract;
     }
