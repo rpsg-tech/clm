@@ -250,7 +250,7 @@ export function DraftingWorkspace({
                                 </Button>
                             )}
                             <div className="flex items-center gap-2">
-                                {annexures.length > 0 && (
+                                {annexures.length > 0 && !skipWorkflowEnforcement && (
                                     <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border border-slate-200 bg-white text-slate-500">
                                         {visitedAnnexures.size}/{annexures.length} reviewed
                                     </span>

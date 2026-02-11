@@ -483,7 +483,7 @@ export default function NewContractPage() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    {(selectedTemplate || viewMode === "review") && (
+                    {(selectedTemplate || viewMode === "review") && !isUploadedContract && (
                         <div className="hidden md:flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                             {[
                                 { label: 'Main Agreement', active: viewMode === "draft" && draftStep === 'main' },
