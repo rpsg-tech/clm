@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Button } from "@repo/ui";
-import { ArrowLeft, ArrowRight, FileText, Settings, Paperclip, Minimize2, Maximize2, User, Calendar, CreditCard, LayoutDashboard, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Settings, Minimize2, Maximize2, User, Calendar, CreditCard, Search, Check } from "lucide-react";
 import { ContractEditorView } from "@/components/contract-editor-view";
-import { AnnexuresView, AnnexureItem } from "@/components/annexures-view";
+import { AnnexureItem } from "@/components/annexures-view";
+import { ContractNavigationSidebar } from "@/components/contract-navigation-sidebar";
 
 interface DraftingWorkspaceProps {
     // Data
@@ -56,8 +57,19 @@ export function DraftingWorkspace({
     onNext,
     onBack
 }: DraftingWorkspaceProps) {
-    const [activeTab, setActiveTab] = useState<"editor" | "annexures">("editor");
     const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    // Visit Tracking (same as Edit page)
+    const [visitedAnnexures, setVisitedAnnexures] = useState<Set<string>>(new Set());
+    const [activeDocId, setActiveDocId] = useState<string>('main');
+
+    // Handle document selection with visit tracking
+    const handleSelectDocument = (id: string) => {
+        setActiveDocId(id);
+        if (id !== 'main' && !visitedAnnexures.has(id)) {
+            setVisitedAnnexures(prev => new Set([...prev, id]));
+        }
+    };
 
     // Simple Form Handler
     const handleDetailChange = (field: string, value: any) => {
@@ -67,8 +79,20 @@ export function DraftingWorkspace({
         });
     };
 
+    // Navigation items (same structure as Edit page)
+    const navItems = [
+        { id: 'main', title: 'Main Agreement', type: 'main' as const },
+        ...annexures.map(a => ({ id: a.id, title: a.title, type: 'annexure' as const }))
+    ];
+
+    // Check if all annexures visited
+    const allAnnexuresVisited = annexures.length === 0 || annexures.every(a => visitedAnnexures.has(a.id));
+
+    // Find active annexure
+    const activeAnnexure = annexures.find(a => a.id === activeDocId);
+
     return (
-        <div className="flex h-[calc(100vh-140px)] min-h-[600px] border border-slate-200 rounded-3xl overflow-hidden bg-white shadow-2xl shadow-slate-200/50 animate-in fade-in zoom-in-95 duration-500">
+        <div className="flex min-h-[500px] border border-slate-200 rounded-3xl overflow-hidden bg-white shadow-2xl shadow-slate-200/50 animate-in fade-in zoom-in-95 duration-500">
             {/* LEFT SIDEBAR: METADATA FORM */}
             <div className={`
                 flex-shrink-0 border-r border-slate-200 bg-slate-50/50 transition-all duration-300 ease-in-out flex flex-col relative z-20
@@ -98,9 +122,8 @@ export function DraftingWorkspace({
                                 : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/20"
                                 }`}
                             disabled={false}
-                            onBlur={(e) => onValidate?.("title", e.target.value)}
                         />
-                        {errors.title && <p className="text-[10px] text-red-500 font-bold mt-1">{errors.title}</p>}
+                        {errors.title && <p className="text-[10px] text-red-500 mt-1">{errors.title}</p>}
                     </div>
 
                     {/* Counterparty */}
@@ -108,70 +131,40 @@ export function DraftingWorkspace({
                         <div className="flex items-center gap-2 text-xs font-bold text-orange-600">
                             <User className="w-3.5 h-3.5" /> Counterparty
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Entity Name</label>
-                            <input
-                                type="text"
-                                value={contractDetails.counterpartyName || ""}
-                                onChange={(e) => handleDetailChange("counterpartyName", e.target.value)}
-                                className={`w-full text-sm p-2 rounded-lg border bg-white outline-none shadow-sm ${errors.counterpartyName
-                                    ? "border-red-500 focus:border-red-500"
-                                    : "border-slate-200 focus:border-orange-500"
-                                    }`}
-                                disabled={false}
-                                onBlur={(e) => onValidate?.("counterpartyName", e.target.value)}
-                            />
-                            {errors.counterpartyName && <p className="text-[10px] text-red-500 mt-1">{errors.counterpartyName}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase">Email</label>
-                            <input
-                                type="email"
-                                value={contractDetails.counterpartyEmail || ""}
-                                onChange={(e) => handleDetailChange("counterpartyEmail", e.target.value)}
-                                className={`w-full text-sm p-2 rounded-lg border bg-white outline-none shadow-sm ${errors.counterpartyEmail
-                                    ? "border-red-500 focus:border-red-500"
-                                    : "border-slate-200 focus:border-orange-500"
-                                    }`}
-                                disabled={false}
-                                onBlur={(e) => onValidate?.("counterpartyEmail", e.target.value)}
-                            />
-                            {errors.counterpartyEmail && <p className="text-[10px] text-red-500 mt-1">{errors.counterpartyEmail}</p>}
-                        </div>
+                        <input
+                            type="text"
+                            value={contractDetails.counterpartyName || ""}
+                            onChange={(e) => handleDetailChange("counterpartyName", e.target.value)}
+                            placeholder="Company or Individual Name"
+                            className="w-full text-sm p-2 rounded-lg border border-slate-200 bg-white outline-none focus:border-orange-500 shadow-sm"
+                            disabled={false}
+                        />
                     </div>
 
-                    {/* Terms */}
+                    {/* Dates */}
                     <div className="space-y-3 pt-2 border-t border-slate-200/50">
                         <div className="flex items-center gap-2 text-xs font-bold text-orange-600">
-                            <Calendar className="w-3.5 h-3.5" /> Terms
+                            <Calendar className="w-3.5 h-3.5" /> Timeline
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">Start</label>
+                            <div>
+                                <label className="text-[10px] font-semibold text-slate-500 uppercase">Start</label>
                                 <input
                                     type="date"
-                                    value={contractDetails.startDate ? new Date(contractDetails.startDate).toISOString().split('T')[0] : ""}
+                                    value={contractDetails.startDate || ""}
                                     onChange={(e) => handleDetailChange("startDate", e.target.value)}
-                                    className={`w-full text-xs p-2 rounded-lg border bg-white outline-none shadow-sm ${errors.date
-                                        ? "border-red-500 focus:border-red-500"
-                                        : "border-slate-200 focus:border-orange-500"
-                                        }`}
+                                    className="w-full text-sm p-2 rounded-lg border border-slate-200 bg-white outline-none focus:border-orange-500 shadow-sm"
                                     disabled={false}
-                                    onBlur={(e) => onValidate?.("startDate", e.target.value)}
                                 />
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase">End</label>
+                            <div>
+                                <label className="text-[10px] font-semibold text-slate-500 uppercase">End</label>
                                 <input
                                     type="date"
-                                    value={contractDetails.endDate ? new Date(contractDetails.endDate).toISOString().split('T')[0] : ""}
+                                    value={contractDetails.endDate || ""}
                                     onChange={(e) => handleDetailChange("endDate", e.target.value)}
-                                    className={`w-full text-xs p-2 rounded-lg border bg-white outline-none shadow-sm ${errors.date
-                                        ? "border-red-500 focus:border-red-500"
-                                        : "border-slate-200 focus:border-orange-500"
-                                        }`}
+                                    className="w-full text-sm p-2 rounded-lg border border-slate-200 bg-white outline-none focus:border-orange-500 shadow-sm"
                                     disabled={false}
-                                    onBlur={(e) => onValidate?.("endDate", e.target.value)}
                                 />
                             </div>
                             {errors.date && <p className="text-[10px] text-red-500 mt-1 col-span-2">{errors.date}</p>}
@@ -197,6 +190,21 @@ export function DraftingWorkspace({
                 </div>
             </div>
 
+            {/* DOCUMENT NAVIGATION SIDEBAR (NEW) */}
+            {!startWithLaunchpad && !filePreviewUrl && (
+                <div className="w-[300px] border-r border-slate-200 bg-slate-50">
+                    <ContractNavigationSidebar
+                        items={navItems}
+                        activeId={activeDocId}
+                        visitedIds={visitedAnnexures}
+                        onSelect={handleSelectDocument}
+                        onAddAnnexure={onAddAnnexure}
+                        onRemoveAnnexure={onRemoveAnnexure}
+                        className="h-full"
+                    />
+                </div>
+            )}
+
             {/* MAIN CONTENT Area */}
             <div className="flex-1 flex flex-col min-w-0 bg-white relative">
                 {/* Top Toolbar */}
@@ -206,38 +214,6 @@ export function DraftingWorkspace({
                             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="mr-2 text-slate-400 hover:text-slate-600">
                                 <Maximize2 className="w-4 h-4" />
                             </Button>
-                        )}
-                        {!startWithLaunchpad && !filePreviewUrl && (
-                            <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
-                                <button
-                                    onClick={() => setActiveTab("editor")}
-                                    className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wide rounded-lg transition-all flex items-center gap-2
-                                        ${activeTab === "editor" ? "bg-white shadow-sm text-slate-900 border border-slate-200/50" : "text-slate-500 hover:text-slate-900"}
-                                    `}
-                                >
-                                    <FileText className="w-3.5 h-3.5" /> Agreement
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab("annexures")}
-                                    className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wide rounded-lg transition-all flex items-center gap-2
-                                        ${activeTab === "annexures" ? "bg-white shadow-sm text-slate-900 border border-slate-200/50" : "text-slate-500 hover:text-slate-900"}
-                                    `}
-                                >
-                                    <Paperclip className="w-3.5 h-3.5" /> Annexures ({annexures.length})
-                                </button>
-                            </div>
-                        )}
-                        {filePreviewUrl && (
-                            <div className="flex items-center gap-2 px-2">
-                                <FileText className="w-4 h-4 text-orange-500" />
-                                <span className="text-sm font-bold text-slate-900 tracking-tight">Review Document</span>
-                            </div>
-                        )}
-                        {startWithLaunchpad && (
-                            <div className="flex items-center gap-2 px-2">
-                                <LayoutDashboard className="w-4 h-4 text-orange-500" />
-                                <span className="text-sm font-bold text-slate-900 tracking-tight">Workspace Ready</span>
-                            </div>
                         )}
                     </div>
 
@@ -253,59 +229,75 @@ export function DraftingWorkspace({
                                     <Search size={14} /> Change Template
                                 </Button>
                             )}
-                            <Button
-                                onClick={onNext}
-                                className="bg-slate-900 hover:bg-orange-600 text-white font-bold uppercase text-[10px] tracking-wide h-8 px-4 rounded-lg shadow-md transition-all flex items-center gap-2 hover:shadow-lg hover:shadow-orange-500/20"
-                            >
-                                Final Review <ArrowRight size={14} />
-                            </Button>
+                            <div className="flex flex-col items-end gap-1">
+                                <Button
+                                    onClick={onNext}
+                                    disabled={!allAnnexuresVisited}
+                                    className="bg-slate-900 hover:bg-orange-600 text-white font-bold uppercase text-[10px] tracking-wide h-8 px-4 rounded-lg shadow-md transition-all flex items-center gap-2 hover:shadow-lg hover:shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title={!allAnnexuresVisited ? 'Review all annexures before proceeding' : ''}
+                                >
+                                    <Check className="w-3.5 h-3.5" />
+                                    Final Review
+                                    {!allAnnexuresVisited && annexures.length > 0 && (
+                                        <span className="ml-1 text-[10px] opacity-70">({visitedAnnexures.size}/{annexures.length})</span>
+                                    )}
+                                </Button>
+                                {!allAnnexuresVisited && annexures.length > 0 && (
+                                    <p className="text-[10px] text-amber-600 font-medium">Review all annexures first</p>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
 
                 {/* Content Body */}
-                <div className="flex-1 overflow-hidden relative bg-slate-50/30">
+                <div className="flex-1 overflow-hidden relative bg-white">
                     {startWithLaunchpad ? (
                         <div className="h-full w-full overflow-y-auto">
                             {renderLaunchpad && renderLaunchpad()}
                         </div>
-                    ) : (
-                        <>
-                            <div className={`h-full flex flex-col ${activeTab === "editor" ? "block" : "hidden"}`}>
-                                <div className="flex-1 overflow-y-auto h-full">
-                                    {filePreviewUrl ? (
-                                        <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-4">
-                                            <div className="w-full h-full max-w-4xl bg-white shadow-lg rounded-xl overflow-hidden border border-slate-200">
-                                                <iframe
-                                                    src={filePreviewUrl}
-                                                    className="w-full h-full"
-                                                    title="Document Preview"
-                                                />
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <ContractEditorView
-                                            content={editorContent}
-                                            onChange={onEditorChange}
-                                            className="border-0 shadow-none rounded-none min-h-full"
-                                            toolbarSimple={true}
-                                            readOnly={mainContentReadOnly}
-                                        />
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className={`h-full overflow-y-auto p-6 ${activeTab === "annexures" ? "block" : "hidden"}`}>
-                                <AnnexuresView
-                                    annexures={annexures}
-                                    onAnnexureChange={onAnnexuresChange}
-                                    onUpdate={onAnnexuresUpdate}
-                                    onAdd={onAddAnnexure}
-                                    onRemove={onRemoveAnnexure}
-                                    onTitleChange={onAnnexureTitleChange}
+                    ) : filePreviewUrl ? (
+                        <div className="w-full h-full bg-slate-100 flex flex-col items-center justify-center p-4">
+                            <div className="w-full h-full max-w-4xl bg-white shadow-lg rounded-xl overflow-hidden border border-slate-200">
+                                <iframe
+                                    src={filePreviewUrl}
+                                    className="w-full h-full"
+                                    title="Document Preview"
                                 />
                             </div>
-                        </>
+                        </div>
+                    ) : activeDocId === 'main' ? (
+                        <ContractEditorView
+                            content={editorContent}
+                            onChange={onEditorChange}
+                            className="h-full border-none shadow-none rounded-none"
+                            toolbarSimple={true}
+                            readOnly={mainContentReadOnly}
+                        />
+                    ) : activeAnnexure ? (
+                        <div className="h-full flex flex-col">
+                            <div className="px-6 py-4 border-b border-slate-100 bg-white flex items-center gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Annexure Title</label>
+                                    <input
+                                        type="text"
+                                        value={activeAnnexure.title}
+                                        onChange={(e) => onAnnexureTitleChange(activeAnnexure.id, e.target.value)}
+                                        className="text-xl font-bold text-slate-900 placeholder-slate-300 border-none p-0 w-full focus:ring-0 bg-transparent"
+                                        placeholder="Enter Title..."
+                                    />
+                                </div>
+                            </div>
+                            <ContractEditorView
+                                content={activeAnnexure.content}
+                                onChange={(val) => onAnnexuresChange(activeAnnexure.id, val)}
+                                className="h-full border-none shadow-none rounded-none"
+                                toolbarSimple={true}
+                                readOnly={false}
+                            />
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-slate-400">Document not found</div>
                     )}
                 </div>
             </div>

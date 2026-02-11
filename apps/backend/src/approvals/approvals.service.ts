@@ -8,7 +8,7 @@ import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nest
 import { PrismaService } from '../prisma/prisma.service';
 import { ApprovalStatus, ApprovalType, ContractStatus } from '@prisma/client';
 
-import { EmailService } from '../common/email/email.service';
+import { EmailService, EmailTemplate } from '../common/email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
@@ -308,6 +308,138 @@ export class ApprovalsService {
         }
 
         return result;
+    }
+
+    /**
+     * Escalate contract to Legal Head
+     * Only Legal Managers with contract:escalate permission can do this
+     */
+    async escalateToLegalHead(
+        contractId: string,
+        userId: string,
+        organizationId: string,
+        userPermissions: string[],
+        reason?: string,
+    ) {
+        // 1. Permission check
+        if (!userPermissions.includes('contract:escalate')) {
+            throw new ForbiddenException('Only Legal Managers can escalate to Legal Head');
+        }
+
+        // 2. Get contract and verify status
+        const contract = await this.prisma.contract.findFirst({
+            where: { id: contractId, organizationId },
+            include: { createdByUser: true },
+        });
+
+        if (!contract) {
+            throw new NotFoundException('Contract not found');
+        }
+
+        // Only allow escalation from SENT_TO_LEGAL or LEGAL_REVIEW_IN_PROGRESS status
+        if (contract.status !== ContractStatus.SENT_TO_LEGAL &&
+            contract.status !== ContractStatus.LEGAL_REVIEW_IN_PROGRESS) {
+            throw new ForbiddenException(
+                'Contract must be in legal review to escalate to Legal Head'
+            );
+        }
+
+        // 3. Get Legal Head user
+        const legalHeadRole = await this.prisma.role.findFirst({
+            where: { code: 'LEGAL_HEAD' },
+            include: {
+                userRoles: {
+                    where: {
+                        organizationId,
+                        user: { isActive: true },
+                    },
+                    include: { user: true },
+                },
+            },
+        });
+
+        if (!legalHeadRole || legalHeadRole.userRoles.length === 0) {
+            throw new NotFoundException(
+                'No active Legal Head found in organization. Please assign a Legal Head role first.'
+            );
+        }
+
+        const legalHead = legalHeadRole.userRoles[0].user;
+
+        // 4. Get escalating user details
+        const escalatingUser = await this.prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        // 5. Transaction: Update contract and create approval record
+        const result = await this.prisma.$transaction(async (tx) => {
+            // Update contract status
+            const updatedContract = await tx.contract.update({
+                where: { id: contractId },
+                data: { status: ContractStatus.PENDING_LEGAL_HEAD },
+            });
+
+            // Create approval record for Legal Head
+            const approval = await tx.approval.create({
+                data: {
+                    contractId,
+                    actorId: legalHead.id,
+                    type: ApprovalType.LEGAL,
+                    status: ApprovalStatus.PENDING,
+                    comment: reason || 'Escalated for Legal Head review',
+                },
+            });
+
+            this.logger.log(
+                `Contract ${contractId} escalated to Legal Head by user ${userId}. Reason: ${reason || 'N/A'}`
+            );
+
+            return { contract: updatedContract, approval, legalHead };
+        });
+
+        // 6. Send notifications (outside transaction)
+        try {
+            // Notify Legal Head
+            await this.notificationsService.create({
+                userId: legalHead.id,
+                type: 'APPROVAL_REQUEST',
+                title: 'Contract Escalated for Your Review',
+                message: `${escalatingUser?.name || 'Legal Manager'} escalated contract "${contract.title}" for your approval.${reason ? ` Reason: ${reason}` : ''}`,
+                link: `/dashboard/contracts/${contractId}`,
+            });
+
+            // Send email to Legal Head
+            if (legalHead.email) {
+                await this.emailService.send({
+                    to: legalHead.email,
+                    template: EmailTemplate.APPROVAL_REQUIRED,
+                    subject: `🔔 Contract Escalated: ${contract.title}`,
+                    data: {
+                        contractTitle: contract.title,
+                        contractReference: contract.id,
+                        approvalType: 'Legal Head Review',
+                        requestedBy: escalatingUser?.name || 'Legal Manager',
+                        approvalUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/contracts/${contractId}`,
+                    },
+                    priority: 'high',
+                });
+            }
+
+            // Notify contract creator
+            if (contract.createdByUser?.id) {
+                await this.notificationsService.create({
+                    userId: contract.createdByUser.id,
+                    type: 'CONTRACT_STATUS_CHANGED',
+                    title: 'Contract Escalated to Legal Head',
+                    message: `Your contract "${contract.title}" has been escalated to Legal Head for final approval.`,
+                    link: `/dashboard/contracts/${contractId}`,
+                });
+            }
+        } catch (error) {
+            this.logger.error(`Failed to send escalation notifications: ${(error as Error).message}`);
+        }
+
+        return result.contract;
     }
 
     /**

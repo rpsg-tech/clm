@@ -92,8 +92,20 @@ function EditContractContent() {
     const [showAiPanel, setShowAiPanel] = useState(false);
     const [focusMode, setFocusMode] = useState(false);
 
+    // Visit Tracking for Workflow Enforcement
+    const [visitedAnnexures, setVisitedAnnexures] = useState<Set<string>>(new Set());
+
     // Unified Selection State
     const [activeDocId, setActiveDocId] = useState<string>('main');
+
+    // Handle document selection with visit tracking
+    const handleSelectDocument = (id: string) => {
+        setActiveDocId(id);
+        // Mark annexures as visited when user views them
+        if (id !== 'main' && !visitedAnnexures.has(id)) {
+            setVisitedAnnexures(prev => new Set([...prev, id]));
+        }
+    };
     const [selectedText, setSelectedText] = useState("");
     const editorRef = useRef<ContractEditorRef>(null);
 
@@ -225,8 +237,11 @@ function EditContractContent() {
         ...annexures.map(a => ({ id: a.id, title: a.title, type: 'annexure' as const }))
     ];
 
+    // Check if all annexures have been visited
+    const allAnnexuresVisited = annexures.length === 0 || annexures.every(a => visitedAnnexures.has(a.id));
+
     return (
-        <div className={`flex flex-col h-[calc(100vh-2rem)] -m-4 bg-slate-50 overflow-hidden relative ${focusMode ? 'fixed inset-0 z-50 m-0' : ''}`}>
+        <div className={`flex flex-col h-full bg-slate-50 overflow-hidden relative rounded-xl border border-slate-200 shadow-sm ${focusMode ? 'fixed inset-0 z-50 m-0 rounded-none border-0' : ''}`}>
 
             {/* Header */}
             <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shrink-0 shadow-sm z-20 h-[72px]">
@@ -303,10 +318,23 @@ function EditContractContent() {
                         Save
                     </Button>
 
-                    <Button onClick={handleDone} disabled={isApproveLoading || isSaving} className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wide h-9 px-5 shadow-md active:scale-95 transition-all">
-                        <Check className="w-3.5 h-3.5 mr-2" />
-                        Done
-                    </Button>
+                    <div className="flex flex-col items-end gap-1">
+                        <Button
+                            onClick={handleDone}
+                            disabled={isApproveLoading || isSaving || !allAnnexuresVisited}
+                            className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wide h-9 px-5 shadow-md active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={!allAnnexuresVisited ? 'Review all annexures before proceeding' : ''}
+                        >
+                            <Check className="w-3.5 h-3.5 mr-2" />
+                            Final Review
+                            {!allAnnexuresVisited && annexures.length > 0 && (
+                                <span className="ml-2 text-[10px] opacity-70">({visitedAnnexures.size}/{annexures.length})</span>
+                            )}
+                        </Button>
+                        {!allAnnexuresVisited && annexures.length > 0 && (
+                            <p className="text-[10px] text-amber-600 font-medium">Review all annexures first</p>
+                        )}
+                    </div>
                 </div>
             </header>
 
@@ -319,7 +347,8 @@ function EditContractContent() {
                         <ContractNavigationSidebar
                             items={navItems}
                             activeId={activeDocId}
-                            onSelect={setActiveDocId}
+                            onSelect={handleSelectDocument}
+                            visitedIds={visitedAnnexures}
                             onAddAnnexure={handleAddAnnexure}
                             onRemoveAnnexure={handleRemoveAnnexure}
                             className="h-full"

@@ -178,7 +178,7 @@ export function TemplateBuilder({ mode = 'create', initialData }: TemplateBuilde
 
 
     return (
-        <div className="h-[calc(100vh-8rem)] flex flex-col">
+        <div className="h-full flex flex-col">
             {/* Hidden File Input */}
             <input
                 type="file"

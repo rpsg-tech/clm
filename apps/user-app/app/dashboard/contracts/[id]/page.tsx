@@ -47,6 +47,8 @@ import { ContractDiffView } from '@/components/contract-diff-view';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FeatureGuard } from '@/components/feature-guard';
 import { FinalChecksSidebar } from '@/components/contracts/final-checks-sidebar';
+import { EscalateDialog } from '@/components/escalate-dialog';
+
 
 interface Contract {
     id: string;
@@ -202,6 +204,7 @@ function ContractDetailContent() {
     const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
     const [comparisonMode, setComparisonMode] = useState(false);
     const [comparisonVersions, setComparisonVersions] = useState<string[]>([]);
+    const [showEscalateDialog, setShowEscalateDialog] = useState(false);
 
     // Initial Fetch
     useEffect(() => {
@@ -253,6 +256,10 @@ function ContractDetailContent() {
             } else if (action === 'request_revision') {
                 await api.approvals.requestRevision(payload.id, payload.comment);
                 toast.success('Request Sent', 'Revision requested successfully');
+            } else if (action === 'escalate_to_legal_head') {
+                // Open dialog instead of directly escalating
+                setShowEscalateDialog(true);
+                return; // Don't refresh yet
             }
 
             // Refresh data
@@ -335,6 +342,29 @@ function ContractDetailContent() {
     const displayVersions = sortedVersions.length > 0 ? sortedVersions : [{
         id: 'current', versionNumber: 1, createdAt: contract.createdAt, createdBy: contract.createdByUser
     }];
+
+    // Handle escalation to Legal Head
+    const handleEscalation = async (reason?: string) => {
+        if (!contract) return;
+        setActionLoading(true);
+        try {
+            await api.approvals.escalateToLegalHead(contract.id, reason);
+            toast.success('Escalated', 'Contract escalated to Legal Head for final approval');
+
+            // Refresh contract data
+            const [data, logs] = await Promise.all([
+                api.contracts.get(contract.id),
+                api.contracts.getAuditLogs(contract.id)
+            ]);
+            setContract(data as any);
+            setAuditLogs(logs);
+        } catch (err: unknown) {
+            toast.error('Error', err instanceof Error ? err.message : 'Escalation failed');
+            throw err;
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     return (
         <div className="min-h-screen pb-20 bg-slate-50">
@@ -671,6 +701,14 @@ function ContractDetailContent() {
                 contractId={contract.id}
                 isOpen={isAnalysisOpen}
                 onClose={() => setIsAnalysisOpen(false)}
+            />
+
+            <EscalateDialog
+                open={showEscalateDialog}
+                onOpenChange={setShowEscalateDialog}
+                contractId={contract?.id || ''}
+                contractTitle={contract?.title || ''}
+                onEscalate={handleEscalation}
             />
         </div>
     );

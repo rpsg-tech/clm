@@ -177,4 +177,40 @@ export class ApprovalsController {
 
         return contract;
     }
+
+    /**
+     * Escalate contract to Legal Head (Legal Manager only)
+     */
+    @Post('/contracts/:contractId/escalate-to-legal-head')
+    @Permissions('contract:escalate')
+    async escalateToLegalHead(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('contractId') contractId: string,
+        @Body('reason') reason?: string,
+    ) {
+        const contract = await this.approvalsService.escalateToLegalHead(
+            contractId,
+            user.id,
+            user.orgId!,
+            user.permissions,
+            reason,
+        );
+
+        // Audit log
+        await this.auditService.log({
+            organizationId: user.orgId,
+            contractId: contract.id,
+            userId: user.id,
+            action: 'CONTRACT_ESCALATED_TO_LEGAL_HEAD',
+            module: 'approvals',
+            targetType: 'Contract',
+            targetId: contract.id,
+            metadata: {
+                reason,
+                escalatedBy: user.email,
+            } as Prisma.InputJsonValue,
+        });
+
+        return contract;
+    }
 }

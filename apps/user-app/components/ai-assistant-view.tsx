@@ -140,7 +140,7 @@ export function AIAssistantView({ onTemplateSelect, templates, onShowAll }: { on
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)] min-h-[500px] max-h-[750px] border border-slate-200 rounded-3xl overflow-hidden shadow-2xl shadow-slate-200/50 bg-white animate-in fade-in zoom-in-95 duration-500 relative ring-1 ring-slate-100">
+        <div className="flex flex-col min-h-[500px] max-h-[750px] border border-slate-200 rounded-3xl overflow-hidden shadow-2xl shadow-slate-200/50 bg-white animate-in fade-in zoom-in-95 duration-500 relative ring-1 ring-slate-100">
             {/* Header */}
             <div className="bg-white/80 backdrop-blur-xl p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 z-20 transition-all">
                 <div className="flex items-center gap-4">
@@ -193,8 +193,8 @@ export function AIAssistantView({ onTemplateSelect, templates, onShowAll }: { on
 
                         <div className="max-w-[85%] sm:max-w-[75%] space-y-3">
                             <div className={`p-4 sm:p-5 rounded-2xl text-[15px] leading-relaxed shadow-sm ${msg.role === "user"
-                                    ? "bg-slate-900 text-white rounded-tr-sm shadow-md"
-                                    : "bg-white text-slate-600 border border-slate-100 rounded-tl-sm shadow-sm"
+                                ? "bg-slate-900 text-white rounded-tr-sm shadow-md"
+                                : "bg-white text-slate-600 border border-slate-100 rounded-tl-sm shadow-sm"
                                 }`}>
                                 <p className="whitespace-pre-wrap">{msg.content}</p>
                             </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Spinner } from '@repo/ui';
 import { useAuth } from '@/lib/auth-context';
+import { SidebarProvider } from '@/lib/sidebar-context';
 import { DashboardHeader } from '@/components/dashboard-header';
 import { DashboardSidebar } from '@/components/dashboard-sidebar';
 import { MobileHeader } from '@/components/mobile-header';
@@ -48,32 +49,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
 
     return (
-        <div className="min-h-screen bg-[#FDFDFF] flex flex-col lg:flex-row selection:bg-orange-100 selection:text-orange-900">
-            {/* Mobile Header */}
-            <div className="lg:hidden sticky top-0 z-50">
-                <MobileHeader />
-            </div>
-
-            {/* Desktop Sidebar (Fixed Left) */}
-            <div className="hidden lg:block shrink-0">
-                <DashboardSidebar />
-            </div>
-
-            {/* Main Content Area (Right Side) */}
-            <div className="flex-1 flex flex-col min-w-0 h-[100vh] overflow-hidden">
-                {/* Desktop Header */}
-                <div className="hidden lg:block shrink-0 z-40">
-                    <DashboardHeader />
+        <SidebarProvider>
+            <div className="h-screen bg-[#FDFDFF] flex flex-col lg:flex-row overflow-hidden selection:bg-orange-100 selection:text-orange-900">
+                {/* Mobile Header */}
+                <div className="lg:hidden sticky top-0 z-50">
+                    <MobileHeader />
                 </div>
 
-                <main className="flex-1 p-4 md:p-8 lg:p-12 overflow-y-auto scroll-smooth pb-20 lg:pb-12">
-                    <div className="max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        {children}
+                {/* Desktop Sidebar (Fixed Left) */}
+                <div className="hidden lg:block shrink-0">
+                    <DashboardSidebar />
+                </div>
+
+                {/* Main Content Area (Right Side) */}
+                <div className="flex-1 flex flex-col min-w-0 h-full relative">
+                    {/* Desktop Header */}
+                    <div className="hidden lg:block shrink-0 z-40">
+                        <DashboardHeader />
                     </div>
-                </main>
-                {/* AI Assistant */}
-                <OracleAssistant />
+
+                    <main className="flex-1 p-4 md:p-8 lg:p-12 overflow-y-auto">
+                        <div className="max-w-[1200px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            {children}
+                        </div>
+                    </main>
+                    {/* AI Assistant */}
+                    <OracleAssistant />
+                </div>
             </div>
-        </div>
+        </SidebarProvider>
     );
 }

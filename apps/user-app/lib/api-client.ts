@@ -380,6 +380,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ comment }),
       }),
+
+    escalateToLegalHead: (contractId: string, reason?: string) =>
+      authFetch(`/approvals/contracts/${contractId}/escalate-to-legal-head`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      }),
   },
 
   // Health

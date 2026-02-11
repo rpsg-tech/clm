@@ -120,7 +120,7 @@ export default function LegalApprovalsPage() {
 
     if (approvals.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-100px)] text-center px-6">
+            <div className="flex flex-col items-center justify-center h-full text-center px-6">
                 <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100">
                     <CheckCircle className="w-8 h-8 text-emerald-600" />
                 </div>
@@ -133,7 +133,7 @@ export default function LegalApprovalsPage() {
     }
 
     return (
-        <div className="p-6 h-[calc(100vh-80px)] overflow-y-auto">
+        <div className="p-6 h-full overflow-y-auto">
             <div className="mb-6 flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Legal Review</h1>

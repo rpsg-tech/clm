@@ -29,6 +29,10 @@ async function main() {
         { name: 'Upload Signed Copy', code: 'contract:upload', module: 'Contracts', description: 'Upload final signed documents.' },
         { name: 'Download Contract', code: 'contract:download', module: 'Contracts', description: 'Download contract documents as PDF/Word.' },
         { name: 'View History & Versions', code: 'contract:history', module: 'Contracts', description: 'View audit trail and previous versions.' },
+        { name: 'Restore Cancelled Contract', code: 'contract:restore', module: 'Contracts', description: 'Restore a cancelled contract back to active state.' },
+        { name: 'Escalate to Legal Head', code: 'contract:escalate', module: 'Contracts', description: 'Escalate contracts to Legal Head for final approval.' },
+        { name: 'Export Contract Data', code: 'contract:export', module: 'Contracts', description: 'Export contract data and reports.' },
+
 
         // Templates
         { name: 'View Templates', code: 'template:view', module: 'Templates', description: 'Browse available contract templates.' },
@@ -114,6 +118,7 @@ async function main() {
     // 2. Legal Manager
     const legalManagerPerms = [
         'contract:view', 'contract:edit', 'contract:send', 'contract:upload', 'contract:history', 'contract:download',
+        'contract:escalate', // Escalate contracts to Legal Head
         'approval:legal:view', 'approval:legal:act', 'approval:finance:request',
         'system:audit',
         'template:view', 'template:create', 'template:edit',
@@ -281,163 +286,167 @@ async function main() {
     const adminUser = await prisma.user.findUnique({ where: { email: 'admin@clm.com' } });
 
     const templatesData: any[] = [
-/*
-{
-    name: 'Non-Disclosure Agreement',
-    code: 'NDA',
-    category: TemplateCategory.NDA,
-    description: 'Standard NDA template for confidential information sharing',
-    baseContent: `<h1>Non-Disclosure Agreement</h1>
-<p>This Non-Disclosure Agreement ("Agreement") is entered into by and between the parties.</p>
-<h2>1. Definition of Confidential Information</h2>
-<p>For purposes of this Agreement, "Confidential Information" shall include all information...</p>`,
-    isGlobal: true,
-},
-{
-    name: 'Service Level Agreement',
-    code: 'SLA',
-    category: TemplateCategory.SERVICE_AGREEMENT,
-    description: 'Standard SLA for service providers',
-    baseContent: `<h1>Service Level Agreement</h1>
-<p>This Service Level Agreement ("SLA") is made between the parties for the provision of services.</p>
-<h2>1. Service Description</h2>
-<p>The Service Provider agrees to provide the following services...</p>`,
-    isGlobal: true,
-},
-{
-    name: 'Vendor Agreement',
-    code: 'VENDOR',
-    category: TemplateCategory.VENDOR_AGREEMENT,
-    description: 'Agreement for vendor onboarding and engagement',
-    baseContent: `<h1>Vendor Agreement</h1>
-<p>This Vendor Agreement is entered into for the purpose of establishing a vendor relationship.</p>
-<h2>1. Scope of Services</h2>
-<p>The Vendor shall provide the following products/services...</p>`,
-    isGlobal: false,
-},
-{
-    name: 'Third Party Contract',
-    code: 'THIRD_PARTY',
-    category: TemplateCategory.OTHER, // Using OTHER as a generic fallback
-    description: 'Generic template for imported third-party contracts',
-    baseContent: `<p>This contract was uploaded from an external source.</p>`,
-    isGlobal: true,
-},
-];
-
-for (const template of templatesData) {
-console.log(`Processing template: ${template.name} (${template.code})`);
-const created = await prisma.template.upsert({
-    where: { code: template.code },
-    update: {
-        name: template.name,
-        category: template.category,
-        description: template.description,
-        baseContent: template.baseContent,
-        isGlobal: template.isGlobal,
-        isActive: true, // Force active
+        /*
+    {
+        name: 'Non-Disclosure Agreement',
+        code: 'NDA',
+        category: TemplateCategory.NDA,
+        description: 'Standard NDA template for confidential information sharing',
+        baseContent: `<h1>Non-Disclosure Agreement</h1>
+    <p>This Non-Disclosure Agreement ("Agreement") is entered into by and between the parties.</p>
+    <h2>1. Definition of Confidential Information</h2>
+    <p>For purposes of this Agreement, "Confidential Information" shall include all information...</p>`,
+        isGlobal: true,
     },
-    create: {
-        ...template,
-        createdByUserId: adminUser!.id,
-        isActive: true,
+    {
+        name: 'Service Level Agreement',
+        code: 'SLA',
+        category: TemplateCategory.SERVICE_AGREEMENT,
+        description: 'Standard SLA for service providers',
+        baseContent: `<h1>Service Level Agreement</h1>
+    <p>This Service Level Agreement ("SLA") is made between the parties for the provision of services.</p>
+    <h2>1. Service Description</h2>
+    <p>The Service Provider agrees to provide the following services...</p>`,
+        isGlobal: true,
     },
-});
-
-// Create annexure for each template
-await prisma.annexure.upsert({
-    where: {
-        id: `${created.id}-annexure-1`,
+    {
+        name: 'Vendor Agreement',
+        code: 'VENDOR',
+        category: TemplateCategory.VENDOR_AGREEMENT,
+        description: 'Agreement for vendor onboarding and engagement',
+        baseContent: `<h1>Vendor Agreement</h1>
+    <p>This Vendor Agreement is entered into for the purpose of establishing a vendor relationship.</p>
+    <h2>1. Scope of Services</h2>
+    <p>The Vendor shall provide the following products/services...</p>`,
+        isGlobal: false,
     },
-    update: {},
-    create: {
-        id: `${created.id}-annexure-1`,
-        templateId: created.id,
-        name: 'Annexure I',
-        title: 'Party Details',
-        content: `<h3>Party Details</h3>
-<p>Party Name: {{partyName}}</p>
-<p>Address: {{partyAddress}}</p>
-<p>Contact Person: {{contactPerson}}</p>
-<p>Email: {{contactEmail}}</p>`,
-        fieldsConfig: JSON.stringify([
-            { key: 'partyName', label: 'Party Name', type: 'text', required: true },
-            { key: 'partyAddress', label: 'Address', type: 'textarea', required: true },
-            { key: 'contactPerson', label: 'Contact Person', type: 'text', required: true },
-            { key: 'contactEmail', label: 'Contact Email', type: 'text', required: true },
-        ]),
-        order: 1,
+    {
+        name: 'Third Party Contract',
+        code: 'THIRD_PARTY',
+        category: TemplateCategory.OTHER, // Using OTHER as a generic fallback
+        description: 'Generic template for imported third-party contracts',
+        baseContent: `<p>This contract was uploaded from an external source.</p>`,
+        isGlobal: true,
     },
-});
-
-// Enable non-global templates for CESC
-if (!template.isGlobal && cescOrg) {
-    await prisma.templateOrganization.upsert({
+    ];
+    
+    for (const template of templatesData) {
+    console.log(`Processing template: ${template.name} (${template.code})`);
+    const created = await prisma.template.upsert({
+        where: { code: template.code },
+        update: {
+            name: template.name,
+            category: template.category,
+            description: template.description,
+            baseContent: template.baseContent,
+            isGlobal: template.isGlobal,
+            isActive: true, // Force active
+        },
+        create: {
+            ...template,
+            createdByUserId: adminUser!.id,
+            isActive: true,
+        },
+    });
+    
+    // Create annexure for each template
+    await prisma.annexure.upsert({
         where: {
-            templateId_organizationId: {
-                templateId: created.id,
-                organizationId: cescOrg.id,
-            },
+            id: `${created.id}-annexure-1`,
         },
         update: {},
         create: {
+            id: `${created.id}-annexure-1`,
             templateId: created.id,
-            organizationId: cescOrg.id,
-            isEnabled: true,
+            name: 'Annexure I',
+            title: 'Party Details',
+            content: `<h3>Party Details</h3>
+    <p>Party Name: {{partyName}}</p>
+    <p>Address: {{partyAddress}}</p>
+    <p>Contact Person: {{contactPerson}}</p>
+    <p>Email: {{contactEmail}}</p>`,
+            fieldsConfig: JSON.stringify([
+                { key: 'partyName', label: 'Party Name', type: 'text', required: true },
+                { key: 'partyAddress', label: 'Address', type: 'textarea', required: true },
+                { key: 'contactPerson', label: 'Contact Person', type: 'text', required: true },
+                { key: 'contactEmail', label: 'Contact Email', type: 'text', required: true },
+            ]),
+            order: 1,
         },
     });
-}
-}
+    
+    // Enable non-global templates for CESC
+    if (!template.isGlobal && cescOrg) {
+        await prisma.templateOrganization.upsert({
+            where: {
+                templateId_organizationId: {
+                    templateId: created.id,
+                    organizationId: cescOrg.id,
+                },
+            },
+            update: {},
+            create: {
+                templateId: created.id,
+                organizationId: cescOrg.id,
+                isEnabled: true,
+            },
+        });
+    }
+    */
+    ]; // End of commented templates data
 
-console.log(`✅ Created ${templatesData.length} templates with annexures`);
+    // Actually use empty array since templates are commented out
+    const activeTemplatesData: any[] = [];
 
-// ============ FEATURE FLAGS ============
-console.log('Creating feature flags...');
+    console.log(`✅ Created ${activeTemplatesData.length} templates with annexures`);
 
-const orgs = await prisma.organization.findMany({ where: { type: OrgType.ENTITY } });
+    // ============ FEATURE FLAGS ============
+    console.log('Creating feature flags...');
 
-for (const org of orgs) {
-await prisma.featureFlag.upsert({
-    where: {
-        organizationId_featureCode: { organizationId: org.id, featureCode: 'AI_ANALYSIS' },
-    },
-    update: {},
-    create: {
-        organizationId: org.id,
-        featureCode: 'AI_ANALYSIS',
-        isEnabled: true,
-        config: { maxRequestsPerDay: 100 },
-    },
-});
+    const orgs = await prisma.organization.findMany({ where: { type: OrgType.ENTITY } });
 
-await prisma.featureFlag.upsert({
-    where: {
-        organizationId_featureCode: { organizationId: org.id, featureCode: 'OCR' },
-    },
-    update: {},
-    create: {
-        organizationId: org.id,
-        featureCode: 'OCR',
-        isEnabled: false,
-    },
-});
-}
+    for (const org of orgs) {
+        await prisma.featureFlag.upsert({
+            where: {
+                organizationId_featureCode: { organizationId: org.id, featureCode: 'AI_ANALYSIS' },
+            },
+            update: {},
+            create: {
+                organizationId: org.id,
+                featureCode: 'AI_ANALYSIS',
+                isEnabled: true,
+                config: { maxRequestsPerDay: 100 },
+            },
+        });
 
-console.log(`✅ Created feature flags for ${orgs.length} organizations`);
+        await prisma.featureFlag.upsert({
+            where: {
+                organizationId_featureCode: { organizationId: org.id, featureCode: 'OCR' },
+            },
+            update: {},
+            create: {
+                organizationId: org.id,
+                featureCode: 'OCR',
+                isEnabled: false,
+            },
+        });
+    }
 
-console.log('\n🎉 Database seeding complete!');
-if (!process.env.SEED_PASSWORD) {
-console.log('\n⚠️  Using default seed password: ChangeMe@123');
-console.log('   Please set SEED_PASSWORD env var for custom password.');
-}
-console.log('   All users require password change on first login.\n');
+    console.log(`✅ Created feature flags for ${orgs.length} organizations`);
+
+    console.log('\n🎉 Database seeding complete!');
+    if (!process.env.SEED_PASSWORD) {
+        console.log('\n⚠️  Using default seed password: ChangeMe@123');
+        console.log('   Please set SEED_PASSWORD env var for custom password.');
+    }
+    console.log('   All users require password change on first login.\n');
 }
 
 main()
-.catch((e) => {
-console.error('❌ Seeding failed:', e);
-process.exit(1);
-})
-.finally(async () => {
-await prisma.$disconnect();
-});
+    .catch((e) => {
+        console.error('❌ Seeding failed:', e);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

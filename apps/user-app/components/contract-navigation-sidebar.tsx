@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Plus, Trash2, GripVertical, ChevronRight } from "lucide-react";
+import { FileText, Plus, Trash2, Lock, FileEdit, CheckCircle2, Circle } from "lucide-react";
 
 export interface NavItem {
     id: string;
@@ -11,6 +11,7 @@ export interface NavItem {
 interface ContractNavigationSidebarProps {
     items: NavItem[];
     activeId: string;
+    visitedIds: Set<string>;
     onSelect: (id: string) => void;
     onAddAnnexure: () => void;
     onRemoveAnnexure: (id: string) => void;
@@ -20,11 +21,16 @@ interface ContractNavigationSidebarProps {
 export function ContractNavigationSidebar({
     items,
     activeId,
+    visitedIds,
     onSelect,
     onAddAnnexure,
     onRemoveAnnexure,
     className = ""
 }: ContractNavigationSidebarProps) {
+    // Calculate progress (exclude main from count)
+    const annexureItems = items.filter(item => item.type === 'annexure');
+    const visitedCount = annexureItems.filter(item => visitedIds.has(item.id)).length;
+    const totalCount = annexureItems.length;
     return (
         <div className={`flex flex-col bg-slate-50 border-r border-slate-200 h-full ${className}`}>
 
@@ -59,6 +65,15 @@ export function ContractNavigationSidebar({
                                     : 'bg-transparent border-transparent hover:bg-white hover:border-slate-200 hover:shadow-sm'}
                             `}
                         >
+                            {/* Visit Status Indicator */}
+                            <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                                {isMain || visitedIds.has(item.id) ? (
+                                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                ) : (
+                                    <Circle className="w-4 h-4 text-slate-300" />
+                                )}
+                            </div>
+
                             {/* Icon / Number */}
                             <span className={`
                                 flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold border transition-colors
@@ -66,7 +81,7 @@ export function ContractNavigationSidebar({
                                     ? 'bg-orange-50 border-orange-100 text-orange-700'
                                     : 'bg-white border-slate-200 text-slate-400 group-hover:border-slate-300'}
                             `}>
-                                {isMain ? <FileText size={14} /> : (index)}
+                                {isMain ? <Lock size={14} className="text-slate-400" /> : <FileEdit size={14} />}
                                 {/* Note: index is 0 for Main, so Annexures start at 1 if we subtract or handle separately. 
                                    Actually, if Main is always first, index 0 is main.
                                    So Annexures are index. 
@@ -78,7 +93,7 @@ export function ContractNavigationSidebar({
                                 <h4 className={`text-sm font-semibold truncate ${isActive ? 'text-slate-900' : 'text-slate-600 group-hover:text-slate-900'}`}>
                                     {item.title}
                                 </h4>
-                                {isMain && <p className="text-[10px] text-slate-400 font-medium truncate">Primary Contract</p>}
+                                {isMain && <p className="text-[10px] text-slate-400 font-medium truncate flex items-center gap-1"><Lock size={10} /> Read-Only</p>}
                             </div>
 
                             {/* Actions (Only for Annexures) */}
@@ -113,6 +128,31 @@ export function ContractNavigationSidebar({
                     <Plus size={14} /> Add Annexure
                 </button>
             </div>
+
+            {/* Progress Indicator */}
+            {totalCount > 0 && (
+                <div className="p-4 bg-white border-t border-slate-200 shrink-0">
+                    <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">
+                        Review Progress
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500 ease-out"
+                                style={{ width: `${totalCount > 0 ? (visitedCount / totalCount) * 100 : 0}%` }}
+                            />
+                        </div>
+                        <span className="text-xs font-bold text-slate-700 tabular-nums min-w-[2.5rem] text-right">
+                            {visitedCount}/{totalCount}
+                        </span>
+                    </div>
+                    {visitedCount < totalCount && (
+                        <p className="text-[10px] text-amber-600 mt-2 font-medium">
+                            Review all annexures to proceed
+                        </p>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

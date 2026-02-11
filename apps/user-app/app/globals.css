@@ -157,8 +157,14 @@
 }
 
 /* ============ BASE STYLES ============ */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  /* Prevent browser-level scrolling for App-Shell feel */
+}
+
 html {
-  scroll-behavior: smooth;
   -webkit-tap-highlight-color: transparent;
 }
 

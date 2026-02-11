@@ -54,7 +54,7 @@ export function AiClauseAssistant({ isOpen, onClose, onInsertClause, selectedTex
 
     // Popup Layout
     return (
-        <div className="fixed right-4 top-24 w-96 max-h-[calc(100vh-120px)] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 flex flex-col animate-in slide-in-from-right-5 fade-in duration-300">
+        <div className="fixed right-4 top-24 w-96 max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50 flex flex-col animate-in slide-in-from-right-5 fade-in duration-300">
             <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-2">
                     <Sparkles size={16} className="text-orange-400" />

@@ -274,6 +274,8 @@ enum ContractStatus {
   DRAFT
   SENT_TO_LEGAL             // Renamed from PENDING_LEGAL
   LEGAL_REVIEW_IN_PROGRESS
+  PENDING_LEGAL_HEAD        // Escalated to Legal Head for approval
+  APPROVED_LEGAL_HEAD       // Approved by Legal Head
   SENT_TO_FINANCE           // Renamed from PENDING_FINANCE
   FINANCE_REVIEW_IN_PROGRESS
   IN_REVIEW

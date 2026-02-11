@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button, Spinner, Textarea } from "@repo/ui";
 import {
-    Edit, Send, Upload, CheckCircle, XCircle, ArrowRight, FileCheck, Clock, Loader2, Shield, Ban, AlertTriangle
+    Edit, Send, Upload, CheckCircle, XCircle, ArrowRight, FileCheck, Clock, Loader2, Shield, Ban, AlertTriangle, ArrowUpCircle
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -295,12 +295,25 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
 
                                     {/* Show Legal Approve ONLY if Sent to Legal OR Generic Review */}
                                     {permissions.canApproveLegal && isLegalPending && (
-                                        <ActionButton
-                                            icon={CheckCircle}
-                                            label="Approve (Legal)"
-                                            variant="primary"
-                                            onClick={() => router.push(`/dashboard/approvals/legal?id=${contract.id}&action=approve`)}
-                                        />
+                                        <>
+                                            <ActionButton
+                                                icon={CheckCircle}
+                                                label="Approve (Legal)"
+                                                variant="primary"
+                                                onClick={() => router.push(`/dashboard/approvals/legal?id=${contract.id}&action=approve`)}
+                                            />
+
+                                            {/* Escalate to Legal Head - only for Legal Managers */}
+                                            {(['SENT_TO_LEGAL', 'LEGAL_REVIEW_IN_PROGRESS'].includes(contract.status)) && (
+                                                <ActionButton
+                                                    icon={ArrowUpCircle}
+                                                    label="Escalate to Legal Head"
+                                                    subLabel="Requires Head Approval"
+                                                    className="text-orange-600 hover:bg-orange-50 hover:border-orange-200"
+                                                    onClick={() => onAction('escalate_to_legal_head')}
+                                                />
+                                            )}
+                                        </>
                                     )}
 
                                     {!permissions.canApproveFinance && !permissions.canApproveLegal && (
