@@ -23,36 +23,6 @@ export class ApprovalsService {
         private analyticsService: AnalyticsService,
     ) { }
 
-    /**
-     * Approve a contract (Legal or Finance)
-     */
-    async approve(
-        approvalId: string,
-        actorId: string,
-        organizationId: string,
-        userPermissions: string[],
-        comment?: string,
-    ) {
-        // ... (existing implementation) ...
-        const approval = await this.findApproval(approvalId, organizationId);
-        // ...
-
-        // Inside transaction or after
-        const result = await this.prisma.$transaction(async (tx) => {
-            // ... existing transaction logic ...
-            // (Copying logic to ensure context - but tool asks for replacementChunk)
-            // I will use multiple chunks to be safe and precise.
-            return { contract: updatedContract, approval };
-        });
-
-        // Invalidate Analytics Cache
-        await this.analyticsService.invalidateOrganizationCache(organizationId);
-
-        // ... notifications ...
-        return result;
-    }
-    // Wait, I need to be careful with replace_file_content. I should use MultiReplaceFileContent since I'm touching multiple methods.
-    // I will switch to multi_replace_file_content for this.
 
 
     /**
