@@ -29,10 +29,13 @@ export function ContractNavigationSidebar({
     onRemoveAnnexure,
     className = ""
 }: ContractNavigationSidebarProps) {
-    // Calculate progress (exclude main from count)
-    const annexureItems = items.filter(item => item.type === 'annexure');
-    const visitedCount = annexureItems.filter(item => visitedIds.has(item.id)).length;
-    const totalCount = annexureItems.length;
+    // Calculate progress (Include Main Agreement in count)
+    // We treat 'main' as checked by default since it's the base document
+    const totalCount = items.length;
+    const visitedCount = items.reduce((acc, item) => {
+        if (item.type === 'main') return acc + 1;
+        return visitedIds.has(item.id) ? acc + 1 : acc;
+    }, 0);
     return (
         <div className={`flex flex-col bg-slate-50 border-r border-slate-200 h-full ${className}`}>
 
@@ -68,7 +71,7 @@ export function ContractNavigationSidebar({
                     </div>
                     {visitedCount < totalCount && (
                         <p className="text-[10px] text-amber-600 mt-2 font-medium">
-                            Review all annexures to proceed
+                            Review all documents to proceed
                         </p>
                     )}
                 </div>
