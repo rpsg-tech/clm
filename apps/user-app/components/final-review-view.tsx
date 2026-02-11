@@ -272,7 +272,7 @@ export function FinalReviewView({ content, details, templateName, filePreviewUrl
             {/* MAIN CONTENT: Document Workspace */}
             <div className="flex-1 h-full overflow-y-auto bg-slate-100/50 relative flex justify-center p-4 md:p-8 scroll-smooth">
                 {/* Contract Paper Container */}
-                <div className="w-full max-w-[800px] relative pb-20">
+                <div className="w-full max-w-[800px] relative pb-8">
                     {/* Realistic Paper Shadow Effect */}
                     <div className="relative group">
                         {/* Layered shadows for depth */}
