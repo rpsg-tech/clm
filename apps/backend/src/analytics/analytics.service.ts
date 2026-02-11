@@ -376,22 +376,36 @@ export class AnalyticsService {
                 }),
 
                 // 6. Pending Legal (Conditional)
-                canViewLegal ? this.prisma.approval.count({
+                canViewLegal ? this.prisma.approval.findMany({
                     where: {
                         type: 'LEGAL',
                         status: 'PENDING',
-                        contract: { organizationId } // Approvers see ALL org pending items
+                        contract: { organizationId }
+                    },
+                    take: 5,
+                    orderBy: { createdAt: 'desc' },
+                    include: {
+                        contract: {
+                            select: { id: true, title: true, createdByUser: { select: { name: true } } }
+                        }
                     }
-                }) : Promise.resolve(0),
+                }) : Promise.resolve([]),
 
                 // 7. Pending Finance (Conditional)
-                canViewFinance ? this.prisma.approval.count({
+                canViewFinance ? this.prisma.approval.findMany({
                     where: {
                         type: 'FINANCE',
                         status: 'PENDING',
                         contract: { organizationId }
+                    },
+                    take: 5,
+                    orderBy: { createdAt: 'desc' },
+                    include: {
+                        contract: {
+                            select: { id: true, title: true, createdByUser: { select: { name: true } } }
+                        }
                     }
-                }) : Promise.resolve(0),
+                }) : Promise.resolve([]),
 
                 // 8. Trend Calculation (This Month)
                 this.prisma.contract.count({
