@@ -27,6 +27,7 @@ export default function NewContractPage() {
     // View Mode: 'draft' (Workspace) or 'review' (Final Check)
     // Note: 'setup' is now just 'draft' with no template selected.
     const [viewMode, setViewMode] = useState<"draft" | "review">("draft");
+    const [draftStep, setDraftStep] = useState<'main' | 'annexure'>('main');
 
     const [loading, setLoading] = useState(false);
     const [showAiPanel, setShowAiPanel] = useState(false);
@@ -467,24 +468,44 @@ export default function NewContractPage() {
     };
 
     return (
-        <div className="max-w-[1600px] mx-auto py-8 px-6 pb-20 selection:bg-orange-100">
+        <div className="max-w-[1600px] mx-auto selection:bg-orange-100">
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-start md:justify-between">
                 <div className="flex flex-col space-y-1">
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Create New Contract</h1>
                     <p className="text-slate-500 font-medium text-sm">Unified workspace for seamless drafting.</p>
                 </div>
 
-                {viewMode === "review" && (
-                    <Button
-                        onClick={() => setViewMode("draft")}
-                        variant="ghost"
-                        className="flex items-center gap-2 h-9 px-4 text-xs font-bold uppercase tracking-wide text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
-                    >
-                        <ArrowLeft size={14} />
-                        Back to Edit
-                    </Button>
-                )}
+                <div className="flex items-center gap-4">
+                    {(selectedTemplate || viewMode === "review") && (
+                        <div className="hidden md:flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                            {[
+                                { label: 'Main Agreement', active: viewMode === "draft" && draftStep === 'main' },
+                                { label: 'Annexures', active: viewMode === "draft" && draftStep === 'annexure' },
+                                { label: 'Final Review', active: viewMode === "review" }
+                            ].map((step, index) => (
+                                <div key={step.label} className="flex items-center gap-2">
+                                    <span className={`h-5 w-5 rounded-full border flex items-center justify-center text-[10px] font-bold ${step.active ? 'bg-orange-600 text-white border-orange-600' : 'bg-white text-slate-400 border-slate-200'}`}>
+                                        {index + 1}
+                                    </span>
+                                    <span className={`${step.active ? 'text-slate-900' : 'text-slate-400'}`}>{step.label}</span>
+                                    {index < 2 && <span className="h-[1px] w-5 bg-slate-200" />}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {viewMode === "review" && (
+                        <Button
+                            onClick={() => setViewMode("draft")}
+                            variant="ghost"
+                            className="flex items-center gap-2 h-9 px-4 text-xs font-bold uppercase tracking-wide text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
+                        >
+                            <ArrowLeft size={14} />
+                            Back to Edit
+                        </Button>
+                    )}
+                </div>
             </div>
 
             {/* Main Content Area */}
@@ -499,12 +520,12 @@ export default function NewContractPage() {
                 ) : (
                     <>
                         {viewMode === "draft" && (
-                            <DraftingWorkspace
-                                contractDetails={contractDetails}
-                                editorContent={editorContent}
-                                annexures={annexures}
-                                attachedFiles={attachedFiles}
-                                templateName={selectedTemplate?.name}
+                                    <DraftingWorkspace
+                                        contractDetails={contractDetails}
+                                        editorContent={editorContent}
+                                        annexures={annexures}
+                                        attachedFiles={attachedFiles}
+                                        templateName={selectedTemplate?.name}
                                 // Core Logic for Unified View:
                                 startWithLaunchpad={!selectedTemplate}
                                 renderLaunchpad={() => (
@@ -531,17 +552,18 @@ export default function NewContractPage() {
                                 }}
                                 onEditorChange={setEditorContent}
                                 onAnnexuresChange={handleAnnexureChange}
-                                onAnnexuresUpdate={setAttachedFiles}
-                                onAddAnnexure={handleAddAnnexure}
-                                onRemoveAnnexure={handleRemoveAnnexure}
-                                onAnnexureTitleChange={handleTitleChange}
-                                onNext={handleProceedToReview}
-                                onBack={resetSelection}
-                            />
+                                        onAnnexuresUpdate={setAttachedFiles}
+                                        onAddAnnexure={handleAddAnnexure}
+                                        onRemoveAnnexure={handleRemoveAnnexure}
+                                        onAnnexureTitleChange={handleTitleChange}
+                                        onStepChange={setDraftStep}
+                                        onNext={handleProceedToReview}
+                                        onBack={resetSelection}
+                                    />
                         )}
 
                         {viewMode === "review" && (
-                            <div className="flex h-[700px] border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative animate-in fade-in zoom-in-95 duration-500">
+                            <div className="flex h-[calc(100vh-220px)] min-h-[520px] border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative animate-in fade-in zoom-in-95 duration-500">
                                 <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
                                     <FinalReviewView
                                         content={getFinalDocumentContent()}

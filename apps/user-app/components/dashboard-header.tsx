@@ -35,7 +35,7 @@ export function DashboardHeader() {
 
     return (
         <header className="sticky top-0 z-50 glass border-b border-neutral-200/60 shadow-glass">
-            <div className="flex items-center justify-between px-6 py-3 h-[64px]">
+            <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 py-2 h-[56px]">
                 {/* Breadcrumb / Context */}
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-neutral-50 transition-colors cursor-default">

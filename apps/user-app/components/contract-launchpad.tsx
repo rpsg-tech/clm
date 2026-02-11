@@ -69,16 +69,16 @@ export function ContractLaunchpad({ templates, onSelect, onUpload, isLoading = f
     const isSearching = searchQuery.trim().length > 0;
 
     return (
-        <div className="w-full max-w-5xl mx-auto py-16 px-6 flex flex-col items-center animate-in fade-in zoom-in-95 duration-500">
+        <div className="w-full max-w-5xl mx-auto py-8 px-4 md:px-6 flex flex-col items-center animate-in fade-in zoom-in-95 duration-500">
 
             {/* 1. HERO HEADER */}
-            <div className="text-center space-y-3 mb-12 w-full">
+            <div className="text-center space-y-3 mb-8 w-full">
                 <h1 className="text-4xl font-semibold text-slate-900 tracking-tight">What would you like to draft?</h1>
                 <p className="text-slate-500 text-lg">Describe your needs and let AI find the right contract.</p>
             </div>
 
             {/* 2. AI SEARCH INPUT */}
-            <div className="relative w-full max-w-3xl group mb-16">
+            <div className="relative w-full max-w-3xl group mb-10">
                 <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
                     <Sparkles className="w-6 h-6 text-orange-500 animate-pulse" />
                 </div>

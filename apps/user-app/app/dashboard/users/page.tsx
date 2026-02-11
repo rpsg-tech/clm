@@ -145,7 +145,7 @@ export default function UsersPage() {
 
 
     return (
-        <div className="space-y-8 pb-20 selection:bg-orange-100 text-slate-900 font-sans relative">
+        <div className="space-y-8 selection:bg-orange-100 text-slate-900 font-sans relative">
 
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-1">

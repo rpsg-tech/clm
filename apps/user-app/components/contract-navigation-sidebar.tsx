@@ -48,6 +48,31 @@ export function ContractNavigationSidebar({
                 </button>
             </div>
 
+            {/* Progress Indicator (Top) */}
+            {totalCount > 0 && (
+                <div className="px-4 py-3 bg-white border-b border-slate-200">
+                    <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">
+                        Review Progress
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                                className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500 ease-out"
+                                style={{ width: `${totalCount > 0 ? (visitedCount / totalCount) * 100 : 0}%` }}
+                            />
+                        </div>
+                        <span className="text-xs font-bold text-slate-700 tabular-nums min-w-[2.5rem] text-right">
+                            {visitedCount}/{totalCount}
+                        </span>
+                    </div>
+                    {visitedCount < totalCount && (
+                        <p className="text-[10px] text-amber-600 mt-2 font-medium">
+                            Review all annexures to proceed
+                        </p>
+                    )}
+                </div>
+            )}
+
             {/* List */}
             <div className="flex-1 overflow-y-auto p-3 space-y-1">
                 {items.map((item, index) => {
@@ -129,30 +154,6 @@ export function ContractNavigationSidebar({
                 </button>
             </div>
 
-            {/* Progress Indicator */}
-            {totalCount > 0 && (
-                <div className="p-4 bg-white border-t border-slate-200 shrink-0">
-                    <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-2">
-                        Review Progress
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500 ease-out"
-                                style={{ width: `${totalCount > 0 ? (visitedCount / totalCount) * 100 : 0}%` }}
-                            />
-                        </div>
-                        <span className="text-xs font-bold text-slate-700 tabular-nums min-w-[2.5rem] text-right">
-                            {visitedCount}/{totalCount}
-                        </span>
-                    </div>
-                    {visitedCount < totalCount && (
-                        <p className="text-[10px] text-amber-600 mt-2 font-medium">
-                            Review all annexures to proceed
-                        </p>
-                    )}
-                </div>
-            )}
         </div>
     );
 }

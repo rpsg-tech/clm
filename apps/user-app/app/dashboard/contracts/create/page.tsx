@@ -89,7 +89,7 @@ export default function CreateContractPage() {
     }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold tracking-tight mb-2">Create New Contract</h1>
                 <p className="text-slate-500">Select a template to start drafting a new agreement.</p>

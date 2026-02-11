@@ -367,14 +367,14 @@ function ContractDetailContent() {
     };
 
     return (
-        <div className="min-h-screen pb-20 bg-slate-50">
+        <div className="min-h-screen pb-12 bg-slate-50">
             {/* HERO SECTION */}
             <div className="bg-white border-b border-slate-200">
-                <div className="max-w-[1600px] mx-auto px-6 lg:px-12 py-8 space-y-6">
+                <div className="max-w-[1600px] mx-auto px-4 md:px-6 lg:px-10 py-6 space-y-5">
                     {/* 1. Breadcrumbs & Actions */}
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div className="max-w-3xl">
-                            <nav className="flex items-center text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest">
+                            <nav className="flex items-center text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">
                                 <Link href="/dashboard/contracts" className="hover:text-slate-800 transition-colors flex items-center gap-2">
                                     <div className="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center">
                                         <ArrowLeft className="w-3 h-3" />
@@ -385,21 +385,21 @@ function ContractDetailContent() {
                                 <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-mono">{contract.reference || 'REF-???'}</span>
                             </nav>
 
-                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">
+                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-2">
                                 {contract.title}
                             </h1>
 
-                            <div className="flex flex-wrap items-center gap-3">
-                                <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider shadow-sm">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm">
                                     {contract.template?.name || 'Service Agreement'}
                                 </Badge>
                                 <div className="h-4 w-px bg-slate-200" />
-                                <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
-                                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-50 leading-none to-purple-50 flex items-center justify-center text-[10px] font-bold text-indigo-700 border border-indigo-100 shadow-sm">
+                                <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-50 leading-none to-purple-50 flex items-center justify-center text-[9px] font-bold text-indigo-700 border border-indigo-100 shadow-sm">
                                         {(contract.createdByUser?.name || 'S').charAt(0)}
                                     </div>
                                     Created by <span className="text-slate-900 font-semibold">{contract.createdByUser?.name || 'System'}</span>
-                                    <span className="text-slate-400 text-xs">on {new Date(contract.createdAt).toLocaleDateString()}</span>
+                                    <span className="text-slate-400 text-[10px]">on {new Date(contract.createdAt).toLocaleDateString()}</span>
                                 </div>
                             </div>
                         </div>
@@ -458,7 +458,7 @@ function ContractDetailContent() {
                     />
 
                     {/* 3. Tabs Navigation */}
-                    <div className="flex items-center gap-8 pt-6 border-b border-slate-200">
+                    <div className="flex items-center gap-6 pt-4 border-b border-slate-200">
                         <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" icon={Briefcase} />
                         <TabButton active={activeTab === 'document'} onClick={() => setActiveTab('document')} label="Document" icon={FileText} />
                         <TabButton active={activeTab === 'history'} onClick={() => setActiveTab('history')} label="Version History" icon={History} />
@@ -467,7 +467,7 @@ function ContractDetailContent() {
             </div>
 
             {/* MAIN CONTENT AREA */}
-            <div className="max-w-[1600px] mx-auto px-6 lg:px-12 py-8">
+            <div className="max-w-[1600px] mx-auto px-4 md:px-6 lg:px-10 py-6">
                 {activeTab === 'overview' && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
 

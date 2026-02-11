@@ -235,7 +235,7 @@ export default function AdminModulesPage() {
     if (!currentOrg) return null;
 
     return (
-        <div className="max-w-[1000px] mx-auto pb-20 px-6 py-8 relative">
+        <div className="max-w-[1000px] mx-auto relative">
             <div className="flex items-center gap-4 mb-8">
                 <div className="w-12 h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center shadow-sm">
                     <Settings className="w-6 h-6 text-slate-400" />

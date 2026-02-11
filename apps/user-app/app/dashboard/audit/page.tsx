@@ -151,7 +151,7 @@ export default function AuditLogPage() {
     };
 
     return (
-        <div className="space-y-6 max-w-[1200px] mx-auto pb-12">
+        <div className="space-y-6 max-w-[1200px] mx-auto">
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold text-neutral-900 tracking-tight">Audit Log</h1>

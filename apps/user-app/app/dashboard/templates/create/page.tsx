@@ -4,7 +4,7 @@ import { TemplateBuilder } from '../../../../components/templates/template-build
 
 export default function CreateTemplatePage() {
     return (
-        <div className="h-full p-6">
+        <div className="h-full">
             <TemplateBuilder />
         </div>
     );

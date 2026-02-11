@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@repo/ui";
 import { ArrowLeft, ArrowRight, Settings, Minimize2, Maximize2, User, Calendar, CreditCard, Search, Check } from "lucide-react";
 import { ContractEditorView } from "@/components/contract-editor-view";
@@ -31,6 +31,7 @@ interface DraftingWorkspaceProps {
     onAddAnnexure: () => void;
     onRemoveAnnexure: (id: string) => void;
     onAnnexureTitleChange: (id: string, title: string) => void;
+    onStepChange?: (step: 'main' | 'annexure') => void;
     onNext: () => void;
     onBack: () => void;
 }
@@ -54,6 +55,7 @@ export function DraftingWorkspace({
     onAddAnnexure,
     onRemoveAnnexure,
     onAnnexureTitleChange,
+    onStepChange,
     onNext,
     onBack
 }: DraftingWorkspaceProps) {
@@ -90,6 +92,11 @@ export function DraftingWorkspace({
 
     // Find active annexure
     const activeAnnexure = annexures.find(a => a.id === activeDocId);
+
+    useEffect(() => {
+        if (!onStepChange || startWithLaunchpad) return;
+        onStepChange(activeDocId === 'main' ? 'main' : 'annexure');
+    }, [activeDocId, onStepChange, startWithLaunchpad]);
 
     return (
         <div className="flex min-h-[500px] border border-slate-200 rounded-3xl overflow-hidden bg-white shadow-2xl shadow-slate-200/50 animate-in fade-in zoom-in-95 duration-500">
@@ -208,43 +215,49 @@ export function DraftingWorkspace({
             {/* MAIN CONTENT Area */}
             <div className="flex-1 flex flex-col min-w-0 bg-white relative">
                 {/* Top Toolbar */}
-                <div className="h-14 border-b border-slate-100 flex items-center justify-between px-4 bg-white sticky top-0 z-10">
-                    <div className="flex items-center gap-2">
+                <div className="h-12 border-b border-slate-100 flex items-center justify-between px-3 bg-white sticky top-0 z-10">
+                    <div className="flex items-center gap-2 min-w-0">
                         {!sidebarOpen && (
                             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)} className="mr-2 text-slate-400 hover:text-slate-600">
                                 <Maximize2 className="w-4 h-4" />
                             </Button>
                         )}
+                        {!startWithLaunchpad && (
+                            <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 truncate">
+                                <span className="px-2 py-1 bg-slate-100 rounded-full text-slate-600">
+                                    {activeDocId === 'main' ? 'Main Agreement' : (activeAnnexure?.title || 'Annexure')}
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     {!startWithLaunchpad && (
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
                             {!filePreviewUrl && (
                                 <Button
                                     onClick={onBack}
                                     variant="ghost"
-                                    className="text-slate-400 hover:text-slate-700 h-8 px-3 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide"
+                                    className="text-slate-600 hover:text-slate-900 h-8 px-3 rounded-full flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide border border-slate-200 bg-white hover:bg-slate-50 shadow-sm"
                                     title="Change Template"
                                 >
                                     <Search size={14} /> Change Template
                                 </Button>
                             )}
-                            <div className="flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-2">
+                                {annexures.length > 0 && (
+                                    <span className="hidden sm:inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border border-slate-200 bg-white text-slate-500">
+                                        {visitedAnnexures.size}/{annexures.length} reviewed
+                                    </span>
+                                )}
                                 <Button
                                     onClick={onNext}
                                     disabled={!allAnnexuresVisited}
-                                    className="bg-slate-900 hover:bg-orange-600 text-white font-bold uppercase text-[10px] tracking-wide h-8 px-4 rounded-lg shadow-md transition-all flex items-center gap-2 hover:shadow-lg hover:shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    title={!allAnnexuresVisited ? 'Review all annexures before proceeding' : ''}
+                                    className="bg-slate-900 hover:bg-orange-600 text-white font-bold uppercase text-[10px] tracking-wide h-8 px-4 rounded-full shadow-md shadow-slate-900/20 transition-all flex items-center gap-2 hover:shadow-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title={!allAnnexuresVisited ? 'Review all annexures before proceeding' : 'Proceed to Final Review'}
                                 >
                                     <Check className="w-3.5 h-3.5" />
                                     Final Review
-                                    {!allAnnexuresVisited && annexures.length > 0 && (
-                                        <span className="ml-1 text-[10px] opacity-70">({visitedAnnexures.size}/{annexures.length})</span>
-                                    )}
                                 </Button>
-                                {!allAnnexuresVisited && annexures.length > 0 && (
-                                    <p className="text-[10px] text-amber-600 font-medium">Review all annexures first</p>
-                                )}
                             </div>
                         </div>
                     )}

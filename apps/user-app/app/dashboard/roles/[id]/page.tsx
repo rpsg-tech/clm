@@ -127,7 +127,7 @@ export default function RoleDetailPage() {
     const isReadOnly = role?.isSystem && !isSuperAdmin;
 
     return (
-        <div className="space-y-8 pb-20 selection:bg-orange-100 max-w-5xl mx-auto relative animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-8 selection:bg-orange-100 max-w-5xl mx-auto relative animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="space-y-1">

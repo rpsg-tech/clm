@@ -61,11 +61,11 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
         const label = stageMap[contract.status] || contract.status.replace(/_/g, ' ');
 
         return (
-            <div className="flex flex-col gap-1 min-w-[150px]">
+            <div className="flex flex-col gap-1 min-w-[140px]">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Stage</span>
                 <div className="flex items-center gap-2">
                     <div className={`w-2 h-2 rounded-full ${['ACTIVE'].includes(contract.status) ? 'bg-emerald-500' : 'bg-orange-500'} animate-pulse`} />
-                    <span className="text-sm font-bold text-slate-900">{label}</span>
+                    <span className="text-sm font-semibold text-slate-900">{label}</span>
                 </div>
             </div>
         );
@@ -89,8 +89,8 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                     disabled={disabled}
                     className={`
                         relative overflow-hidden group bg-slate-900 hover:bg-black text-white 
-                        border border-transparent rounded-lg pl-3 pr-4 py-2.5 sm:py-2.5 flex items-center justify-center sm:justify-start gap-3 transition-all duration-300
-                        shadow-md hover:shadow-xl hover:-translate-y-0.5 ring-offset-2 focus:ring-2 ring-indigo-500/30
+                        border border-transparent rounded-lg pl-3 pr-3 py-2 flex items-center justify-center sm:justify-start gap-2.5 transition-all duration-300
+                        shadow-sm hover:shadow-md ring-offset-2 focus:ring-2 ring-indigo-500/30
                         disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none
                         w-full sm:w-auto
                         ${className}
@@ -100,8 +100,8 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                         {loading ? <Spinner size="sm" className="text-white" /> : <Icon className="w-4 h-4 text-white" />}
                     </IconWrapper>
                     <div className="text-left block">
-                        <div className="text-sm font-bold leading-none mb-1">{label}</div>
-                        {subLabel && <div className="text-[10px] text-slate-300 font-medium leading-none opacity-80">{subLabel}</div>}
+                        <div className="text-xs font-bold leading-none mb-1">{label}</div>
+                        {subLabel && <div className="text-[9px] text-slate-300 font-medium leading-none opacity-80">{subLabel}</div>}
                     </div>
                     {/* Shimmer Effect */}
                     <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent z-10 pointer-events-none" />
@@ -115,8 +115,8 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                 disabled={disabled}
                 className={`
                     group relative bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 
-                    text-slate-600 hover:text-slate-900 rounded-lg pl-3 pr-4 py-2.5 sm:py-2.5 flex items-center justify-center sm:justify-start gap-2.5 transition-all duration-200
-                    shadow-sm hover:shadow-md hover:-translate-y-0.5
+                    text-slate-600 hover:text-slate-900 rounded-lg pl-3 pr-3 py-2 flex items-center justify-center sm:justify-start gap-2.5 transition-all duration-200
+                    shadow-sm hover:shadow-md
                     disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
                     w-full sm:w-auto
                     ${className}
@@ -125,7 +125,7 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                 <div className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors">
                     <Icon className="w-full h-full" />
                 </div>
-                <span className="text-xs font-bold">{label}</span>
+                <span className="text-[11px] font-bold">{label}</span>
             </button>
         );
     };
@@ -135,7 +135,7 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
             onClick={onClick}
             disabled={loading}
             className={`
-                group flex items-center gap-1.5 text-xs font-bold transition-all px-3 py-2 rounded-lg
+                group flex items-center gap-1.5 text-[10px] font-bold transition-all px-2.5 py-1.5 rounded-lg
                 ${variant === 'destructive'
                     ? 'text-red-400 hover:text-red-600 hover:bg-red-50'
                     : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}
@@ -173,9 +173,9 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
 
     return (
         <>
-            <div className="w-full bg-white/90 backdrop-blur-xl border-y md:border border-slate-200/80 md:rounded-2xl p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-sm shadow-slate-200/50 sticky top-0 md:top-6 z-30 transition-all duration-300">
+            <div className="w-full bg-white border border-slate-200 rounded-xl p-3 md:p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 shadow-sm sticky top-0 md:top-4 z-30">
                 {/* Left: Status */}
-                <div className="flex items-center gap-6 w-full lg:w-auto justify-between lg:justify-start border-b lg:border-none border-slate-100 pb-4 lg:pb-0">
+                <div className="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start border-b lg:border-none border-slate-100 pb-3 lg:pb-0">
                     <StatusIndicator />
                 </div>
 

@@ -136,7 +136,7 @@ export function DashboardSidebar({ className, onClose }: DashboardSidebarProps) 
             >
                 {/* Logo */}
                 <div className="mb-8 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <Link href="/dashboard" onClick={onClose} className="flex items-center gap-3">
                         {/* Consistent Logo */}
                         <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/20">
                             <FileSignature className="w-6 h-6 text-white" />
@@ -148,7 +148,7 @@ export function DashboardSidebar({ className, onClose }: DashboardSidebarProps) 
                                 <span className="text-slate-400 text-xs font-medium">CLM Enterprise</span>
                             </div>
                         )}
-                    </div>
+                    </Link>
 
                     {/* Toggle Button - Always Visible */}
                     <Tooltip>

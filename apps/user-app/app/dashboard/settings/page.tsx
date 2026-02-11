@@ -18,8 +18,8 @@ export default function SettingsPage() {
     };
 
     return (
-        <div className="max-w-[1200px] mx-auto pb-20 animate-in fade-in duration-700 px-6 py-8">
-            <div className="flex items-center gap-4 mb-8">
+        <div className="pb-12 animate-in fade-in duration-700">
+            <div className="flex items-center gap-4 mb-6">
                 <div className="w-12 h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center shadow-sm">
                     <Settings className="w-6 h-6 text-slate-400" />
                 </div>
@@ -31,7 +31,7 @@ export default function SettingsPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                 {/* Sidebar Navigation */}
                 <div className="md:col-span-3 space-y-1">
                     <button
@@ -67,18 +67,18 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="md:col-span-9 space-y-6">
+                <div className="md:col-span-9 space-y-5">
                     {activeTab === 'profile' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
                             {/* Profile Card */}
-                            <Card className="bg-white border border-slate-100 shadow-sm rounded-xl overflow-hidden p-6">
-                                <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-50">
+                            <Card className="bg-white border border-slate-100 shadow-sm rounded-xl overflow-hidden p-5 md:p-6">
+                                <div className="flex items-center gap-2 mb-5 pb-3 border-b border-slate-50">
                                     <User className="w-4 h-4 text-orange-600" />
                                     <h3 className="text-sm font-bold text-slate-900">Personal Information</h3>
                                 </div>
 
-                                <div className="space-y-6">
-                                    <div className="flex items-center gap-6">
+                                <div className="space-y-5">
+                                    <div className="flex items-center gap-5">
                                         <div className="relative group cursor-pointer">
                                             <div className="w-20 h-20 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-600 text-2xl font-black border-2 border-slate-100 shadow-sm transition-transform group-hover:scale-105">
                                                 {user?.name?.charAt(0) || 'U'}
@@ -95,7 +95,7 @@ export default function SettingsPage() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Full Name</label>
                                             <Input defaultValue={user?.name || ''} className="h-10 rounded-lg border-slate-200 bg-slate-50 font-medium text-slate-900 focus:ring-2 focus:ring-orange-500/10 focus:border-orange-500 text-sm" />
@@ -161,21 +161,21 @@ export default function SettingsPage() {
                     )}
 
                     {activeTab === 'notifications' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <Card className="bg-white border border-slate-100 shadow-sm rounded-xl overflow-hidden p-6">
-                                <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-50">
+                        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <Card className="bg-white border border-slate-100 shadow-sm rounded-xl overflow-hidden p-5 md:p-6">
+                                <div className="flex items-center gap-2 mb-5 pb-3 border-b border-slate-50">
                                     <Bell className="w-4 h-4 text-orange-600" />
                                     <h3 className="text-sm font-bold text-slate-900">Email Notifications</h3>
                                 </div>
 
-                                <div className="space-y-4">
+                                <div className="space-y-3.5">
                                     {[
                                         { title: 'Contract Approvals', desc: 'Get notified when a contract needs your approval' },
                                         { title: 'Status Updates', desc: 'Receive updates when your contracts change status' },
                                         { title: 'Comments & Mentions', desc: 'When someone mentions you in a contract discussion' },
                                         { title: 'Weekly Digest', desc: 'A summary of all activity in your workspace' }
                                     ].map((item, i) => (
-                                        <div key={i} className="flex items-center justify-between py-3">
+                                        <div key={i} className="flex items-center justify-between py-2.5">
                                             <div>
                                                 <p className="font-bold text-slate-900 text-sm">{item.title}</p>
                                                 <p className="text-xs font-medium text-slate-500 mt-0.5">{item.desc}</p>
@@ -191,19 +191,19 @@ export default function SettingsPage() {
                     )}
 
                     {activeTab === 'security' && (
-                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <Card className="bg-white border border-slate-100 shadow-sm rounded-xl overflow-hidden p-6">
-                                <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-50">
+                        <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <Card className="bg-white border border-slate-100 shadow-sm rounded-xl overflow-hidden p-5 md:p-6">
+                                <div className="flex items-center gap-2 mb-5 pb-3 border-b border-slate-50">
                                     <Key className="w-4 h-4 text-orange-600" />
                                     <h3 className="text-sm font-bold text-slate-900">Access Credentials</h3>
                                 </div>
 
-                                <div className="space-y-6">
+                                <div className="space-y-5">
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Current Password</label>
                                         <Input type="password" className="h-10 rounded-lg border-slate-200 bg-slate-50 font-bold px-4 text-sm" />
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">New Password</label>
                                             <Input type="password" className="h-10 rounded-lg border-slate-200 bg-slate-50 font-bold px-4 text-sm" />
@@ -222,7 +222,7 @@ export default function SettingsPage() {
                                 </div>
                             </Card>
 
-                            <Card className="bg-white border border-rose-100 shadow-sm rounded-xl overflow-hidden p-6">
+                            <Card className="bg-white border border-rose-100 shadow-sm rounded-xl overflow-hidden p-5 md:p-6">
                                 <div className="flex items-center gap-2 mb-4">
                                     <Shield className="w-4 h-4 text-rose-600" />
                                     <h3 className="text-sm font-bold text-rose-600">Danger Zone</h3>

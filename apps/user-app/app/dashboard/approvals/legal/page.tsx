@@ -107,8 +107,8 @@ export default function LegalApprovalsPage() {
 
     if (isLoading) {
         return (
-            <div className="p-6 space-y-4">
-                <div className="flex justify-between items-center mb-6">
+            <div className="space-y-4">
+                <div className="flex justify-between items-center mb-4">
                     <Skeleton className="h-8 w-48" />
                 </div>
                 <Skeleton className="h-12 w-full" />
@@ -120,7 +120,7 @@ export default function LegalApprovalsPage() {
 
     if (approvals.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center h-full text-center px-6">
+            <div className="flex flex-col items-center justify-center h-full text-center">
                 <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mb-4 border border-emerald-100">
                     <CheckCircle className="w-8 h-8 text-emerald-600" />
                 </div>
@@ -133,8 +133,8 @@ export default function LegalApprovalsPage() {
     }
 
     return (
-        <div className="p-6 h-full overflow-y-auto">
-            <div className="mb-6 flex items-center justify-between">
+        <div className="h-full">
+            <div className="mb-4 flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Legal Review</h1>
                     <p className="text-slate-500 font-medium text-sm mt-1">
