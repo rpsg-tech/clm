@@ -262,7 +262,7 @@ export class OracleRouterService {
             extract: () => ({ role: 'FINANCE' })
         },
         {
-            pattern: /how many.*(?:active )?(?:users?|team members?|people)/i,
+            pattern: /(?:how many|count).*(?:active\s+)?(?:users?|team\s+members?|people)/i,
             intent: 'COUNT_USERS'
         },
         {
