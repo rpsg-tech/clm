@@ -46,26 +46,37 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
 
     // Helper for Status Indicator
     const StatusIndicator = () => {
-        const stageMap: Record<string, string> = {
-            DRAFT: 'Drafting & Review',
-            REVISION_REQUESTED: 'Drafting & Review',
-            IN_REVIEW: 'Internal Review',
-            SENT_TO_LEGAL: 'Internal Review',
-            SENT_TO_FINANCE: 'Internal Review',
-            APPROVED: 'Ready for Execution',
-            SENT_TO_COUNTERPARTY: 'External Review',
-            ACTIVE: 'Active Contract',
-            CANCELLED: 'Cancelled'
+        // Color mapping for each status
+        const statusColors: Record<string, string> = {
+            DRAFT: 'bg-orange-500',
+            REVISION_REQUESTED: 'bg-amber-500',
+            IN_REVIEW: 'bg-blue-500',
+            SENT_TO_LEGAL: 'bg-indigo-500',
+            SENT_TO_FINANCE: 'bg-cyan-500',
+            APPROVED: 'bg-green-500',
+            SENT_TO_COUNTERPARTY: 'bg-purple-500',
+            ACTIVE: 'bg-emerald-500',
+            CANCELLED: 'bg-red-500',
         };
 
-        const label = stageMap[contract.status] || contract.status.replace(/_/g, ' ');
+        // Determine if status should pulse (active/in-progress states)
+        const shouldPulse = !['ACTIVE', 'CANCELLED'].includes(contract.status);
+
+        // Get color class, default to slate if status not mapped
+        const colorClass = statusColors[contract.status] || 'bg-slate-400';
+
+        // Format status for display (replace underscores with spaces, title case)
+        const displayStatus = contract.status
+            .split('_')
+            .map((word: string) => word.charAt(0) + word.slice(1).toLowerCase())
+            .join(' ');
 
         return (
-            <div className="flex flex-col gap-1 min-w-[140px]">
+            <div className="flex flex-col gap-1.5 min-w-[160px]">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Current Stage</span>
-                <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${['ACTIVE'].includes(contract.status) ? 'bg-emerald-500' : 'bg-orange-500'} animate-pulse`} />
-                    <span className="text-sm font-semibold text-slate-900">{label}</span>
+                <div className="flex items-center gap-2.5">
+                    <div className={`w-2.5 h-2.5 rounded-full ${colorClass} ${shouldPulse ? 'animate-pulse' : ''}`} />
+                    <span className="text-sm font-bold text-slate-900">{displayStatus}</span>
                 </div>
             </div>
         );
@@ -76,7 +87,7 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
         const IconWrapper = ({ children }: { children: React.ReactNode }) => (
             <div className={`
                 flex items-center justify-center rounded-md w-7 h-7 sm:w-8 sm:h-8 transition-colors shrink-0
-                ${variant === 'primary' ? 'bg-white/10 group-hover:bg-white/20' : 'bg-slate-100 text-slate-500 group-hover:bg-white group-hover:text-amber-600'}
+                ${variant === 'primary' ? 'bg-white/10 group-hover:bg-white/20' : 'bg-slate-100 text-slate-500 group-hover:bg-orange-50 group-hover:text-orange-600'}
             `}>
                 {children}
             </div>
@@ -88,9 +99,9 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                     onClick={onClick}
                     disabled={disabled}
                     className={`
-                        relative overflow-hidden group bg-slate-900 hover:bg-black text-white 
+                        relative overflow-hidden group bg-slate-900 hover:bg-orange-600 text-white 
                         border border-transparent rounded-lg pl-3 pr-3 py-2 flex items-center justify-center sm:justify-start gap-2.5 transition-all duration-300
-                        shadow-sm hover:shadow-md ring-offset-2 focus:ring-2 ring-indigo-500/30
+                        shadow-md shadow-slate-900/20 hover:shadow-lg hover:shadow-orange-500/30 ring-offset-2 focus:ring-2 ring-orange-500/30
                         disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none
                         w-full sm:w-auto
                         ${className}
@@ -114,15 +125,15 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
                 onClick={onClick}
                 disabled={disabled}
                 className={`
-                    group relative bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 
-                    text-slate-600 hover:text-slate-900 rounded-lg pl-3 pr-3 py-2 flex items-center justify-center sm:justify-start gap-2.5 transition-all duration-200
+                    group relative bg-white hover:bg-orange-50 border border-slate-200 hover:border-orange-200 
+                    text-slate-600 hover:text-orange-600 rounded-lg pl-3 pr-3 py-2 flex items-center justify-center sm:justify-start gap-2.5 transition-all duration-200
                     shadow-sm hover:shadow-md
                     disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
                     w-full sm:w-auto
                     ${className}
                 `}
             >
-                <div className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors">
+                <div className="w-4 h-4 text-slate-400 group-hover:text-orange-600 transition-colors">
                     <Icon className="w-full h-full" />
                 </div>
                 <span className="text-[11px] font-bold">{label}</span>
@@ -135,10 +146,10 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
             onClick={onClick}
             disabled={loading}
             className={`
-                group flex items-center gap-1.5 text-[10px] font-bold transition-all px-2.5 py-1.5 rounded-lg
+                group flex items-center gap-1.5 text-[10px] font-bold transition-all px-3 py-1.5 rounded-lg border border-transparent
                 ${variant === 'destructive'
-                    ? 'text-red-400 hover:text-red-600 hover:bg-red-50'
-                    : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}
+                    ? 'text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-100'
+                    : 'text-slate-500 hover:text-orange-600 hover:bg-orange-50 hover:border-orange-100'}
             `}
         >
             <Icon className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
@@ -173,7 +184,7 @@ export function SmartActionButtons({ contract, permissions, loading, onAction }:
 
     return (
         <>
-            <div className="w-full bg-white border border-slate-200 rounded-xl p-3 md:p-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 shadow-sm sticky top-0 md:top-4 z-30">
+            <div className="w-full bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl p-4 md:p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-md hover:shadow-lg transition-shadow sticky top-0 md:top-4 z-30">
                 {/* Left: Status */}
                 <div className="flex items-center gap-4 w-full lg:w-auto justify-between lg:justify-start border-b lg:border-none border-slate-100 pb-3 lg:pb-0">
                     <StatusIndicator />
