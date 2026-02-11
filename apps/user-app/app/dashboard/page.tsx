@@ -154,7 +154,7 @@ export default function DashboardPage() {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
-                    title="Total Volume"
+                    title="Total Contract"
                     value={stats.totalContracts}
                     icon={FileText}
                     trend={stats.trend}
@@ -170,7 +170,7 @@ export default function DashboardPage() {
                     delay={200}
                 />
                 <StatCard
-                    title="Pending Drafts"
+                    title="Pending Contract"
                     value={stats.draftContracts}
                     icon={Clock}
                     description="Work in progress"
