@@ -386,6 +386,12 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ reason }),
       }),
+
+    returnToManager: (approvalId: string, comment: string) =>
+      authFetch(`/approvals/${approvalId}/return`, {
+        method: 'POST',
+        body: JSON.stringify({ comment }),
+      }),
   },
 
   // Health

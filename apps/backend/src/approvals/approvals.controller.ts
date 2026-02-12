@@ -213,4 +213,40 @@ export class ApprovalsController {
 
         return contract;
     }
+
+    /**
+     * Return contract to Manager (Legal Head)
+     */
+    @Post(':id/return')
+    @Permissions('approval:legal:act')
+    async returnToManager(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+        @Body('comment') comment: string,
+    ) {
+        const result = await this.approvalsService.returnToManager(
+            id,
+            user.id,
+            user.orgId!,
+            user.permissions,
+            comment
+        );
+
+        // Audit log
+        await this.auditService.log({
+            organizationId: user.orgId,
+            contractId: result.contract.id, // Access contract from result
+            userId: user.id,
+            action: 'CONTRACT_RETURNED_TO_MANAGER',
+            module: 'approvals',
+            targetType: 'Approval',
+            targetId: id,
+            metadata: {
+                comment,
+                contractId: result.contract.id,
+            } as Prisma.InputJsonValue,
+        });
+
+        return result.contract;
+    }
 }

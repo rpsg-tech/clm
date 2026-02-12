@@ -67,6 +67,7 @@ interface ActivityItem {
     type: 'VERSION' | 'AUDIT';
     title: string;
     user: string;
+    role?: string;
     date: Date;
     meta?: any;
 }
@@ -184,6 +185,9 @@ function ContractDetailContent() {
                 // Open dialog instead of directly escalating
                 setShowEscalateDialog(true);
                 return; // Don't refresh yet
+            } else if (action === 'return_to_manager') {
+                await api.approvals.returnToManager(payload.id, payload.comment);
+                toast.success('Returned', 'Contract returned to Legal Manager');
             }
 
             // Refresh data
@@ -234,6 +238,7 @@ function ContractDetailContent() {
                 type: 'VERSION',
                 title: `Created version`, // Removed v${version} to avoid duplication
                 user: v.createdBy?.name || 'Unknown',
+                role: (v.createdBy as any)?.organizationRoles?.[0]?.role?.name,
                 date: new Date(v.createdAt),
                 meta: { version: v.versionNumber }
             });
@@ -255,6 +260,8 @@ function ContractDetailContent() {
                 type: 'AUDIT',
                 title: title,
                 user: log.user?.name || 'System', // Audit log should ideally expand user
+                role: log.user?.organizationRoles?.find((or: any) => or.organizationId === log.organizationId)?.role?.name
+                    || log.user?.organizationRoles?.[0]?.role?.name,
                 date: new Date(log.createdAt),
                 meta: log.metadata
             });
@@ -327,38 +334,38 @@ function ContractDetailContent() {
     return (
         <div className="h-[calc(100vh-140px)] w-full relative overflow-hidden bg-slate-50/50 flex flex-col rounded-xl border border-slate-200 shadow-sm">
             {/* 1. COMPACT HEADER (Toolbar Style) */}
-            <div className="h-14 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-4 shadow-sm">
-                <div className="flex items-center gap-4">
+            <div className="min-h-[64px] py-3 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-start justify-between px-4 sm:px-6 shadow-sm">
+                <div className="flex items-start gap-4 mt-0.5">
                     <Link href="/dashboard/contracts" className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:border-slate-300 transition-all">
                         <ArrowLeft className="w-4 h-4" />
                     </Link>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-start gap-3">
                         <Button
                             onClick={() => setIsInfoOpen(!isInfoOpen)}
                             variant="ghost"
                             size="sm"
-                            className={`h-9 w-9 p-0 rounded-full transition-colors ${isInfoOpen ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                            className={`h-9 w-9 p-0 rounded-full transition-colors mt-0.5 ${isInfoOpen ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
                             title="Contract Info"
                         >
                             <FileText className="w-4 h-4" />
                         </Button>
-                        <div>
-                            <div className="flex items-center gap-2 mb-0.5">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{contract.reference || 'REF-???'}</span>
-                                <div className="w-1 h-1 rounded-full bg-slate-300" />
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-slate-50 border-slate-200 text-slate-500 font-medium">
-                                    {contract.template?.name || 'General'}
-                                </Badge>
-                            </div>
-                            <h1 className="text-sm font-bold text-slate-900 leading-none truncate max-w-[300px]">
+                        <div className="flex flex-col gap-1.5 overflow-hidden">
+                            <h1 className="text-base font-bold text-slate-900 leading-tight truncate max-w-[400px]" title={contract.title}>
                                 {contract.title}
                             </h1>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-bold text-slate-500 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded uppercase tracking-wider">{contract.reference || 'REF-???'}</span>
+                                <span className="w-1 h-1 rounded-full bg-slate-300" />
+                                <Badge variant="outline" className="text-[10px] px-2 py-0 h-4.5 bg-orange-50 text-orange-600 border-orange-100 font-bold uppercase tracking-wide">
+                                    {contract.template?.name || 'General Template'}
+                                </Badge>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* ACTION TOOLBAR - Preserved SmartActionButtons */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                     {/* AI Button - Subtle */}
                     <FeatureGuard feature="AI_CONTRACT_REVIEW">
                         <Button
@@ -546,7 +553,13 @@ function ContractDetailContent() {
                                                             </div>
                                                             <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
                                                                 <User className="w-3 h-3" />
-                                                                {item.user} • {item.date.toLocaleDateString()}
+                                                                {item.user}
+                                                                {item.role && (
+                                                                    <span className="ml-1 text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0 rounded border border-orange-100">
+                                                                        {item.role}
+                                                                    </span>
+                                                                )}
+                                                                • {item.date.toLocaleDateString()}
                                                             </div>
                                                             {item.meta?.version && (
                                                                 <span className="inline-block mt-2 px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded border border-orange-100">

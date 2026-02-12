@@ -90,20 +90,24 @@ export default function NewContractPage() {
     }, [templates, searchParams]);
 
     // Initialize editor content and annexures when template is selected
-    const loadFullTemplate = async (template: Template) => {
+    const loadFullTemplate = async (template: Template, metadata?: any) => {
         try {
             console.log('Loading full template for:', template.id, template.name);
             // Fetch full template details to get annexure content (list view is optimized/slim)
             const fullTemplate = await api.templates.get(template.id) as any;
             setEditorContent(fullTemplate.baseContent || "");
 
-            // Pre-fill Title logic
-            if (!contractDetails.title) {
-                setContractDetails((prev: any) => ({
+            // Pre-fill Title logic - ONLY if not already provided in metadata or state
+            setContractDetails((prev: any) => {
+                const currentTitle = metadata?.title || prev.title;
+                if (currentTitle) return { ...prev, ...metadata }; // Ensure metadata is merged
+
+                return {
                     ...prev,
+                    ...metadata,
                     title: `${fullTemplate.name} - ${new Date().toLocaleDateString()}`
-                }));
-            }
+                };
+            });
 
             // Auto-populate annexures from template
             if ((fullTemplate as any).annexures?.length > 0) {
@@ -215,7 +219,7 @@ export default function NewContractPage() {
         if (pendingTemplate) {
             setContractDetails(data);
             setSelectedTemplate(pendingTemplate);
-            loadFullTemplate(pendingTemplate); // Triggers content load
+            loadFullTemplate(pendingTemplate, data); // Pass data directly to avoid stale state issues
             setIsMetadataDialogOpen(false);
             // If there's a pendingUploadFile, this is an upload contract
             if (pendingUploadFile) {

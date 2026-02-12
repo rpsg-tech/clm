@@ -49,6 +49,7 @@ async function main() {
         { name: 'Finance Review: View', code: 'approval:finance:view', module: 'Approvals', description: 'View contracts pending finance review.' },
         { name: 'Finance Review: Act', code: 'approval:finance:act', module: 'Approvals', description: 'Approve or reject contracts as Finance.' },
         { name: 'Request Finance Review', code: 'approval:finance:request', module: 'Approvals', description: 'Manually trigger a finance review.' },
+        { name: 'Reject Contract', code: 'approval:reject', module: 'Approvals', description: 'Reject a contract (Permission restricted).' },
 
         // ============ INTELLIGENCE ============
 
@@ -138,7 +139,7 @@ async function main() {
     // 4. Legal Head (Final Approver)
     const legalHeadPerms = [
         'contract:view', 'contract:history', 'contract:download', 'contract:edit',
-        'approval:legal:view', 'approval:legal:act',
+        'approval:legal:view', 'approval:legal:act', 'approval:reject',
         'system:audit',
         'analytics:view'
     ];
@@ -320,123 +321,65 @@ async function main() {
     console.log(`✅ Created ${usersData.length} demo users`);
 
     // ============ TEMPLATES ============
-    console.log('Creating templates...');
+    console.log('Managing templates...');
 
+    // 1. Delete unwanted templates
+    const templatesToDelete = ['NDA', 'SLA', 'VENDOR'];
+    const deletedTemplates = await prisma.template.deleteMany({
+        where: {
+            code: { in: templatesToDelete }
+        }
+    });
+    console.log(`✅ Removed ${deletedTemplates.count} unwanted templates (NDA, SLA, VENDOR)`);
+
+    // 2. Ensure Third Party Template exists (Required for Uploads)
+    console.log('Ensuring Third Party Template exists...');
     const adminUser = await prisma.user.findUnique({ where: { email: 'admin@clm.com' } });
 
-    const templatesData: any[] = [
-        {
-            name: 'Non-Disclosure Agreement',
-            code: 'NDA',
-            category: TemplateCategory.NDA,
-            description: 'Standard NDA template for confidential information sharing',
-            baseContent: `<h1>Non-Disclosure Agreement</h1>
-    <p>This Non-Disclosure Agreement ("Agreement") is entered into by and between the parties.</p>
-    <h2>1. Definition of Confidential Information</h2>
-    <p>For purposes of this Agreement, "Confidential Information" shall include all information...</p>`,
-            isGlobal: true,
+    const thirdPartyTemplate = {
+        name: 'Third Party Contract',
+        code: 'THIRD_PARTY',
+        category: TemplateCategory.OTHER,
+        description: 'Generic template for imported third-party contracts',
+        baseContent: `<p>This contract was uploaded from an external source.</p>`,
+        isGlobal: true,
+    };
+
+    const createdTemplate = await prisma.template.upsert({
+        where: { code: thirdPartyTemplate.code },
+        update: {
+            name: thirdPartyTemplate.name,
+            category: thirdPartyTemplate.category,
+            description: thirdPartyTemplate.description,
+            baseContent: thirdPartyTemplate.baseContent,
+            isGlobal: thirdPartyTemplate.isGlobal,
+            isActive: true,
         },
-        {
-            name: 'Service Level Agreement',
-            code: 'SLA',
-            category: TemplateCategory.SERVICE_AGREEMENT,
-            description: 'Standard SLA for service providers',
-            baseContent: `<h1>Service Level Agreement</h1>
-    <p>This Service Level Agreement ("SLA") is made between the parties for the provision of services.</p>
-    <h2>1. Service Description</h2>
-    <p>The Service Provider agrees to provide the following services...</p>`,
-            isGlobal: true,
+        create: {
+            ...thirdPartyTemplate,
+            createdByUserId: adminUser!.id,
+            isActive: true,
         },
-        {
-            name: 'Vendor Agreement',
-            code: 'VENDOR',
-            category: TemplateCategory.VENDOR_AGREEMENT,
-            description: 'Agreement for vendor onboarding and engagement',
-            baseContent: `<h1>Vendor Agreement</h1>
-    <p>This Vendor Agreement is entered into for the purpose of establishing a vendor relationship.</p>
-    <h2>1. Scope of Services</h2>
-    <p>The Vendor shall provide the following products/services...</p>`,
-            isGlobal: false,
+    });
+
+    // Create annexure for Third Party template
+    await prisma.annexure.upsert({
+        where: {
+            id: `${createdTemplate.id}-annexure-1`,
         },
-        {
-            name: 'Third Party Contract',
-            code: 'THIRD_PARTY',
-            category: TemplateCategory.OTHER, // Using OTHER as a generic fallback
-            description: 'Generic template for imported third-party contracts',
-            baseContent: `<p>This contract was uploaded from an external source.</p>`,
-            isGlobal: true,
+        update: {},
+        create: {
+            id: `${createdTemplate.id}-annexure-1`,
+            templateId: createdTemplate.id,
+            name: 'Annexure I',
+            title: 'Party Details',
+            content: `<h3>Party Details</h3><p>Details from third party contract.</p>`,
+            fieldsConfig: '[]', // No specific fields for generic third party
+            order: 1,
         },
-    ];
+    });
 
-    for (const template of templatesData) {
-        console.log(`Processing template: ${template.name} (${template.code})`);
-        const created = await prisma.template.upsert({
-            where: { code: template.code },
-            update: {
-                name: template.name,
-                category: template.category,
-                description: template.description,
-                baseContent: template.baseContent,
-                isGlobal: template.isGlobal,
-                isActive: true, // Force active
-            },
-            create: {
-                ...template,
-                createdByUserId: adminUser!.id,
-                isActive: true,
-            },
-        });
-
-        // Create annexure for each template
-        await prisma.annexure.upsert({
-            where: {
-                id: `${created.id}-annexure-1`,
-            },
-            update: {},
-            create: {
-                id: `${created.id}-annexure-1`,
-                templateId: created.id,
-                name: 'Annexure I',
-                title: 'Party Details',
-                content: `<h3>Party Details</h3>
-    <p>Party Name: {{partyName}}</p>
-    <p>Address: {{partyAddress}}</p>
-    <p>Contact Person: {{contactPerson}}</p>
-    <p>Email: {{contactEmail}}</p>`,
-                fieldsConfig: JSON.stringify([
-                    { key: 'partyName', label: 'Party Name', type: 'text', required: true },
-                    { key: 'partyAddress', label: 'Address', type: 'textarea', required: true },
-                    { key: 'contactPerson', label: 'Contact Person', type: 'text', required: true },
-                    { key: 'contactEmail', label: 'Contact Email', type: 'text', required: true },
-                ]),
-                order: 1,
-            },
-        });
-
-        // Enable non-global templates for CESC
-        if (!template.isGlobal && cescOrg) {
-            await prisma.templateOrganization.upsert({
-                where: {
-                    templateId_organizationId: {
-                        templateId: created.id,
-                        organizationId: cescOrg.id,
-                    },
-                },
-                update: {},
-                create: {
-                    templateId: created.id,
-                    organizationId: cescOrg.id,
-                    isEnabled: true,
-                },
-            });
-        }
-    }
-
-
-    // Actually use empty array since templates are commented out
-    const activeTemplatesData = templatesData;
-
-    console.log(`✅ Created ${activeTemplatesData.length} templates with annexures`);
+    console.log(`✅ Verified 'Third Party Contract' template`);
 
     // ============ FEATURE FLAGS ============
     console.log('Creating feature flags...');

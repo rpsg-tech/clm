@@ -6,7 +6,7 @@
 
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Contract, ContractStatus, Prisma } from '@prisma/client';
+import { Contract, ContractStatus, ApprovalStatus, Prisma } from '@prisma/client';
 import { sanitizeContractContent } from '../common/utils/sanitize.util';
 import { EmailService, EmailTemplate } from '../common/email/email.service';
 import { ConfigService } from '@nestjs/config';
@@ -43,16 +43,45 @@ export class ContractsService {
     async sendToCounterparty(id: string, organizationId: string) {
         const contract = await this.findById(id, organizationId);
 
-        // Can only send if status is APPROVED
-        if (contract.status !== ContractStatus.APPROVED) {
-            throw new ForbiddenException('Only APPROVED contracts can be sent to counterparty');
+        // NEW LOGIC: Allow sending in Draft, Approved, or Review states (Parallel Negotiation)
+        const allowedStatuses: ContractStatus[] = [
+            ContractStatus.DRAFT,
+            ContractStatus.APPROVED,
+            ContractStatus.REVISION_REQUESTED, // Allow sending back to CP if changes requested? Maybe.
+            ContractStatus.SENT_TO_LEGAL,
+            ContractStatus.LEGAL_REVIEW_IN_PROGRESS,
+            ContractStatus.SENT_TO_FINANCE,
+            ContractStatus.FINANCE_REVIEW_IN_PROGRESS,
+            ContractStatus.IN_REVIEW
+        ];
+
+        if (!allowedStatuses.includes(contract.status)) {
+            throw new ForbiddenException(`Cannot send to counterparty in current status: ${contract.status}`);
+        }
+
+        // Status Determination Logic (PRD: "Send to Legal takes precedence")
+        // 1. If currently in Internal Review -> Status remains same (Review takes precedence)
+        // 2. If Draft or Approved -> Status becomes SENT_TO_COUNTERPARTY
+
+        const reviewStatuses: ContractStatus[] = [
+            ContractStatus.SENT_TO_LEGAL,
+            ContractStatus.LEGAL_REVIEW_IN_PROGRESS,
+            ContractStatus.SENT_TO_FINANCE,
+            ContractStatus.FINANCE_REVIEW_IN_PROGRESS,
+            ContractStatus.IN_REVIEW,
+            ContractStatus.PENDING_LEGAL_HEAD
+        ];
+
+        let newStatus = contract.status;
+        if (!reviewStatuses.includes(contract.status)) {
+            newStatus = ContractStatus.SENT_TO_COUNTERPARTY;
         }
 
         // Update status
         const updated = await this.prisma.contract.update({
             where: { id },
             data: {
-                status: ContractStatus.SENT_TO_COUNTERPARTY,
+                status: newStatus,
                 sentAt: new Date(),
             },
         });
@@ -447,6 +476,7 @@ export class ContractsService {
                     reference: true,
                     status: true,
                     counterpartyName: true,
+                    counterpartyBusinessName: true,
                     createdAt: true,
                     updatedAt: true,
                     amount: true,
@@ -693,7 +723,15 @@ export class ContractsService {
                 newStatus = ContractStatus.SENT_TO_LEGAL;
                 approvalsData.push({ contractId: id, type: 'LEGAL' });
             } else if (target === 'FINANCE') {
-                newStatus = ContractStatus.SENT_TO_FINANCE;
+                // Check if Legal is already pending. If so, keep Legal priority in status.
+                const isLegalAlreadyPending = contract.approvals?.some(a => a.type === 'LEGAL' && a.status === ApprovalStatus.PENDING);
+
+                if (isLegalAlreadyPending) {
+                    // Stay in Legal status to maintain visibility priority
+                    newStatus = contract.status as ContractStatus;
+                } else {
+                    newStatus = ContractStatus.SENT_TO_FINANCE;
+                }
                 approvalsData.push({ contractId: id, type: 'FINANCE' });
             } else {
                 // Default: Parallel if Finance enabled, else Legal

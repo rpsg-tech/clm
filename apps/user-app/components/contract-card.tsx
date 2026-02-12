@@ -32,8 +32,8 @@ export function ContractCard({ contract, statusColors }: ContractCardProps) {
                         </div>
                         <div>
                             <span className="text-xs text-slate-500 font-mono">{contract.reference}</span>
-                            <h3 className="font-semibold text-slate-900 line-clamp-1" title={contract.title}>
-                                {contract.title}
+                            <h3 className="font-semibold text-slate-900 line-clamp-2 min-h-[2.5rem]" title={contract.title}>
+                                {contract.title || 'Untitled Contract'}
                             </h3>
                         </div>
                     </div>

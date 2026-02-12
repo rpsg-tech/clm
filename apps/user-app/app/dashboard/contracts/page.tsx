@@ -32,6 +32,7 @@ interface Contract {
     title: string;
     status: string;
     counterpartyName: string | null;
+    counterpartyBusinessName?: string | null;
     createdAt: string;
     startDate?: string;
     endDate?: string;
@@ -215,7 +216,14 @@ export default function ContractsListPage() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-slate-600">
-                                                    {contract.counterpartyName || '-'}
+                                                    {contract.counterpartyBusinessName ? (
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium text-slate-800">{contract.counterpartyBusinessName}</span>
+                                                            <span className="text-xs text-slate-400">{contract.counterpartyName || '-'}</span>
+                                                        </div>
+                                                    ) : (
+                                                        contract.counterpartyName || '-'
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <Badge className={statusColors[contract.status] || 'bg-slate-100 text-slate-700'}>

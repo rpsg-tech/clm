@@ -155,7 +155,16 @@ export class AuditService {
                 },
             },
             include: {
-                user: { select: { name: true, email: true } },
+                user: {
+                    select: {
+                        name: true,
+                        email: true,
+                        organizationRoles: {
+                            where: { organizationId: { in: [organizationId, ...childOrgs.map(o => o.id)] } },
+                            select: { role: { select: { name: true } } }
+                        }
+                    }
+                },
             },
             orderBy: { createdAt: 'desc' },
             skip: params?.skip !== undefined ? Number(params.skip) : undefined,
@@ -170,7 +179,18 @@ export class AuditService {
         return this.prisma.auditLog.findMany({
             where: { contractId },
             include: {
-                user: { select: { name: true, email: true } },
+                user: {
+                    select: {
+                        name: true,
+                        email: true,
+                        organizationRoles: {
+                            select: {
+                                organizationId: true,
+                                role: { select: { name: true } }
+                            }
+                        }
+                    }
+                },
             },
             orderBy: { createdAt: 'desc' },
             take: limit,

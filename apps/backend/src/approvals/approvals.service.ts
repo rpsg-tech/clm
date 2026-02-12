@@ -70,36 +70,32 @@ export class ApprovalsService {
             );
 
             // Determine granular status
-            // USER REQ: Legal is Mandatory, Finance is Optional.
-            // If Legal approves, Status = APPROVED (even if Finance is pending).
-            // If Legal is pending, Status != APPROVED.
+            // REVISED LOGIC: STRICT CHECK
+            // 1. If Legal is PENDING -> SENT_TO_LEGAL (Priority)
+            // 2. If Finance is PENDING -> FINANCE_REVIEW_IN_PROGRESS
+            // 3. If ALL Approved -> APPROVED
 
             let newStatus: ContractStatus;
 
             const legal = allApprovals.find(a => a.type === 'LEGAL');
             const finance = allApprovals.find(a => a.type === 'FINANCE');
 
-            // Projected checks
-            const isLegalApproved = legal && (legal.id === approvalId || legal.status === ApprovalStatus.APPROVED);
-            const isFinanceApproved = finance && (finance.id === approvalId || finance.status === ApprovalStatus.APPROVED);
+            // Helper to check status (considering the update currently happening in tx)
+            const getStatus = (a: any) => (a.id === approvalId ? ApprovalStatus.APPROVED : a.status);
 
-            if (legal) {
-                if (isLegalApproved) {
-                    // Legal Approved -> Fully Approved (Finance is optional)
-                    newStatus = ContractStatus.APPROVED;
-                } else if (isFinanceApproved) {
-                    // Finance Approved, Legal Pending -> Show Legal Pending
-                    // (Prioritize showing who is holding it up)
-                    newStatus = ContractStatus.SENT_TO_LEGAL;
-                } else {
-                    // Both Pending or Just Legal Pending
-                    newStatus = ContractStatus.SENT_TO_LEGAL;
-                }
+            const isLegalPending = legal && getStatus(legal) === ApprovalStatus.PENDING;
+            const isFinancePending = finance && getStatus(finance) === ApprovalStatus.PENDING;
+
+            if (isLegalPending) {
+                newStatus = ContractStatus.SENT_TO_LEGAL;
+            } else if (isFinancePending) {
+                newStatus = ContractStatus.FINANCE_REVIEW_IN_PROGRESS;
             } else {
-                // Fallback: No Legal workflow? Use strict "All Approved"
+                // No pending reviews?
                 if (isFullyApproved) {
                     newStatus = ContractStatus.APPROVED;
                 } else {
+                    // Fallback, though logic above covers most cases
                     newStatus = ContractStatus.IN_REVIEW;
                 }
             }
@@ -117,9 +113,6 @@ export class ApprovalsService {
             this.logger.log(
                 `Approval ${approval.type} granted for contract ${approval.contractId}. New status: ${newStatus}`,
             );
-
-            // Returning updated contract and approval
-
 
             return { contract: updatedContract, approval };
         });
@@ -176,10 +169,11 @@ export class ApprovalsService {
 
         const approval = await this.findApproval(approvalId, organizationId);
 
-        // Security Check: Ensure user has permission for THIS specific approval type
-        const requiredPermission = `approval:${approval.type.toLowerCase()}:act`;
-        if (!userPermissions.includes(requiredPermission)) {
-            throw new ForbiddenException(`You do not have permission to reject ${approval.type} requests`);
+        // Security Check: REJECTION NOW REQUIRES SPECIAL PERMISSION
+        // Old: approval:${type}:act
+        // New: approval:reject
+        if (!userPermissions.includes('approval:reject')) {
+            throw new ForbiddenException(`You do not have permission to REJECT contracts. Please request changes instead.`);
         }
 
         if (approval.status !== ApprovalStatus.PENDING) {
@@ -243,6 +237,81 @@ export class ApprovalsService {
         await this.analyticsService.invalidateOrganizationCache(organizationId);
 
 
+        return result;
+    }
+
+    /**
+     * Return contract to Manager (De-escalate)
+     * For Legal Head usage
+     */
+    async returnToManager(
+        approvalId: string,
+        actorId: string,
+        organizationId: string,
+        userPermissions: string[],
+        comment: string,
+    ) {
+        if (!comment) throw new ForbiddenException('Comment is required for returning contract');
+
+        // 1. Permission Check (Implicitly Legal Head if acting on escalated ticket, but verify)
+        // We can reuse 'approval:legal:act' or check role.
+        // Assuming Legal Head has 'approval:legal:act'.
+
+        const approval = await this.findApproval(approvalId, organizationId);
+
+        // Ensure it is escalated
+        if (approval.status !== ApprovalStatus.PENDING) {
+            throw new ForbiddenException('Approval has already been processed');
+        }
+
+        // 2. Transaction
+        const result = await this.prisma.$transaction(async (tx) => {
+            // Reset approval to be assigned back to original escalator or open
+            const originalEscalator = approval.escalatedBy;
+
+            // We keep the same approval record but change actor? 
+            // Or better, mark this one as RETURNED (if enum exists) -> No enum.
+            // We will reset it to PENDING and assign actorId back to escalator (or null).
+
+            await tx.approval.update({
+                where: { id: approvalId },
+                data: {
+                    status: ApprovalStatus.PENDING,
+                    actorId: originalEscalator, // Assign back to manager
+                    escalatedTo: null, // Clear escalation
+                    // Append comment to history or replace? 
+                    // We'll prepend "RETURNED BY HEAD: " to comment
+                    comment: `RETURNED BY HEAD: ${comment}`,
+                }
+            });
+
+            // Update Contract Status
+            const updatedContract = await tx.contract.update({
+                where: { id: approval.contractId },
+                data: { status: ContractStatus.SENT_TO_LEGAL }, // Back to Manager Queue
+                include: { createdByUser: true }
+            });
+
+            return { contract: updatedContract, approval };
+        });
+
+        // Notifications
+        try {
+            // Notify the Manager (escalatedBy)
+            if (approval.escalatedBy) {
+                await this.notificationsService.create({
+                    userId: approval.escalatedBy,
+                    type: 'APPROVAL_REQUEST',
+                    title: 'Contract Returned by Legal Head',
+                    message: `Legal Head returned ${result.contract.title} to you. Comment: ${comment}`,
+                    link: `/dashboard/contracts/${result.contract.id}`
+                });
+            }
+        } catch (e) {
+            this.logger.error(e);
+        }
+
+        await this.analyticsService.invalidateOrganizationCache(organizationId);
         return result;
     }
 
@@ -352,18 +421,24 @@ export class ApprovalsService {
         // 2. Get contract and verify status
         const contract = await this.prisma.contract.findFirst({
             where: { id: contractId, organizationId },
-            include: { createdByUser: true },
+            include: {
+                createdByUser: true,
+                approvals: true,
+            },
         });
 
         if (!contract) {
             throw new NotFoundException('Contract not found');
         }
 
-        // Only allow escalation from SENT_TO_LEGAL or LEGAL_REVIEW_IN_PROGRESS status
-        if (contract.status !== ContractStatus.SENT_TO_LEGAL &&
-            contract.status !== ContractStatus.LEGAL_REVIEW_IN_PROGRESS) {
+        const legalApproval = contract.approvals?.find(a => a.type === 'LEGAL');
+
+        // Allow escalation if Legal is specifically pending, regardless of aggregate status (Parallel Negotiation)
+        const isLegalPending = legalApproval?.status === ApprovalStatus.PENDING;
+
+        if (!isLegalPending) {
             throw new ForbiddenException(
-                'Contract must be in legal review to escalate to Legal Head'
+                'No pending Legal approval found to escalate'
             );
         }
 
