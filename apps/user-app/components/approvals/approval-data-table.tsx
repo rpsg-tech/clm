@@ -161,8 +161,8 @@ export function ApprovalDataTable({ data, onApprove, onReject, onBulkApprove, on
                                     <div className="flex items-center justify-end gap-3">
                                         <ApprovalActionsCell
                                             approvalId={item.id}
-                                            onApprove={(id) => onApprove(id)}
-                                            onReject={(id) => onReject(id, "Rejected via Quick Action")}
+                                            onApprove={(id, comment) => onApprove(id, comment)}
+                                            onReject={(id, comment) => onReject(id, comment)}
                                             isLoading={isLoading}
                                         />
                                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-300 group-hover:text-slate-600">

@@ -230,7 +230,7 @@ export function SmartActionButtons({ contract, permissions, loading, onAction, c
                 <StatusIndicator />
 
                 {/* Edit / Cancel Actions Stacked */}
-                {['DRAFT', 'REVISION_REQUESTED', 'IN_REVIEW', 'SENT_TO_LEGAL', 'SENT_TO_FINANCE', 'APPROVED', 'PENDING_LEGAL_HEAD', 'SENT_TO_COUNTERPARTY', 'LEGAL_REVIEW_IN_PROGRESS', 'FINANCE_REVIEW_IN_PROGRESS'].includes(contract.status) && (
+                {['DRAFT', 'REVISION_REQUESTED', 'IN_REVIEW', 'SENT_TO_LEGAL', 'SENT_TO_FINANCE', 'PENDING_LEGAL_HEAD', 'SENT_TO_COUNTERPARTY', 'LEGAL_REVIEW_IN_PROGRESS', 'FINANCE_REVIEW_IN_PROGRESS'].includes(contract.status) && (
                     <div className="flex flex-col gap-2 w-full mt-2">
                         {permissions.canEdit && (
                             <ActionButton
