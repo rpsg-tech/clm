@@ -135,7 +135,15 @@ async function main() {
         'analytics:view'
     ];
 
-    // 4. Organization Admin
+    // 4. Legal Head (Final Approver)
+    const legalHeadPerms = [
+        'contract:view', 'contract:history', 'contract:download', 'contract:edit',
+        'approval:legal:view', 'approval:legal:act',
+        'system:audit',
+        'analytics:view'
+    ];
+
+    // 5. Organization Admin
     const entityAdminPerms = [
         'org:view', 'org:manage',
         'user:view', 'user:manage',
@@ -143,15 +151,18 @@ async function main() {
         'template:view', 'template:create', 'template:edit', 'template:publish', 'template:global',
         'system:audit', 'analytics:view', 'system:settings', 'admin:config_modules',
         // Can also view contracts to manage them
-        'contract:view', 'contract:history'
+        'contract:view', 'contract:history',
+        // Allow Admins to act on approvals if needed
+        'approval:legal:act', 'approval:finance:act', 'contract:escalate'
     ];
 
-    // 5. Super Admin (God Mode)
+    // 6. Super Admin (God Mode)
     const superAdminPerms = permissionsData.map((p) => p.code); // All Permissions
 
     const rolesData = [
         { name: 'Business User', code: 'BUSINESS_USER', permissions: businessUserPerms, isSystem: true },
         { name: 'Legal Manager', code: 'LEGAL_MANAGER', permissions: legalManagerPerms, isSystem: true },
+        { name: 'Legal Head', code: 'LEGAL_HEAD', permissions: legalHeadPerms, isSystem: true },
         { name: 'Finance Manager', code: 'FINANCE_MANAGER', permissions: financeManagerPerms, isSystem: true },
         { name: 'Entity Admin', code: 'ENTITY_ADMIN', permissions: entityAdminPerms, isSystem: true },
         { name: 'Super Admin', code: 'SUPER_ADMIN', permissions: superAdminPerms, isSystem: true },
@@ -232,6 +243,7 @@ async function main() {
         { email: 'admin@clm.com', name: 'System Admin', role: 'SUPER_ADMIN' },
         { email: 'admin@cesc.com', name: 'CESC Admin', role: 'ENTITY_ADMIN' },
         { email: 'legal@clm.com', name: 'Legal Manager', role: 'LEGAL_MANAGER' },
+        { email: 'head.legal@clm.com', name: 'Group Legal Head', role: 'LEGAL_HEAD' },
         { email: 'finance@clm.com', name: 'Finance Manager', role: 'FINANCE_MANAGER' },
         { email: 'user@clm.com', name: 'Business User', role: 'BUSINESS_USER' },
     ];
@@ -275,6 +287,31 @@ async function main() {
                     userId: user.id,
                     organizationId: targetOrg.id,
                     roleId: role.id,
+                },
+            });
+        }
+    }
+
+    // Explicitly add Super Admin to CESC for testing purposes
+    if (cescOrg) {
+        const adminUser = await prisma.user.findUnique({ where: { email: 'admin@clm.com' } });
+        const superAdminRole = await prisma.role.findUnique({ where: { code: 'SUPER_ADMIN' } });
+
+        if (adminUser && superAdminRole) {
+            console.log('✨ Adding Super Admin to CESC for testing...');
+            await prisma.userOrganizationRole.upsert({
+                where: {
+                    userId_organizationId_roleId: {
+                        userId: adminUser.id,
+                        organizationId: cescOrg.id,
+                        roleId: superAdminRole.id,
+                    },
+                },
+                update: {},
+                create: {
+                    userId: adminUser.id,
+                    organizationId: cescOrg.id,
+                    roleId: superAdminRole.id,
                 },
             });
         }

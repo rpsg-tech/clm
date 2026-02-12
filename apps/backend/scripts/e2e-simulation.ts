@@ -18,7 +18,7 @@ async function runHybridSimulation() {
         const healthRes = await axios.get(`${API_URL}/health`);
         const initialCookies = healthRes.headers['set-cookie'];
 
-        let csrfToken = null;
+        let csrfToken: string | null = null;
         let cookieHeader = '';
 
         if (initialCookies) {

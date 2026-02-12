@@ -9,6 +9,7 @@ interface ContractCardProps {
         title: string;
         status: string;
         counterpartyName: string | null;
+        counterpartyBusinessName?: string | null;
         createdAt: string;
         amount?: number;
         template: { name: string; category: string };
@@ -45,7 +46,12 @@ export function ContractCard({ contract, statusColors }: ContractCardProps) {
                 <div className="space-y-3 flex-1">
                     <div className="flex items-center text-sm text-slate-600">
                         <User className="w-4 h-4 mr-2 text-slate-400" />
-                        <span className="truncate">{contract.counterpartyName || 'Internal / No Counterparty'}</span>
+                        <span className="truncate">
+                            {contract.counterpartyBusinessName
+                                ? `${contract.counterpartyBusinessName} ${contract.counterpartyName ? ` • ${contract.counterpartyName}` : ''}`
+                                : (contract.counterpartyName || 'Internal / No Counterparty')
+                            }
+                        </span>
                     </div>
 
                     <div className="flex items-center text-sm text-slate-600">

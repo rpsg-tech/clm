@@ -27,6 +27,11 @@ export class CreateContractDto {
 
     @IsOptional()
     @IsString()
+    @MaxLength(200, { message: 'Business name cannot exceed 200 characters' })
+    counterpartyBusinessName?: string;
+
+    @IsOptional()
+    @IsString()
     startDate?: string;
 
     @IsOptional()

@@ -15,6 +15,7 @@ interface Approval {
         id: string;
         title: string;
         reference: string;
+        status: string;
         createdByUser: {
             name: string;
         };
@@ -121,9 +122,23 @@ export function ApprovalDataTable({ data, onApprove, onReject, onBulkApprove, on
                                     />
                                 </td>
                                 <td className="p-4">
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{item.contract.title}</span>
-                                        <span className="text-[10px] font-mono text-slate-400 mt-0.5">{item.contract.reference}</span>
+                                    <div className="flex flex-col gap-0.5">
+                                        <span className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors tracking-tight">{item.contract.title}</span>
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-[10px] font-mono text-slate-400">{item.contract.reference}</span>
+
+                                            {/* Status Tags */}
+                                            {item.contract.status === 'PENDING_LEGAL_HEAD' && (
+                                                <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-[9px] font-bold rounded border border-purple-200 uppercase tracking-wide shadow-sm">
+                                                    Escalated to Head
+                                                </span>
+                                            )}
+                                            {item.contract.status === 'SENT_TO_LEGAL' && (
+                                                <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-medium rounded border border-blue-100 uppercase tracking-wide">
+                                                    Legal Review
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </td>
                                 <td className="p-4">

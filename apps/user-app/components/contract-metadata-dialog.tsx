@@ -10,6 +10,7 @@ import { User, Calendar, CreditCard, AlertCircle } from "lucide-react";
 interface ContractMetadata {
     title: string;
     counterpartyName: string;
+    counterpartyBusinessName?: string;
     counterpartyEmail: string;
     startDate?: string;
     endDate?: string;
@@ -34,6 +35,7 @@ export function ContractMetadataDialog({
     const [formData, setFormData] = useState<ContractMetadata>({
         title: "",
         counterpartyName: "",
+        counterpartyBusinessName: "",
         counterpartyEmail: "",
         startDate: "",
         endDate: "",
@@ -137,27 +139,37 @@ export function ContractMetadataDialog({
                         <div className="flex items-center gap-2 text-xs font-bold text-orange-600 border-b border-orange-100 pb-1">
                             <User className="w-3.5 h-3.5" /> Counterparty
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2 col-span-2">
+                                <Label htmlFor="cpBusinessName" className="text-[10px] font-bold uppercase text-slate-500">Business Entity Name</Label>
+                                <input
+                                    id="cpBusinessName"
+                                    value={formData.counterpartyBusinessName || ""}
+                                    onChange={(e) => handleChange("counterpartyBusinessName", e.target.value)}
+                                    className="flex h-9 w-full rounded-md border border-slate-200 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-500"
+                                    placeholder="e.g. Acme Corp Ltd."
+                                />
+                            </div>
                             <div className="space-y-2">
-                                <Label htmlFor="cpName" className="text-[10px] font-bold uppercase text-slate-500">Name</Label>
+                                <Label htmlFor="cpName" className="text-[10px] font-bold uppercase text-slate-500">Contact Person Name</Label>
                                 <input
                                     id="cpName"
                                     value={formData.counterpartyName}
                                     onChange={(e) => handleChange("counterpartyName", e.target.value)}
                                     className={`flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 ${errors.counterpartyName ? 'border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:ring-orange-500'}`}
-                                    placeholder="Entity Name"
+                                    placeholder="John Doe"
                                 />
                                 {errors.counterpartyName && <p className="text-[10px] text-red-500 font-medium">{errors.counterpartyName}</p>}
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="cpEmail" className="text-[10px] font-bold uppercase text-slate-500">Email</Label>
+                                <Label htmlFor="cpEmail" className="text-[10px] font-bold uppercase text-slate-500">Contact Email</Label>
                                 <input
                                     id="cpEmail"
                                     type="email"
                                     value={formData.counterpartyEmail}
                                     onChange={(e) => handleChange("counterpartyEmail", e.target.value)}
                                     className={`flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 ${errors.counterpartyEmail ? 'border-red-500 focus-visible:ring-red-500' : 'border-slate-200 focus-visible:ring-orange-500'}`}
-                                    placeholder="contact@entity.com"
+                                    placeholder="john@acme.com"
                                 />
                                 {errors.counterpartyEmail && <p className="text-[10px] text-red-500 font-medium">{errors.counterpartyEmail}</p>}
                             </div>

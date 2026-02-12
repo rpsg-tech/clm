@@ -264,6 +264,7 @@ export class ContractsService {
             templateId: string;
             title: string;
             counterpartyName?: string;
+            counterpartyBusinessName?: string;
             counterpartyEmail?: string;
             startDate?: string;
             endDate?: string;
@@ -339,6 +340,7 @@ export class ContractsService {
                     title: data.title,
                     reference: this.generateReference(org.code),
                     counterpartyName: data.counterpartyName,
+                    counterpartyBusinessName: data.counterpartyBusinessName,
                     counterpartyEmail: data.counterpartyEmail,
                     startDate: data.startDate ? new Date(data.startDate) : undefined,
                     endDate: data.endDate ? new Date(data.endDate) : undefined,
@@ -534,6 +536,7 @@ export class ContractsService {
             annexureData?: string;
             fieldData?: Prisma.InputJsonValue;
             counterpartyName?: string;
+            counterpartyBusinessName?: string;
             counterpartyEmail?: string;
             startDate?: string;
             endDate?: string;
@@ -590,6 +593,7 @@ export class ContractsService {
                     annexureData: sanitizedContent,
                     fieldData: data.fieldData,
                     counterpartyName: data.counterpartyName,
+                    counterpartyBusinessName: data.counterpartyBusinessName,
                     counterpartyEmail: data.counterpartyEmail,
                     startDate: data.startDate ? new Date(data.startDate) : undefined,
                     endDate: data.endDate ? new Date(data.endDate) : undefined,

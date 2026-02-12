@@ -70,36 +70,37 @@ export class ApprovalsService {
             );
 
             // Determine granular status
-            // If fully approved -> APPROVED
-            // If not, determine intermediate state based on what IS approved
+            // USER REQ: Legal is Mandatory, Finance is Optional.
+            // If Legal approves, Status = APPROVED (even if Finance is pending).
+            // If Legal is pending, Status != APPROVED.
+
             let newStatus: ContractStatus;
 
-            if (isFullyApproved) {
-                newStatus = ContractStatus.APPROVED;
-            } else {
-                // Check specific combinations for granular status (UI Feedback)
-                const legal = allApprovals.find(a => a.type === 'LEGAL');
-                const finance = allApprovals.find(a => a.type === 'FINANCE');
+            const legal = allApprovals.find(a => a.type === 'LEGAL');
+            const finance = allApprovals.find(a => a.type === 'FINANCE');
 
-                // Note: We use the *projected* status of the current approval being acted on
-                const isLegalApproved = legal?.id === approvalId || legal?.status === ApprovalStatus.APPROVED;
-                const isFinanceApproved = finance?.id === approvalId || finance?.status === ApprovalStatus.APPROVED;
+            // Projected checks
+            const isLegalApproved = legal && (legal.id === approvalId || legal.status === ApprovalStatus.APPROVED);
+            const isFinanceApproved = finance && (finance.id === approvalId || finance.status === ApprovalStatus.APPROVED);
 
-                if (isLegalApproved && isFinanceApproved) {
-                    // Should be covered by isFullyApproved, but safety check
+            if (legal) {
+                if (isLegalApproved) {
+                    // Legal Approved -> Fully Approved (Finance is optional)
                     newStatus = ContractStatus.APPROVED;
-                } else if (isLegalApproved) {
-                    // Legal approved, but finance pending/exists → Show finance-specific status
-                    newStatus = ContractStatus.LEGAL_APPROVED;
                 } else if (isFinanceApproved) {
-                    // Finance approved, but legal is still pending
-                    // PRIORITY: Show SENT_TO_LEGAL if legal exists and is pending
-                    const legalExists = legal && legal.status === ApprovalStatus.PENDING;
-                    newStatus = legalExists ? ContractStatus.SENT_TO_LEGAL : ContractStatus.FINANCE_REVIEWED;
+                    // Finance Approved, Legal Pending -> Show Legal Pending
+                    // (Prioritize showing who is holding it up)
+                    newStatus = ContractStatus.SENT_TO_LEGAL;
                 } else {
-                    // Neither approved yet - prioritize legal in status
-                    const legalExists = legal && legal.status === ApprovalStatus.PENDING;
-                    newStatus = legalExists ? ContractStatus.SENT_TO_LEGAL : ContractStatus.IN_REVIEW;
+                    // Both Pending or Just Legal Pending
+                    newStatus = ContractStatus.SENT_TO_LEGAL;
+                }
+            } else {
+                // Fallback: No Legal workflow? Use strict "All Approved"
+                if (isFullyApproved) {
+                    newStatus = ContractStatus.APPROVED;
+                } else {
+                    newStatus = ContractStatus.IN_REVIEW;
                 }
             }
 
@@ -401,14 +402,31 @@ export class ApprovalsService {
                 data: { status: ContractStatus.PENDING_LEGAL_HEAD },
             });
 
-            // Create approval record for Legal Head
-            const approval = await tx.approval.create({
-                data: {
+            // Create or update approval record for Legal Head
+            const approval = await tx.approval.upsert({
+                where: {
+                    contractId_type: {
+                        contractId,
+                        type: ApprovalType.LEGAL,
+                    },
+                },
+                update: {
+                    actorId: legalHead.id,
+                    status: ApprovalStatus.PENDING,
+                    comment: reason || 'Escalated for Legal Head review',
+                    escalatedBy: userId,
+                    escalatedAt: new Date(),
+                    escalatedTo: legalHead.id,
+                },
+                create: {
                     contractId,
                     actorId: legalHead.id,
                     type: ApprovalType.LEGAL,
                     status: ApprovalStatus.PENDING,
                     comment: reason || 'Escalated for Legal Head review',
+                    escalatedBy: userId,
+                    escalatedAt: new Date(),
+                    escalatedTo: legalHead.id,
                 },
             });
 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Spinner, Skeleton } from '@repo/ui';
+import { Card, CardHeader, CardTitle, CardContent, Button, Badge, Spinner, Skeleton, Textarea } from '@repo/ui';
 import { SafeHtml } from '@/components/SafeHtml';
 import { VersionHistoryView } from '@/components/version-history-view';
 import { VersionDiffViewer } from '@/components/version-diff-viewer';
@@ -14,39 +14,27 @@ import {
     ArrowLeft,
     FileText,
     Clock,
-    FileSignature,
-    Download,
     History,
     ChevronRight,
-    Wand2,
     Sparkles,
     Calendar,
     User,
     Mail,
-    Eye,
     X,
-    FileCheck,
-    GitCompare,
-    CheckCircle2,
     AlertCircle,
     Building2,
-    Ban,
-    Zap,
     Briefcase,
-    Shield,
-    PenTool,
-    Info,
-    Send,
-    ExternalLink,
     Check,
-    Share2,
-    AlertTriangle
+    AlertTriangle,
+    IndianRupee,
+    Edit,
+    Ban
 } from 'lucide-react';
 import { SmartActionButtons } from '@/components/smart-action-buttons';
 import { ContractDiffView } from '@/components/contract-diff-view';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { FeatureGuard } from '@/components/feature-guard';
-import { FinalChecksSidebar } from '@/components/contracts/final-checks-sidebar';
+import { ContractAssistantSidebar } from '@/components/contract-assistant-sidebar';
 import { EscalateDialog } from '@/components/escalate-dialog';
 
 
@@ -56,6 +44,7 @@ interface Contract {
     title: string;
     status: string;
     counterpartyName: string | null;
+    counterpartyBusinessName?: string | null;
     counterpartyEmail: string | null;
     content?: string;
     annexureData: string;
@@ -82,98 +71,6 @@ interface ActivityItem {
     meta?: any;
 }
 
-// --- sub-components ---
-const TabButton = ({ active, onClick, icon: Icon, label }: any) => (
-    <button
-        onClick={onClick}
-        className={`flex items-center gap-2 pb-4 text-sm font-bold border-b-2 transition-all relative top-[1px] ${active
-            ? 'border-slate-900 text-slate-900'
-            : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'
-            }`}
-    >
-        <Icon className={`w-4 h-4 ${active ? 'text-indigo-600' : 'text-slate-400'}`} />
-        {label}
-    </button>
-);
-
-const DetailItem = ({ label, value, icon: Icon, className }: any) => (
-    <div className={`flex flex-col gap-1 ${className}`}>
-        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-            {Icon && <Icon className="w-3 h-3" />}
-            {label}
-        </div>
-        <div className="text-sm font-bold text-slate-900 truncate" title={String(value)}>
-            {value || 'N/A'}
-        </div>
-    </div>
-);
-
-const VersionCard = ({ version, index, total, onPreview, isLatest }: any) => (
-    <div className={`
-        relative rounded-xl border p-5 flex flex-col justify-between transition-all group h-full bg-white
-        ${isLatest
-            ? 'border-orange-200 shadow-lg shadow-orange-500/10 ring-1 ring-orange-100'
-            : 'border-slate-200 hover:border-orange-200 hover:shadow-md'
-        }
-    `}>
-        {isLatest && (
-            <div className="absolute top-0 right-0 bg-orange-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl rounded-tr-lg shadow-sm">
-                LATEST
-            </div>
-        )}
-
-        <div className="mb-4">
-            <div className="flex items-center justify-between mb-4">
-                <Badge variant="secondary" className="bg-slate-100 text-slate-500 border-slate-200 text-xs font-mono px-2 py-0.5">
-                    v{version.versionNumber}
-                </Badge>
-            </div>
-
-            <div className="flex items-center gap-3 mb-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${isLatest ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'}`}>
-                    {version.createdBy?.name?.charAt(0) || 'U'}
-                </div>
-                <div>
-                    <p className="text-sm font-bold text-slate-900 truncate max-w-[140px]">
-                        {version.createdBy?.name || 'Unknown User'}
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Editor</p>
-                </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <span>{new Date(version.createdAt).toLocaleDateString()}</span>
-                <span className="text-slate-300">•</span>
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span>{new Date(version.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            </div>
-        </div>
-
-        <div className="mt-auto pt-4 border-t border-slate-50 flex gap-2">
-            <Button
-                size="sm"
-                variant="ghost"
-                className={`flex-1 font-bold text-xs uppercase tracking-wide ${isLatest ? 'text-orange-700 hover:bg-orange-50' : 'text-slate-600 hover:bg-slate-50'}`}
-                onClick={() => onPreview(version)}
-            >
-                <Eye className="w-3.5 h-3.5 mr-2" />
-                View
-            </Button>
-            {!isLatest && (
-                <Button
-                    size="sm"
-                    variant="ghost"
-                    className="flex-1 font-bold text-xs uppercase tracking-wide text-slate-500 hover:text-indigo-600 hover:bg-indigo-50"
-                    onClick={() => onPreview(version, true)}
-                >
-                    <GitCompare className="w-3.5 h-3.5 mr-2" />
-                    Compare
-                </Button>
-            )}
-        </div>
-    </div>
-);
 
 function ContractDetailContent() {
     const params = useParams();
@@ -195,7 +92,7 @@ function ContractDetailContent() {
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'overview' | 'document' | 'history'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'document' | 'history'>('document');
 
     // Preview Modal State
     // Preview Modal State
@@ -203,9 +100,14 @@ function ContractDetailContent() {
     const [isDiffMode, setIsDiffMode] = useState(false);
     const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
     const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
+    const [isInfoOpen, setIsInfoOpen] = useState(true);
     const [comparisonMode, setComparisonMode] = useState(false);
     const [comparisonVersions, setComparisonVersions] = useState<string[]>([]);
     const [showEscalateDialog, setShowEscalateDialog] = useState(false);
+    const [showCancelDialog, setShowCancelDialog] = useState(false);
+    const [cancelReason, setCancelReason] = useState('');
+    const [activeAction, setActiveAction] = useState<string | null>(null);
+
 
     // Initial Fetch
     useEffect(() => {
@@ -225,7 +127,14 @@ function ContractDetailContent() {
                 }
 
                 if ((contractData as any).attachments?.length > 0) {
-                    setAttachmentUrl((contractData as any).attachments[(contractData as any).attachments.length - 1].fileUrl);
+                    try {
+                        const attachments = (contractData as any).attachments;
+                        const lastAttachment = attachments[attachments.length - 1];
+                        const downloadData = await api.contracts.getAttachmentDownloadUrl((contractData as any).id, lastAttachment.id);
+                        setAttachmentUrl(downloadData.url);
+                    } catch (e) {
+                        console.error('Failed to get attachment URL', e);
+                    }
                 }
             } catch (err) {
                 console.error('Failed to fetch contract:', err);
@@ -291,6 +200,12 @@ function ContractDetailContent() {
         }
     };
 
+    const handleConfirmCancel = async () => {
+        await handleAction('cancel', { reason: cancelReason });
+        setShowCancelDialog(false);
+        setCancelReason('');
+    };
+
     const handlePreview = async (version: any, diff: boolean = false) => {
         setPreviewVersion(version);
         setIsDiffMode(diff);
@@ -350,6 +265,34 @@ function ContractDetailContent() {
 
     const activityStream = getActivityStream();
 
+    // Helper for Status Color
+    const getStatusColor = (status: string) => {
+        const colors: Record<string, string> = {
+            'DRAFT': 'bg-slate-500',
+            'SENT_TO_LEGAL': 'bg-indigo-500', // Legal stays indigo/purple usually
+            'SENT_TO_FINANCE': 'bg-cyan-500',
+            'APPROVED': 'bg-green-500',
+            'SENT_FOR_SIGNATURE': 'bg-purple-500',
+            'SIGNED': 'bg-orange-500',
+            'ACTIVE': 'bg-emerald-500',
+            'EXPIRED': 'bg-slate-500',
+        };
+        return colors[status] || 'bg-slate-500';
+    };
+
+    const getStatusLabel = (status: string) => {
+        const labels: Record<string, string> = {
+            'DRAFT': 'Draft',
+            'PENDING_APPROVAL': 'Pending Approval',
+            'APPROVED': 'Approved',
+            'REJECTED': 'Rejected',
+            'SENT_FOR_SIGNATURE': 'Sent for Signature',
+            'SIGNED': 'Active',
+            'CANCELLED': 'Cancelled',
+        };
+        return labels[status] || status;
+    };
+
     if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Spinner size="lg" /></div>;
     if (!contract) return <div className="flex h-screen items-center justify-center text-slate-500">Contract Not Found</div>;
 
@@ -382,349 +325,406 @@ function ContractDetailContent() {
     };
 
     return (
-        <div className="min-h-screen pb-12 bg-slate-50">
-            {/* HERO SECTION */}
-            <div className="bg-white border-b border-slate-200">
-                <div className="max-w-[1600px] mx-auto px-4 md:px-6 lg:px-10 py-6 space-y-5">
-                    {/* 1. Breadcrumbs & Actions */}
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                        <div className="max-w-3xl">
-                            <nav className="flex items-center text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">
-                                <Link href="/dashboard/contracts" className="hover:text-slate-800 transition-colors flex items-center gap-2">
-                                    <div className="w-5 h-5 rounded-md bg-slate-100 flex items-center justify-center">
-                                        <ArrowLeft className="w-3 h-3" />
-                                    </div>
-                                    Contracts
-                                </Link>
-                                <ChevronRight className="w-3 h-3 mx-2 text-slate-300" />
-                                <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded font-mono">{contract.reference || 'REF-???'}</span>
-                            </nav>
-
-                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight leading-tight mb-2">
+        <div className="h-[calc(100vh-140px)] w-full relative overflow-hidden bg-slate-50/50 flex flex-col rounded-xl border border-slate-200 shadow-sm">
+            {/* 1. COMPACT HEADER (Toolbar Style) */}
+            <div className="h-14 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-4 shadow-sm">
+                <div className="flex items-center gap-4">
+                    <Link href="/dashboard/contracts" className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:border-slate-300 transition-all">
+                        <ArrowLeft className="w-4 h-4" />
+                    </Link>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            onClick={() => setIsInfoOpen(!isInfoOpen)}
+                            variant="ghost"
+                            size="sm"
+                            className={`h-9 w-9 p-0 rounded-full transition-colors ${isInfoOpen ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                            title="Contract Info"
+                        >
+                            <FileText className="w-4 h-4" />
+                        </Button>
+                        <div>
+                            <div className="flex items-center gap-2 mb-0.5">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{contract.reference || 'REF-???'}</span>
+                                <div className="w-1 h-1 rounded-full bg-slate-300" />
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 bg-slate-50 border-slate-200 text-slate-500 font-medium">
+                                    {contract.template?.name || 'General'}
+                                </Badge>
+                            </div>
+                            <h1 className="text-sm font-bold text-slate-900 leading-none truncate max-w-[300px]">
                                 {contract.title}
                             </h1>
-
-                            <div className="flex flex-wrap items-center gap-2">
-                                <Badge variant="outline" className="bg-white border-slate-200 text-slate-600 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm">
-                                    {contract.template?.name || 'Service Agreement'}
-                                </Badge>
-                                <div className="h-4 w-px bg-slate-200" />
-                                <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-50 leading-none to-purple-50 flex items-center justify-center text-[9px] font-bold text-indigo-700 border border-indigo-100 shadow-sm">
-                                        {(contract.createdByUser?.name || 'S').charAt(0)}
-                                    </div>
-                                    Created by <span className="text-slate-900 font-semibold">{contract.createdByUser?.name || 'System'}</span>
-                                    <span className="text-slate-400 text-[10px]">on {new Date(contract.createdAt).toLocaleDateString()}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Top Right Actions */}
-                        <div className="flex items-center gap-2 shrink-0">
-                            <FeatureGuard feature="AI_CONTRACT_REVIEW">
-                                <Button
-                                    onClick={() => setIsAnalysisOpen(true)}
-                                    variant="outline"
-                                    size="sm"
-                                    className="h-9 bg-white hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-colors font-bold text-xs uppercase tracking-wide shadow-sm"
-                                >
-                                    <Wand2 className="w-3.5 h-3.5 mr-2 text-indigo-500" />
-                                    AI Risk Analysis
-                                </Button>
-                            </FeatureGuard>
                         </div>
                     </div>
+                </div>
 
+                {/* ACTION TOOLBAR - Preserved SmartActionButtons */}
+                <div className="flex items-center gap-3">
+                    {/* AI Button - Subtle */}
+                    <FeatureGuard feature="AI_CONTRACT_REVIEW">
+                        <Button
+                            onClick={() => setIsAnalysisOpen(!isAnalysisOpen)}
+                            variant="ghost"
+                            size="sm"
+                            className={`h-9 w-9 p-0 rounded-full transition-colors ${isAnalysisOpen ? 'bg-orange-100 text-orange-600' : 'text-orange-500 hover:bg-orange-50 hover:text-orange-600'}`}
+                            title="AI Assistant"
+                        >
+                            <Sparkles className="w-4 h-4" />
+                        </Button>
+                    </FeatureGuard>
 
-                    {/* REVISION BANNER */}
-                    {contract.status === 'REVISION_REQUESTED' && (
-                        <div className="relative overflow-hidden bg-rose-50 border border-rose-100 rounded-2xl p-6 flex flex-col sm:flex-row items-start gap-5 shadow-sm">
-                            <div className="absolute top-0 right-0 p-4 opacity-5">
-                                <AlertTriangle className="w-32 h-32" />
-                            </div>
-                            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center text-rose-600 shadow-sm border border-rose-100 shrink-0">
-                                <AlertCircle className="w-6 h-6" />
-                            </div>
-                            <div className="flex-1 relative z-10">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <h3 className="text-base font-bold text-slate-900">Changes Requested</h3>
-                                    <Badge variant="error" className="bg-rose-600 text-white hover:bg-rose-700 font-bold uppercase tracking-wide text-[10px]">Action Required</Badge>
-                                </div>
-                                <div className="bg-white/60 rounded-lg p-4 border border-rose-100/50 backdrop-blur-sm">
-                                    <p className="text-sm text-slate-700 leading-relaxed font-medium">
-                                        &ldquo;{(() => {
-                                            const rejection = contract.approvals
-                                                ?.filter(a => a.status === 'REJECTED')
-                                                .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime())[0];
-                                            return rejection?.comment?.replace('REVISION REQUESTED: ', '') || 'A reviewer has requested changes to this contract.';
-                                        })()}&rdquo;
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    <div className="h-8 w-px bg-slate-200 mx-1" />
 
-                    {/* 2. Control Bar (Smart Actions) */}
                     <SmartActionButtons
                         contract={contract}
                         permissions={permissions}
                         loading={actionLoading}
                         onAction={handleAction}
+                        compact={true}
+                        hideStatus={true}
+                        hideSecondary={false}
                     />
-
-                    {/* 3. Tabs Navigation */}
-                    <div className="flex items-center gap-6 pt-4 border-b border-slate-200">
-                        <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} label="Overview" icon={Briefcase} />
-                        <TabButton active={activeTab === 'document'} onClick={() => setActiveTab('document')} label="Document" icon={FileText} />
-                        <TabButton active={activeTab === 'history'} onClick={() => setActiveTab('history')} label="Version History" icon={History} />
-                    </div>
                 </div>
             </div>
 
-            {/* MAIN CONTENT AREA */}
-            <div className="max-w-[1600px] mx-auto px-4 md:px-6 lg:px-10 py-6">
-                {activeTab === 'overview' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {/* 2. MAIN LAYOUT: Sidebars + Workspace */}
+            <div className="flex-1 w-full flex overflow-hidden min-h-0">
 
-                        {/* CONSOLIDATED INFORMATION CARD */}
-                        <Card className="shadow-sm border-slate-200 md:col-span-2 hover:shadow-md transition-all duration-300 group overflow-hidden">
-                            <CardHeader className="pb-4 border-b border-slate-50 bg-slate-50/30">
-                                <CardTitle className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-3">
-                                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100">
-                                        <Info className="w-4 h-4" />
-                                    </div>
-                                    Contract Information
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="pt-8 pb-8">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                                    {/* Left: General Details */}
-                                    <div className="space-y-6">
-                                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                                            General Values
-                                        </h4>
-                                        <div className="grid grid-cols-2 gap-y-8 gap-x-4">
-                                            <DetailItem
-                                                label="Contract Value"
-                                                value={contract.amount ? formatCurrency(contract.amount) : 'N/A'}
-                                                className="col-span-2"
-                                            />
-                                            <DetailItem
-                                                label="Start Date"
-                                                value={contract.startDate ? new Date(contract.startDate).toLocaleDateString() : 'N/A'}
-                                                icon={Calendar}
-                                            />
-                                            <DetailItem
-                                                label="End Date"
-                                                value={contract.endDate ? new Date(contract.endDate).toLocaleDateString() : 'N/A'}
-                                                icon={Clock}
-                                            />
-                                            <DetailItem
-                                                label="Internal Owner"
-                                                value={contract.createdByUser?.name || 'Admin'}
-                                                icon={User}
-                                                className="col-span-2"
-                                            />
-                                        </div>
-                                    </div>
+                {/* LEFT SIDEBAR - "CONTRACT INFO" */}
+                <div className={`
+                    border-r border-slate-200 bg-slate-50/30 transition-all duration-300 ease-in-out flex flex-col shrink-0 overflow-y-auto overflow-x-hidden
+                    ${isInfoOpen ? 'w-[320px] opacity-100 p-6' : 'w-0 opacity-0 p-0'}
+                `}>
+                    <div className="w-[272px] space-y-6">
+                        {/* SMART ACTIONS - Status & Sidebar Buttons */}
+                        <SmartActionButtons
+                            contract={contract}
+                            permissions={permissions}
+                            loading={actionLoading}
+                            onAction={handleAction}
+                            location="sidebar"
+                        />
 
-                                    {/* Right: Counterparty */}
-                                    <div className="space-y-6">
-                                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                                            <span className="w-2 h-2 rounded-full bg-purple-500"></span>
-                                            Counterparty
-                                        </h4>
-                                        <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 relative group/card hover:bg-slate-100/80 transition-colors">
-                                            <div className="absolute top-4 right-4 text-slate-300">
-                                                <Building2 className="w-8 h-8 opacity-20" />
-                                            </div>
-                                            <div className="flex flex-col gap-4">
-                                                <div className="w-14 h-14 rounded-xl bg-white flex items-center justify-center text-slate-800 font-bold shrink-0 border border-slate-200 text-xl shadow-sm">
-                                                    {contract.counterpartyName?.charAt(0) || 'C'}
-                                                </div>
-                                                <div>
-                                                    <span className="text-lg font-bold text-slate-900 leading-tight block mb-1">{contract.counterpartyName}</span>
-                                                    <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                                                        <Mail className="w-3.5 h-3.5" />
-                                                        {contract.counterpartyEmail || 'No email provided'}
-                                                    </div>
-                                                </div>
-                                                <div className="pt-4 border-t border-slate-200 mt-2">
-                                                    <div className="flex justify-between items-center text-xs">
-                                                        <span className="text-slate-400 font-medium">Tax ID</span>
-                                                        <span className="font-mono font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">{contract.fieldData?.taxId as string || 'N/A'}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Recent Activity Mini with TIMELINE */}
-                        <Card className="shadow-sm border-slate-200 md:col-span-2 lg:col-span-1 hover:shadow-md transition-all duration-300 flex flex-col">
-                            <CardHeader className="pb-3 border-b border-slate-50 bg-slate-50/30">
-                                <CardTitle className="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-3">
-                                    <div className="p-2 bg-orange-50 text-orange-600 rounded-lg border border-orange-100">
-                                        <History className="w-4 h-4" />
-                                    </div>
-                                    Activity Timeline
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex-1 overflow-y-auto max-h-[500px] pt-6 pl-4">
-                                <div className="space-y-0 relative">
-                                    {/* Timeline Line */}
-                                    <div className="absolute left-[19px] top-2 bottom-6 w-0.5 bg-slate-100" />
-
-                                    {activityStream.slice(0, 10).map((item, i) => (
-                                        <div key={item.id} className="flex gap-4 relative pb-8 last:pb-0 group">
-                                            <div className={`
-                                                w-10 h-10 rounded-xl border-2 flex items-center justify-center text-xs font-bold shrink-0 z-10 transition-all shadow-sm
-                                                bg-white group-hover:scale-105
-                                                ${item.type === 'VERSION'
-                                                    ? 'border-slate-100 text-slate-500'
-                                                    : 'border-white ring-2 ring-indigo-50 text-indigo-600'
-                                                }
-                                            `}>
-                                                {item.type === 'VERSION' ? <FileText className="w-4 h-4" /> : <CheckCircle2 className="w-5 h-5" />}
-                                            </div>
-                                            <div className="pt-1.5 flex-1">
-                                                <p className="text-sm font-medium text-slate-900 leading-snug mb-1">
-                                                    <span className="font-bold text-indigo-900">{item.user}</span> {item.title.replace(item.user, '')}
-                                                    {item.type === 'VERSION' && (
-                                                        <span className="inline-block align-middle font-mono text-[10px] text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded ml-2">v{item.meta?.version}</span>
-                                                    )}
-                                                </p>
-                                                <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wide">{item.date.toLocaleDateString()} &bull; {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {activityStream.length === 0 && (
-                                        <p className="text-slate-400 text-sm text-center py-4">No activity recorded</p>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
-
-                {activeTab === 'document' && (
-                    <Card className="h-[800px] shadow-lg border-slate-200 animate-in fade-in zoom-in-95 duration-300">
-                        <div className="h-full rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
-                            {attachmentUrl ? (
-                                <iframe src={attachmentUrl} className="w-full h-full border-none" title="Contract PDF" />
-                            ) : (
-                                <div className="prose prose-slate max-w-[800px] w-full h-full overflow-y-auto bg-white p-12 shadow-sm">
-                                    <SafeHtml html={processVariables(contract.content || '', contract)} />
-                                    {contract.annexureData && (
-                                        <>
-                                            <hr className="my-8 border-slate-200" />
-                                            <h3 className="text-xl font-bold text-slate-900 mb-4">Annexures</h3>
-                                            <SafeHtml html={contract.annexureData} />
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    </Card>
-                )}
-
-                {activeTab === 'history' && (
-                    <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                        {comparisonMode && comparisonVersions.length === 2 ? (
-                            <VersionDiffViewer
-                                contractId={contract.id}
-                                fromVersionId={comparisonVersions[0]}
-                                toVersionId={comparisonVersions[1]}
-                                onBack={() => {
-                                    setComparisonMode(false);
-                                    setComparisonVersions([]);
-                                }}
-                            />
-                        ) : (
-                            <VersionHistoryView
-                                contractId={contract.id}
-                                onCompare={(v1, v2) => {
-                                    setComparisonVersions([v1, v2]);
-                                    setComparisonMode(true);
-                                }}
-                                onRestore={async (id) => {
-                                    try {
-                                        toast.info('Restoring contract version...');
-                                        await api.contracts.restoreVersion(contract.id, id);
-                                        toast.success('Contract restored successfully!');
-                                        // Ideally refresh data here
-                                        window.location.reload();
-                                    } catch (err) {
-                                        toast.error('Failed to restore version');
-                                    }
-                                }}
-                                canRestore={permissions.canRestore}
-                            />
-                        )}
-                    </div>
-                )}
-            </div>
-
-            {/* PREVIEW MODAL */}
-            <Dialog open={!!previewVersion} onOpenChange={(open) => !open && setPreviewVersion(null)}>
-                <DialogContent className="max-w-[95vw] w-[1200px] h-[90vh] flex flex-col p-0 overflow-hidden bg-slate-100 border-none shadow-2xl">
-                    <DialogHeader className="px-6 py-4 bg-white border-b border-slate-200 flex flex-row items-center justify-between shrink-0">
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center border border-orange-100">
-                                <FileText className="w-5 h-5 text-orange-600" />
-                            </div>
+                        {/* KEY METRICS GROUP - Simplified */}
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-5 transition-all duration-300">
                             <div>
-                                <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                    {contract.title}
-                                    <Badge variant="outline" className="ml-2 bg-slate-50 text-slate-500 border-slate-200">
-                                        v{previewVersion?.version || 'Latest'}
-                                    </Badge>
-                                </DialogTitle>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                    Created by {previewVersion?.createdBy?.name || 'Unknown'} on {previewVersion && new Date(previewVersion.createdAt).toLocaleDateString()}
-                                </p>
+                                <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest block mb-1">Total Contract Value</span>
+                                <div className="text-3xl font-serif font-bold text-slate-900 tracking-tight">
+                                    {contract.amount ? formatCurrency(contract.amount) : 'N/A'}
+                                </div>
+                            </div>
+                            <div className="space-y-4 pt-4 border-t border-orange-100/50">
+                                <div className="flex justify-between items-center text-[13px]">
+                                    <span className="text-slate-500 font-medium flex items-center gap-2"><Calendar className="w-3.5 h-3.5 text-orange-300" /> Start Date</span>
+                                    <span className="font-bold text-slate-700 font-mono bg-orange-50/50 px-2 py-0.5 rounded text-[11px]">{contract.startDate ? new Date(contract.startDate).toLocaleDateString() : 'N/A'}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[13px]">
+                                    <span className="text-slate-500 font-medium flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-orange-300" /> End Date</span>
+                                    <span className="font-bold text-slate-700 font-mono bg-orange-50/50 px-2 py-0.5 rounded text-[11px]">{contract.endDate ? new Date(contract.endDate).toLocaleDateString() : 'N/A'}</span>
+                                </div>
                             </div>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={() => setPreviewVersion(null)} className="rounded-full hover:bg-slate-100">
-                            <X className="w-5 h-5 text-slate-400" />
-                        </Button>
-                    </DialogHeader>
 
-                    <div className="flex-1 overflow-hidden bg-slate-100 flex items-center justify-center p-4">
-                        <div className="bg-white shadow-2xl w-full h-full max-w-[1000px] border border-slate-200 overflow-y-auto rounded-lg">
-                            {isDiffMode ? (
-                                <ContractDiffView
-                                    oldContent={previewVersion?.contentSnapshot || ''}
-                                    newContent={contract.content || ''}
-                                    oldVersionLabel={`v${previewVersion?.version}`}
-                                    newVersionLabel={`Current`}
-                                />
-                            ) : (
-                                <div className="p-16 prose prose-slate max-w-none">
-                                    <SafeHtml html={processVariables((previewVersion?.contentSnapshot || contract.content) + (contract.annexureData || ''), contract)} />
+                        {/* COUNTERPARTY GROUP */}
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300">
+                            <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Counterparty</span>
+                                <Building2 className="w-3 h-3 text-slate-300 group-hover:text-orange-400 transition-colors" />
+                            </div>
+                            <div className="p-4">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-10 h-10 rounded-lg bg-white text-orange-600 flex items-center justify-center text-sm font-bold border border-slate-100 shadow-sm shrink-0">
+                                        {contract.counterpartyName?.charAt(0) || 'C'}
+                                    </div>
+                                    <div className="overflow-hidden">
+                                        <div className="text-[13px] font-bold text-slate-900 truncate">
+                                            {contract.counterpartyBusinessName || contract.counterpartyName || 'Unknown Entity'}
+                                        </div>
+                                        <div className="text-[10px] text-slate-500 font-mono mt-0.5 truncate bg-slate-100 px-1.5 py-0.5 rounded w-fit">
+                                            {contract.fieldData?.taxId as string || 'Tax ID: N/A'}
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
+
+                                <div className="space-y-2.5 border-t border-slate-50 pt-3">
+                                    <div className="flex items-center gap-2.5 text-[12px] text-slate-600">
+                                        <User className="w-3 h-3 text-slate-400" />
+                                        <span className="truncate">{contract.counterpartyName || 'No Contact'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2.5 text-[12px] text-slate-600">
+                                        <Mail className="w-3 h-3 text-slate-400" />
+                                        <span className="truncate hover:text-orange-600 cursor-pointer transition-colors">{contract.counterpartyEmail || 'No Email'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* PEOPLE GROUP */}
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden group hover:shadow-md transition-all duration-300">
+                            <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ownership</span>
+                                <User className="w-3 h-3 text-slate-300" />
+                            </div>
+                            <div className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center text-xs font-bold border border-orange-100">
+                                        {(contract.createdByUser?.name || 'A').charAt(0)}
+                                    </div>
+                                    <div>
+                                        <div className="text-[12px] font-bold text-slate-900 shadow-none">
+                                            {contract.createdByUser?.name || 'Admin'}
+                                        </div>
+                                        <div className="text-[9px] text-orange-500 font-bold uppercase tracking-wide">Internal Owner</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </DialogContent>
-            </Dialog>
+                </div>
 
-            <FinalChecksSidebar
-                contractId={contract.id}
-                isOpen={isAnalysisOpen}
-                onClose={() => setIsAnalysisOpen(false)}
-            />
+                {/* THE WORKSPACE */}
+                <div className="flex-1 min-w-0 min-h-0 p-6 flex flex-col items-center">
+                    <div className="w-full max-w-[1000px] flex flex-col flex-1 min-h-0">
 
-            <EscalateDialog
-                open={showEscalateDialog}
-                onOpenChange={setShowEscalateDialog}
-                contractId={contract?.id || ''}
-                contractTitle={contract?.title || ''}
-                onEscalate={handleEscalation}
-            />
+                        {/* TABS HEADER */}
+                        <div className="bg-white rounded-t-xl border border-slate-200 border-b-0 px-4 pt-2 flex items-center justify-between shrink-0">
+                            <div className="flex items-center gap-6">
+                                <button
+                                    onClick={() => setActiveTab('document')}
+                                    className={`pb-3 text-sm font-bold border-b-2 transition-all duration-200 ${activeTab === 'document' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'}`}
+                                >
+                                    Document Preview
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('history')}
+                                    className={`pb-3 text-sm font-bold border-b-2 transition-all duration-200 ${activeTab === 'history' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'}`}
+                                >
+                                    Version History
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('overview')}
+                                    className={`pb-3 text-sm font-bold border-b-2 transition-all duration-200 ${activeTab === 'overview' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'}`}
+                                >
+                                    Activity Feed
+                                </button>
+                            </div>
+
+                            <button
+                                onClick={() => setIsAnalysisOpen(!isAnalysisOpen)}
+                                className={`pb-3 text-sm font-bold flex items-center gap-2 transition-all duration-200 ${isAnalysisOpen ? 'text-orange-600' : 'text-slate-400 hover:text-orange-500'}`}
+                            >
+                                <Sparkles className={`w-4 h-4 ${isAnalysisOpen ? 'fill-orange-600/10' : ''}`} />
+                                AI Assistant
+                            </button>
+                        </div>
+
+                        {/* TAB CONTENT AREA */}
+                        <div className="bg-white border border-slate-200 rounded-b-xl rounded-tr-xl p-0 overflow-hidden shadow-sm flex flex-1 min-h-0">
+                            <div className="flex-1 min-w-0 flex flex-col min-h-0">
+                                {activeTab === 'overview' && (
+                                    <div className="p-6 overflow-y-auto min-h-0 flex-1">
+                                        <div className="max-w-2xl">
+                                            <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-2">
+                                                <History className="w-4 h-4 text-slate-400" />
+                                                Latest Updates
+                                            </h3>
+
+                                            <div className="space-y-0 relative pl-4">
+                                                {/* Timeline Line */}
+                                                <div className="absolute left-[15px] top-2 bottom-6 w-0.5 bg-slate-100" />
+
+                                                {activityStream.map((item, i) => (
+                                                    <div key={item.id} className="flex gap-4 relative pb-8 last:pb-0 group">
+                                                        <div className={`
+                                                        relative z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 bg-white transition-colors
+                                                        ${i === 0 ? 'border-orange-500 text-orange-600 shadow-sm shadow-orange-100' : 'border-slate-200 text-slate-400 group-hover:border-slate-300'}
+                                                    `}>
+                                                            {item.type === 'VERSION' ? <FileText className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                                                        </div>
+                                                        <div className="pt-1">
+                                                            <div className={`text-sm font-bold ${i === 0 ? 'text-slate-900' : 'text-slate-600'}`}>
+                                                                {item.title}
+                                                            </div>
+                                                            <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
+                                                                <User className="w-3 h-3" />
+                                                                {item.user} • {item.date.toLocaleDateString()}
+                                                            </div>
+                                                            {item.meta?.version && (
+                                                                <span className="inline-block mt-2 px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded border border-orange-100">
+                                                                    Version {item.meta.version}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'document' && (
+                                    <div className="flex-1 bg-slate-100 overflow-hidden flex flex-col">
+                                        {attachmentUrl ? (
+                                            <iframe src={attachmentUrl} className="w-full h-full border-none" title="Contract PDF" />
+                                        ) : contract.content ? (
+                                            <div className="flex-1 overflow-auto p-8 md:p-12">
+                                                <div className="max-w-4xl mx-auto bg-white shadow-lg min-h-full p-12 print:shadow-none print:p-0">
+                                                    <div className="prose max-w-none prose-sm sm:prose-base prose-headings:font-serif prose-headings:font-bold">
+                                                        <SafeHtml html={processVariables(contract.content, contract)} />
+                                                        {contract.annexureData && (
+                                                            <>
+                                                                <hr className="my-8 border-slate-200" />
+                                                                <h3 className="text-xl font-bold text-slate-900 mb-4">Annexures</h3>
+                                                                <SafeHtml html={contract.annexureData} />
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-4">
+                                                <FileText className="w-12 h-12 opacity-20" />
+                                                <p>Document content not available</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeTab === 'history' && (
+                                    <div className="p-6 flex-1 overflow-y-auto">
+                                        {comparisonMode && comparisonVersions.length === 2 ? (
+                                            <VersionDiffViewer
+                                                contractId={contract.id}
+                                                fromVersionId={comparisonVersions[0]}
+                                                toVersionId={comparisonVersions[1]}
+                                                onBack={() => setComparisonMode(false)}
+                                            />
+                                        ) : (
+                                            <VersionHistoryView
+                                                contractId={contract.id}
+                                                onPreview={(v) => handlePreview(v, false)}
+                                                onCompare={(v1, v2) => {
+                                                    setComparisonVersions([v1, v2]);
+                                                    setComparisonMode(true);
+                                                }}
+                                                onRestore={async (id) => {
+                                                    try {
+                                                        toast.info('Restoring contract version...');
+                                                        await api.contracts.restoreVersion(contract.id, id);
+                                                        toast.success('Contract restored successfully!');
+                                                        window.location.reload();
+                                                    } catch (err) {
+                                                        toast.error('Failed to restore version');
+                                                    }
+                                                }}
+                                                canRestore={permissions.canRestore}
+                                            />
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* COLLAPSIBLE AI SIDEBAR */}
+                            <div className={`
+                            border-l border-slate-200 bg-white transition-all duration-300 ease-in-out flex flex-col shrink-0
+                            ${isAnalysisOpen ? 'w-[400px] opacity-100' : 'w-0 opacity-0 overflow-hidden'}
+                        `}>
+                                <ContractAssistantSidebar
+                                    embedded
+                                    className="h-full"
+                                    contractId={contract.id}
+                                    content={contract.content}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Cancel Dialog */}
+                <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Cancel Contract</DialogTitle>
+                            <DialogDescription>
+                                Are you sure you want to cancel this contract? This action cannot be undone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <Textarea
+                                placeholder="Reason for cancellation..."
+                                value={cancelReason}
+                                onChange={(e) => setCancelReason(e.target.value)}
+                                className="resize-none"
+                            />
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+                                Keep Contract
+                            </Button>
+                            <Button variant="destructive" onClick={handleConfirmCancel} disabled={!cancelReason.trim()}>
+                                Confirm Cancel
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* PREVIEW MODAL */}
+                <Dialog open={!!previewVersion} onOpenChange={(open) => !open && setPreviewVersion(null)}>
+                    <DialogContent className="max-w-6xl h-[90vh] flex flex-col p-0 gap-0 bg-slate-50">
+                        <DialogHeader className="px-6 py-4 border-b bg-white">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center border border-orange-100">
+                                    <FileText className="w-5 h-5 text-orange-600" />
+                                </div>
+                                <div>
+                                    <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                                        {isDiffMode ? (
+                                            <>Comparing with Previous Version</>
+                                        ) : (
+                                            <>
+                                                {contract.title}
+                                                <Badge variant="outline" className="ml-2 bg-slate-50 text-slate-500 border-slate-200">
+                                                    v{previewVersion?.versionNumber || 'Latest'}
+                                                </Badge>
+                                            </>
+                                        )}
+                                    </DialogTitle>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        Created by {previewVersion?.createdBy?.name || 'Unknown'} on {previewVersion && new Date(previewVersion.createdAt).toLocaleDateString()}
+                                    </p>
+                                </div>
+                            </div>
+                            <Button variant="ghost" size="icon" onClick={() => setPreviewVersion(null)} className="rounded-full hover:bg-slate-100">
+                                <X className="w-5 h-5 text-slate-400" />
+                            </Button>
+                        </DialogHeader>
+
+                        <div className="flex-1 overflow-hidden bg-slate-100 flex items-center justify-center p-4">
+                            <div className="bg-white shadow-2xl w-full h-full max-w-[1000px] border border-slate-200 overflow-y-auto rounded-lg">
+                                {isDiffMode ? (
+                                    <ContractDiffView
+                                        oldContent={previewVersion?.contentSnapshot || ''}
+                                        newContent={contract.content || ''}
+                                        oldVersionLabel={`v${previewVersion?.version}`}
+                                        newVersionLabel={`Current`}
+                                    />
+                                ) : (
+                                    <div className="p-16 prose prose-slate max-w-none">
+                                        <SafeHtml html={processVariables((previewVersion?.contentSnapshot || contract.content) + (contract.annexureData || ''), contract)} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                <EscalateDialog
+                    open={showEscalateDialog}
+                    onOpenChange={setShowEscalateDialog}
+                    contractId={contract?.id || ''}
+                    contractTitle={contract?.title || ''}
+                    onEscalate={handleEscalation}
+                />
+            </div>
         </div>
     );
 }

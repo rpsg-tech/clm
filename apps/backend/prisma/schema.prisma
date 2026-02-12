@@ -223,6 +223,7 @@ model Contract {
   status           ContractStatus @default(DRAFT)
   
   counterpartyName  String?
+  counterpartyBusinessName String?
   counterpartyEmail String?
 
   startDate        DateTime?

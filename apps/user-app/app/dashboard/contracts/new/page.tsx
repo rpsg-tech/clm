@@ -403,6 +403,7 @@ export default function NewContractPage() {
                     title: contractDetails.title,
                     templateId: selectedTemplate.id,
                     counterpartyName: contractDetails.counterpartyName,
+                    counterpartyBusinessName: contractDetails.counterpartyBusinessName,
                     counterpartyEmail: contractDetails.counterpartyEmail,
                     startDate: contractDetails.startDate ? new Date(contractDetails.startDate).toISOString() : undefined,
                     endDate: contractDetails.endDate ? new Date(contractDetails.endDate).toISOString() : undefined,
@@ -443,9 +444,10 @@ export default function NewContractPage() {
             const finalAnnexureData = getOnlyAnnexuresHtml();
 
             const payload = {
-                title: contractDetails.title || `${selectedTemplate.name} - ${new Date().toLocaleDateString()}`,
+                title: contractDetails.title,
                 templateId: selectedTemplate.id,
                 counterpartyName: contractDetails.counterpartyName,
+                counterpartyBusinessName: contractDetails.counterpartyBusinessName,
                 counterpartyEmail: contractDetails.counterpartyEmail,
                 startDate: contractDetails.startDate ? new Date(contractDetails.startDate).toISOString() : undefined,
                 endDate: contractDetails.endDate ? new Date(contractDetails.endDate).toISOString() : undefined,
@@ -501,14 +503,8 @@ export default function NewContractPage() {
                     )}
 
                     {viewMode === "review" && (
-                        <Button
-                            onClick={() => setViewMode("draft")}
-                            variant="ghost"
-                            className="flex items-center gap-2 h-9 px-4 text-xs font-bold uppercase tracking-wide text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
-                        >
-                            <ArrowLeft size={14} />
-                            Back to Edit
-                        </Button>
+                        // Removed Back to Edit button from here
+                        <></>
                     )}
                 </div>
             </div>
@@ -569,49 +565,19 @@ export default function NewContractPage() {
                         )}
 
                         {viewMode === "review" && (
-                            <div className="flex h-[calc(100vh-220px)] min-h-[520px] border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative animate-in fade-in zoom-in-95 duration-500">
-                                <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
-                                    <FinalReviewView
-                                        content={getFinalDocumentContent()}
-                                        details={contractDetails || {}}
-                                        templateName={selectedTemplate?.name}
-                                        filePreviewUrl={filePreviewUrl}
-                                        onSubmit={handleContractSubmit}
-                                        loading={loading}
-                                        className="border-0 shadow-none rounded-none"
-                                    />
-                                    {!showAiPanel && (
-                                        <div className="absolute right-6 top-6 z-30">
-                                            <Button
-                                                className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-lg rounded-full h-10 w-10 p-0 flex items-center justify-center group transition-all"
-                                                onClick={() => setShowAiPanel(true)}
-                                                title="Open AI Assistant"
-                                            >
-                                                <Wand2 className="w-4 h-4 text-orange-600 group-hover:scale-110 transition-transform" />
-                                            </Button>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className={`
-                                border-l border-slate-200 bg-white transition-all duration-300 ease-in-out flex flex-col z-30
-                                 ${showAiPanel ? 'w-[85vw] sm:w-[400px] translate-x-0 opacity-100 max-xl:absolute max-xl:right-0 max-xl:h-full max-xl:shadow-2xl' : 'w-0 translate-x-full opacity-0 overflow-hidden'}
-                            `}>
-                                    <div className="h-full flex flex-col min-w-full">
-                                        <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                                            <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                                                <Wand2 className="w-4 h-4 text-orange-600" />
-                                                Final Checks
-                                            </div>
-                                            <Button variant="ghost" size="icon" onClick={() => setShowAiPanel(false)} className="h-7 w-7 text-slate-400 hover:text-slate-700">
-                                                <ArrowRight className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                        <div className="flex-1 overflow-hidden">
-                                            <ContractAssistantSidebar embedded className="h-full" content={getFinalDocumentContent()} />
-                                        </div>
-                                    </div>
-                                </div>
+                            <div className="flex h-[calc(100vh-220px)] min-h-[520px] w-full border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative animate-in fade-in zoom-in-95 duration-500">
+                                <FinalReviewView
+                                    content={getFinalDocumentContent()}
+                                    details={contractDetails || {}}
+                                    templateName={selectedTemplate?.name}
+                                    filePreviewUrl={filePreviewUrl}
+                                    onSubmit={handleContractSubmit}
+                                    onBackToEdit={() => setViewMode("draft")}
+                                    loading={loading}
+                                    className="border-0 shadow-none rounded-none"
+                                    isAiOpen={showAiPanel}
+                                    onToggleAi={setShowAiPanel}
+                                />
                             </div>
                         )}
                     </>

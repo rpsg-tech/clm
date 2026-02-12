@@ -10,7 +10,8 @@ import {
     Calendar,
     User,
     ChevronRight,
-    Search
+    Search,
+    Eye
 } from 'lucide-react';
 import { Button, Badge } from '@repo/ui';
 import { api } from '@/lib/api-client';
@@ -21,6 +22,7 @@ interface VersionHistoryViewProps {
     contractId: string;
     onCompare: (v1: string, v2: string) => void;
     onRestore: (versionId: string) => void;
+    onPreview: (version: ContractVersion) => void;
     canRestore?: boolean;
 }
 
@@ -38,7 +40,7 @@ interface ContractVersion {
     };
 }
 
-export function VersionHistoryView({ contractId, onCompare, onRestore, canRestore = false }: VersionHistoryViewProps) {
+export function VersionHistoryView({ contractId, onCompare, onRestore, onPreview, canRestore = false }: VersionHistoryViewProps) {
     const [versions, setVersions] = useState<ContractVersion[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedForCompare, setSelectedForCompare] = useState<string[]>([]);
@@ -166,6 +168,14 @@ export function VersionHistoryView({ contractId, onCompare, onRestore, canRestor
                                 </td>
                                 <td className="p-4 text-right">
                                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 hover:bg-white hover:border-slate-200 hover:shadow-sm"
+                                            onClick={() => onPreview(version)}
+                                        >
+                                            <Eye className="w-3.5 h-3.5 mr-1.5" /> View
+                                        </Button>
                                         {canRestore && (
                                             <Button
                                                 variant="ghost"

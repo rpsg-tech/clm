@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Download, ArrowRight, FileCheck, Calendar, User, IndianRupee, FileText } from "lucide-react";
+import { Check, Download, ArrowRight, FileCheck, Calendar, User, IndianRupee, FileText, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ContractAssistantSidebar } from "./contract-assistant-sidebar";
 
 interface FinalReviewViewProps {
     content: string;
@@ -10,11 +11,27 @@ interface FinalReviewViewProps {
     templateName?: string;
     filePreviewUrl?: string | null;
     onSubmit: () => void;
+    onBackToEdit?: () => void;
     loading: boolean;
-    className?: string; // Allow custom styling override
+    className?: string;
+    isAiOpen?: boolean;
+    onToggleAi?: (open: boolean) => void;
+    contractId?: string;
 }
 
-export function FinalReviewView({ content, details, templateName, filePreviewUrl, onSubmit, loading, className = "" }: FinalReviewViewProps) {
+export function FinalReviewView({
+    content,
+    details,
+    templateName,
+    filePreviewUrl,
+    onSubmit,
+    onBackToEdit,
+    loading,
+    className = "",
+    isAiOpen = false,
+    onToggleAi,
+    contractId
+}: FinalReviewViewProps) {
     const [isDownloading, setIsDownloading] = useState(false);
 
     const handleDownload = async () => {
@@ -112,7 +129,8 @@ export function FinalReviewView({ content, details, templateName, filePreviewUrl
             // Map common variances if needed
             const lookupKey = normalizedKey === 'Client Name' ? 'counterpartyName' :
                 normalizedKey === 'Client Email' ? 'counterpartyEmail' :
-                    normalizedKey === 'Contract Title' ? 'title' : normalizedKey;
+                    normalizedKey === 'Business Name' ? 'counterpartyBusinessName' :
+                        normalizedKey === 'Contract Title' ? 'title' : normalizedKey;
 
             const val = data[lookupKey] || data[normalizedKey];
 
@@ -157,199 +175,233 @@ export function FinalReviewView({ content, details, templateName, filePreviewUrl
     const processedContent = processVariables(content, details);
 
     return (
-        <div className={cn("flex h-full bg-slate-50 relative", className)}>
+        <div className={cn("flex h-full w-full bg-slate-50 relative", className)}>
 
             {/* LEFT SIDEBAR: Details & Actions */}
             <div className="w-[320px] bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 h-full">
                 {/* Header */}
-                <div className="p-5 border-b border-slate-100">
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide">Contract Review</h3>
-                    <p className="text-[10px] text-slate-400 mt-1">Review details before submission</p>
+                <div className="p-5 border-b border-slate-100 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center border border-orange-100 text-orange-600">
+                        <FileCheck size={16} />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide leading-none">Contract Review</h3>
+                        <p className="text-[10px] text-slate-400 mt-1 leading-none">Review details before submission</p>
+                    </div>
                 </div>
 
                 {/* Details List */}
-                <div className="flex-1 overflow-y-auto p-5 space-y-6">
-                    {/* Title */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            <FileText size={12} />
-                            <span>Contract Title</span>
+                <div className="flex-1 overflow-y-auto p-5 space-y-8">
+                    {/* Contract Title */}
+                    <div className="relative pl-4 border-l-2 border-orange-500">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                            Contract Title
                         </div>
-                        <h3 className="text-sm font-bold text-slate-900 leading-tight" title={details.title}>
+                        <h3 className="text-lg font-serif font-bold text-slate-900 leading-snug tracking-tight line-clamp-2" title={details.title}>
                             {details.title || "Untitled Contract"}
                         </h3>
-                        <p className="text-[10px] text-slate-500 font-medium flex items-center gap-1.5 mt-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-                            {templateName || "Custom Template"}
-                        </p>
+                        {templateName && (
+                            <div className="mt-2 inline-flex items-center px-2 py-0.5 rounded-md bg-orange-50 text-orange-700 text-[10px] font-bold uppercase tracking-wide border border-orange-100">
+                                {templateName}
+                            </div>
+                        )}
                     </div>
 
-                    <div className="h-px bg-slate-100 w-full" />
-
-                    {/* Counterparty */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            <User size={12} />
-                            <span>Counterparty</span>
+                    {/* Counterparty Card */}
+                    <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100 relative group hover:border-slate-200 transition-colors">
+                        <div className="absolute top-3 right-3 text-slate-300 group-hover:text-slate-400 transition-colors">
+                            <User size={14} />
                         </div>
-                        <p className="text-sm font-semibold text-slate-900">
-                            {details.counterpartyName || "-"}
-                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Business Entity</div>
+                                <p className="text-sm font-bold text-slate-900 leading-tight">
+                                    {details.counterpartyBusinessName || "N/A"}
+                                </p>
+                            </div>
+
+                            <div className="pt-3 border-t border-slate-200/50">
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Point of Contact</div>
+                                <p className="text-sm font-medium text-slate-700 leading-tight">
+                                    {details.counterpartyName || "N/A"}
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Value */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            <IndianRupee size={12} />
-                            <span>Total Value</span>
+                    {/* Financials & Term Grid */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                                <IndianRupee size={10} /> Total Value
+                            </div>
+                            <p className="text-2xl font-mono font-bold text-slate-900 tracking-tight">
+                                {details.amount ? `₹${Number(details.amount).toLocaleString('en-IN')}` : "-"}
+                            </p>
                         </div>
-                        <p className="text-sm font-mono font-semibold text-slate-900">
-                            {details.amount ? `₹${Number(details.amount).toLocaleString('en-IN')}` : "-"}
-                        </p>
-                    </div>
 
-                    {/* Term */}
-                    <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                            <Calendar size={12} />
-                            <span>Term</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-sm font-medium text-slate-700">
-                            <span>{details.startDate ? new Date(details.startDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: '2-digit' }) : "-"}</span>
-                            <ArrowRight size={10} className="text-slate-300" />
-                            <span>{details.endDate ? new Date(details.endDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: '2-digit' }) : "-"}</span>
+                        <div className="col-span-2 pt-2">
+                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                                <Calendar size={10} /> Contract Term
+                            </div>
+                            <div className="flex items-center gap-2 text-sm font-medium text-slate-800 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
+                                <span>{details.startDate ? new Date(details.startDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: '2-digit' }) : "-"}</span>
+                                <ArrowRight size={10} className="text-slate-300" />
+                                <span>{details.endDate ? new Date(details.endDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: '2-digit' }) : "-"}</span>
+                            </div>
                         </div>
                     </div>
 
                     {/* Status Indicator */}
-                    <div className="mt-4 p-3 bg-emerald-50 rounded-lg border border-emerald-100 flex items-start gap-3">
+                    <div className="mt-2 p-3 bg-emerald-50 rounded-lg border border-emerald-100/50 flex items-start gap-3">
                         <div className="mt-0.5 w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                             <Check size={10} className="text-emerald-600" />
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-emerald-800">Ready for Review</p>
-                            <p className="text-[10px] text-emerald-600 leading-relaxed mt-0.5">
-                                Document analysis complete. Ready to initiate approval workflow.
+                            <p className="text-xs font-bold text-emerald-800">Draft Completed</p>
+                            <p className="text-[10px] text-emerald-600/80 leading-relaxed mt-0.5">
+                                All required fields are populated. Ready for final review and approval.
                             </p>
                         </div>
                     </div>
                 </div>
 
                 {/* Actions Footer */}
-                <div className="p-4 border-t border-slate-100 bg-slate-50 space-y-3">
+                {/* Actions Footer - Premium "Designer Approved" Styles */}
+                <div className="p-4 border-t border-slate-100 bg-white/50 backdrop-blur-sm space-y-3 z-10">
                     <button
                         onClick={onSubmit}
                         disabled={loading}
-                        className="w-full group py-2.5 bg-slate-900 hover:bg-black text-white font-bold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none text-xs uppercase tracking-wide flex items-center justify-center"
+                        className="w-full group relative overflow-hidden py-3 bg-slate-900 text-white font-bold rounded-xl transition-all duration-300 shadow-[0_4px_14px_0_rgba(15,23,42,0.39)] hover:shadow-[0_6px_20px_rgba(15,23,42,0.23)] hover:-translate-y-0.5 hover:bg-slate-800 active:translate-y-0 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-xs uppercase tracking-widest flex items-center justify-center"
                     >
                         {loading ? (
-                            <span className="flex items-center gap-2"><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Processing...</span>
+                            <span className="flex items-center gap-2 relative z-10"><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Processing...</span>
                         ) : (
-                            <>
-                                Submit for Approval
-                                <ArrowRight size={14} className="ml-2 opacity-80 group-hover:translate-x-0.5 transition-transform" />
-                            </>
+                            <span className="flex items-center gap-2 relative z-10">
+                                Finalise Draft
+                                <ArrowRight size={14} className="opacity-70 group-hover:translate-x-1 transition-transform duration-300" />
+                            </span>
                         )}
+                        {/* Subtle shine effect */}
+                        <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent z-0"></div>
                     </button>
 
                     <button
                         onClick={handleDownload}
                         disabled={isDownloading}
-                        className="w-full group py-2.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600 font-semibold rounded-xl transition-all text-[10px] uppercase tracking-wide flex items-center justify-center disabled:opacity-50"
+                        className="w-full group py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl transition-all duration-300 hover:border-orange-200 hover:bg-orange-50/30 hover:text-orange-700 hover:shadow-md active:bg-orange-50 text-[10px] uppercase tracking-wide flex items-center justify-center disabled:opacity-50"
                     >
                         {isDownloading ? (
                             <span className="flex items-center gap-2"><div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div> Saving...</span>
                         ) : (
                             <>
-                                <Download size={14} className="mr-2 text-slate-400 group-hover:text-slate-600 transition-colors" />
+                                <Download size={14} className="mr-2 text-slate-400 group-hover:text-orange-500 transition-colors" />
                                 Download Draft
                             </>
                         )}
                     </button>
+
+                    {onBackToEdit && (
+                        <button
+                            onClick={onBackToEdit}
+                            className="w-full py-2 text-slate-400 font-bold rounded-lg transition-colors hover:text-slate-800 hover:bg-slate-50 text-[10px] uppercase tracking-widest"
+                        >
+                            Back to Edit
+                        </button>
+                    )}
                 </div>
             </div>
 
             {/* MAIN CONTENT: Document Workspace */}
-            <div className="flex-1 h-full overflow-y-auto bg-slate-100/50 relative flex justify-center p-4 md:p-8 scroll-smooth">
-                {/* Contract Paper Container */}
-                <div className="w-full max-w-[800px] relative pb-8">
-                    {/* Realistic Paper Shadow Effect */}
-                    <div className="relative group">
-                        {/* Layered shadows for depth */}
-                        <div className="absolute top-2 left-2 w-full h-full bg-slate-900/5 rounded-[2px] blur-sm transform translate-y-2"></div>
+            <div className="flex-1 flex flex-col min-w-0 bg-slate-200/50">
+                {/* WORKSPACE HEADER with AI TOGGLE */}
+                <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                            <FileText className="w-3.5 h-3.5" />
+                            Document Preview
+                        </div>
+                    </div>
 
-                        <div className="bg-white min-h-[1000px] relative z-0 shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col">
+                    <button
+                        onClick={() => onToggleAi?.(!isAiOpen)}
+                        className={`text-sm font-bold flex items-center gap-2 transition-all duration-200 ${isAiOpen ? 'text-orange-600' : 'text-slate-400 hover:text-orange-500'}`}
+                    >
+                        <Sparkles className={`w-4 h-4 ${isAiOpen ? 'fill-orange-600/10' : ''}`} />
+                        AI Assistant
+                    </button>
+                </div>
 
-                            {/* Decorative Head (Subtle) */}
-                            <div className="h-1 bg-gradient-to-r from-orange-500/80 via-orange-400/80 to-orange-500/80 w-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                <div className="flex-1 flex min-h-0 overflow-hidden relative">
+                    <div className={`flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth flex ${filePreviewUrl ? '' : 'justify-center'}`}>
+                        {/* Contract Paper Container */}
+                        <div className={`w-full relative pb-12 transition-all duration-500 ease-out animate-in slide-in-from-bottom-4 fade-in ${filePreviewUrl ? 'h-full' : 'max-w-[850px]'}`}>
+                            {/* Realistic Paper Shadow Effect for HTML Content Only */}
+                            {!filePreviewUrl && (
+                                <div className="absolute top-4 left-4 w-full h-full bg-slate-900/10 rounded-[2px] blur-md transform translate-y-4"></div>
+                            )}
+                            {!filePreviewUrl && (
+                                <div className="absolute top-0 left-0 w-full h-full bg-white shadow-[0_2px_40px_-12px_rgba(0,0,0,0.1)] rounded-[1px] -z-10"></div>
+                            )}
 
-                            {/* Content */}
-                            <div className="p-8 md:p-12 flex-1">
-                                <style jsx global>{`
-                                    .contract-content {
-                                        font-family: 'Times New Roman', serif;
-                                        font-size: 12pt;
-                                        line-height: 1.6;
-                                        color: #1a1a1a;
-                                        width: 100%;
-                                    }
-                                    .contract-content h1, 
-                                    .contract-content h2, 
-                                    .contract-content h3 {
-                                        font-weight: 700;
-                                        color: #000;
-                                        line-height: 1.3;
-                                    }
-                                    .contract-content p {
-                                        margin-bottom: 1.2em;
-                                        text-align: justify;
-    
-                                    }
-                                    /* Web View Page Break Indicator */
-                                    .page-break { 
-                                        border-bottom: 1px dashed #e2e8f0;
-                                        margin: 3rem 0;
-                                        position: relative;
-                                        display: block;
-                                        width: 100%;
-                                    }
-                                    .page-break::after {
-                                        content: 'PAGE BREAK';
-                                        position: absolute;
-                                        right: 0;
-                                        top: -9px;
-                                        font-size: 9px;
-                                        color: #94a3b8;
-                                        background: white;
-                                        padding-left: 8px;
-                                        font-family: sans-serif;
-                                        font-weight: 600;
-                                        letter-spacing: 0.05em;
-                                    }
-                                `}</style>
+                            <div className={`${filePreviewUrl ? 'h-full' : 'bg-white min-h-[1100px] ring-1 ring-black/5'} relative z-0 flex flex-col items-center`}>
 
-                                <div className="contract-content">
-                                    {filePreviewUrl ? (
-                                        <div className="w-full h-[800px] bg-slate-50 flex flex-col items-center justify-center p-4 rounded-lg border border-slate-200 border-dashed">
-                                            <iframe
-                                                src={filePreviewUrl || ""}
-                                                className="w-full h-full rounded shadow-sm"
-                                                title="Document Preview"
+                                {/* Decorative Head (Subtle) */}
+                                {!filePreviewUrl && (
+                                    <div className="h-1 bg-gradient-to-r from-orange-500/80 via-orange-400/80 to-orange-500/80 w-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                                )}
+
+                                {/* Content */}
+                                <div className={`${filePreviewUrl ? 'p-0 w-full h-full' : 'p-8 md:p-12 flex-1 w-full'}`}>
+                                    <style jsx global>{`
+                                        .contract-content {
+                                            font-family: 'Times New Roman', serif;
+                                            font-size: 12pt;
+                                            line-height: 1.6;
+                                            color: #1a1a1a;
+                                            width: 100%;
+                                            height: 100%;
+                                        }
+                                        /* ... styles ... */
+                                    `}</style>
+
+                                    <div className="contract-content">
+                                        {filePreviewUrl ? (
+                                            <div className="w-full h-full bg-slate-50 flex flex-col items-center justify-center rounded-lg border border-slate-200 border-dashed">
+                                                <iframe
+                                                    src={filePreviewUrl || ""}
+                                                    className="w-full h-full rounded shadow-sm"
+                                                    title="Document Preview"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div
+                                                dangerouslySetInnerHTML={{ __html: processedContent || "<p class='text-slate-400 italic text-center py-20'>Content generation pending...</p>" }}
                                             />
-                                        </div>
-                                    ) : (
-                                        <div
-                                            dangerouslySetInnerHTML={{ __html: processedContent || "<p class='text-slate-400 italic text-center py-20'>Content generation pending...</p>" }}
-                                        />
-                                    )}
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Footer: Page Number Simulation */}
+                                <div className="absolute bottom-6 left-0 w-full text-center pointer-events-none">
+                                    <span className="text-[10px] text-slate-300 font-serif">Page 1</span>
                                 </div>
                             </div>
-
-                            {/* Footer: Page Number Simulation */}
-                            <div className="absolute bottom-6 left-0 w-full text-center pointer-events-none">
-                                <span className="text-[10px] text-slate-300 font-serif">Page 1</span>
-                            </div>
                         </div>
+                    </div>
+
+                    {/* COLLAPSIBLE AI SIDEBAR */}
+                    <div className={`
+                        border-l border-slate-200 bg-white transition-all duration-300 ease-in-out flex flex-col shrink-0 z-30
+                        ${isAiOpen ? 'w-[400px] opacity-100' : 'w-0 opacity-0 overflow-hidden'}
+                    `}>
+                        <ContractAssistantSidebar
+                            embedded
+                            className="h-full"
+                            contractId={contractId}
+                            content={content}
+                        />
                     </div>
                 </div>
             </div>
