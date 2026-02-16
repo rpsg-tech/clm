@@ -6,26 +6,10 @@ import { Skeleton } from '@repo/ui';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api-client';
 import { DollarSign } from 'lucide-react';
-import { ApprovalReviewList } from '@/components/approvals/approval-review-list';
+import { ApprovalReviewList, type Approval } from '@/components/approvals/approval-review-list';
 import toast from 'react-hot-toast';
 
-interface Approval {
-    id: string;
-    type: string;
-    status: string;
-    createdAt: string;
-    dueDate: string | null;
-    contract: {
-        id: string;
-        title: string;
-        reference: string;
-        status: string;
-        createdByUser: {
-            name: string;
-            email: string;
-        };
-    };
-}
+
 
 export default function FinanceApprovalsPage() {
     const router = useRouter();

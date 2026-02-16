@@ -4,9 +4,9 @@ const nextConfig = {
     output: 'standalone',
     reactStrictMode: true,
     transpilePackages: ['@repo/ui', '@repo/types'],
+    serverExternalPackages: ['puppeteer-core', '@sparticuz/chromium'],
     experimental: {
         optimizePackageImports: ['@repo/ui'],
-        serverComponentsExternalPackages: ['puppeteer-core', '@sparticuz/chromium'],
     },
     async rewrites() {
         return [

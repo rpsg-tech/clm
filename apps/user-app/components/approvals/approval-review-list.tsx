@@ -7,7 +7,7 @@ import { CheckCircle, XCircle, Clock, FileText, ArrowRight, User, Calendar, Buil
 import { ApprovalActionsCell } from './approval-actions-cell';
 import { useRouter } from 'next/navigation';
 
-interface Approval {
+export interface Approval {
     id: string
     type: string
     status: string
