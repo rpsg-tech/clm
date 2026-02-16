@@ -654,7 +654,25 @@ export class ApprovalsService {
                         title: true,
                         reference: true,
                         status: true,
+                        amount: true,
+                        counterpartyName: true,
+                        counterpartyBusinessName: true,
                         createdByUser: { select: { name: true, email: true } },
+                        auditLogs: {
+                            where: {
+                                action: {
+                                    in: ['CONTRACT_REJECTED', 'CONTRACT_REVISION_REQUESTED', 'CONTRACT_SUBMITTED', 'CONTRACT_ESCALATED', 'CONTRACT_RETURNED_TO_MANAGER', 'CONTRACT_APPROVED']
+                                }
+                            },
+                            orderBy: { createdAt: 'desc' },
+                            select: {
+                                id: true,
+                                action: true,
+                                createdAt: true,
+                                metadata: true,
+                                user: { select: { name: true } }
+                            }
+                        }
                     },
                 },
             },

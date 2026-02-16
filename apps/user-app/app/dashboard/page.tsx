@@ -48,7 +48,7 @@ interface RecentContract {
 
 export default function DashboardPage() {
     const router = useRouter();
-    const { user, currentOrg } = useAuth();
+    const { user, currentOrg, role } = useAuth();
     const [isOracleOpen, setIsOracleOpen] = useState(false);
 
     // Permissions
@@ -185,6 +185,7 @@ export default function DashboardPage() {
                 rejectedContracts={dashboardData?.rejectedContracts}
                 pendingApprovals={pendingApprovals}
                 canViewLegalApprovals={canViewLegalApprovals}
+                userRole={role || undefined}
             />
 
             {/* Recent Contracts Table */}

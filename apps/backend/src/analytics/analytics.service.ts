@@ -372,7 +372,20 @@ export class AnalyticsService {
                     },
                     orderBy: { updatedAt: 'desc' },
                     take: 5,
-                    select: { id: true, title: true, status: true, updatedAt: true }
+                    select: {
+                        id: true,
+                        title: true,
+                        status: true,
+                        updatedAt: true,
+                        auditLogs: {
+                            where: {
+                                action: { in: ['CONTRACT_REJECTED', 'CONTRACT_REVISION_REQUESTED', 'CONTRACT_RETURNED_TO_MANAGER'] }
+                            },
+                            orderBy: { createdAt: 'desc' },
+                            take: 1,
+                            select: { id: true, action: true, metadata: true, user: { select: { name: true } } }
+                        }
+                    }
                 }),
 
                 // 6. Pending Legal (Conditional)
@@ -386,7 +399,20 @@ export class AnalyticsService {
                     orderBy: { createdAt: 'desc' },
                     include: {
                         contract: {
-                            select: { id: true, title: true, createdByUser: { select: { name: true } } }
+                            select: {
+                                id: true,
+                                title: true,
+                                amount: true,
+                                createdByUser: { select: { name: true } },
+                                auditLogs: {
+                                    where: {
+                                        action: { in: ['CONTRACT_ESCALATED', 'CONTRACT_SUBMITTED', 'CONTRACT_REVISION_REQUESTED', 'CONTRACT_APPROVED', 'CONTRACT_RETURNED_TO_MANAGER'] }
+                                    },
+                                    orderBy: { createdAt: 'desc' },
+                                    take: 1,
+                                    select: { id: true, action: true, metadata: true, user: { select: { name: true } } }
+                                }
+                            }
                         }
                     }
                 }) : Promise.resolve([]),
@@ -402,7 +428,20 @@ export class AnalyticsService {
                     orderBy: { createdAt: 'desc' },
                     include: {
                         contract: {
-                            select: { id: true, title: true, createdByUser: { select: { name: true } } }
+                            select: {
+                                id: true,
+                                title: true,
+                                amount: true,
+                                createdByUser: { select: { name: true } },
+                                auditLogs: {
+                                    where: {
+                                        action: { in: ['CONTRACT_SUBMITTED', 'CONTRACT_APPROVED', 'CONTRACT_REVISION_REQUESTED'] }
+                                    },
+                                    orderBy: { createdAt: 'desc' },
+                                    take: 1,
+                                    select: { id: true, action: true, metadata: true, user: { select: { name: true } } }
+                                }
+                            }
                         }
                     }
                 }) : Promise.resolve([]),

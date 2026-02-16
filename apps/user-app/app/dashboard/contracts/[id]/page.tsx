@@ -99,7 +99,6 @@ function ContractDetailContent() {
     const [activeTab, setActiveTab] = useState<'overview' | 'document' | 'history'>('document');
 
     // Preview Modal State
-    // Preview Modal State
     const [previewVersion, setPreviewVersion] = useState<any | null>(null);
     const [isDiffMode, setIsDiffMode] = useState(false);
     const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
@@ -693,7 +692,26 @@ function ContractDetailContent() {
                                                             <>
                                                                 <hr className="my-8 border-slate-200" />
                                                                 <h3 className="text-xl font-bold text-slate-900 mb-4">Annexures</h3>
-                                                                <SafeHtml html={contract.annexureData} />
+                                                                {(() => {
+                                                                    try {
+                                                                        const parsed = JSON.parse(contract.annexureData);
+                                                                        if (Array.isArray(parsed)) {
+                                                                            return parsed.map((item: any, index: number) => (
+                                                                                <div key={item.id || index} className="mb-8 p-6 bg-slate-50 rounded-xl border border-slate-200">
+                                                                                    <h4 className="text-lg font-bold text-slate-800 mb-3 pb-2 border-b border-slate-200">
+                                                                                        {item.title || item.name || `Annexure ${index + 1}`}
+                                                                                    </h4>
+                                                                                    <div className="prose-sm">
+                                                                                        <SafeHtml html={item.content} />
+                                                                                    </div>
+                                                                                </div>
+                                                                            ));
+                                                                        }
+                                                                    } catch (e) {
+                                                                        // Not JSON, render as is
+                                                                    }
+                                                                    return <SafeHtml html={contract.annexureData} />;
+                                                                })()}
                                                             </>
                                                         )}
                                                     </div>

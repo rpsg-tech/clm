@@ -6,7 +6,7 @@ import { Skeleton } from '@repo/ui';
 import { useAuth } from '@/lib/auth-context';
 import { api } from '@/lib/api-client';
 import { CheckCircle, ArrowRight } from 'lucide-react';
-import { ApprovalDataTable } from '@/components/approvals/approval-data-table';
+import { ApprovalReviewList } from '@/components/approvals/approval-review-list';
 import toast from 'react-hot-toast';
 
 interface Approval {
@@ -76,34 +76,7 @@ export default function LegalApprovalsPage() {
         }
     };
 
-    const handleBulkApprove = async (ids: string[], comment?: string) => {
-        try {
-            const results = await Promise.allSettled(
-                ids.map(id => api.approvals.approve(id, comment || 'Bulk Approved'))
-            );
 
-            const rejected = results.filter(r => r.status === 'rejected');
-            if (rejected.length > 0) {
-                toast.error(`Approved ${ids.length - rejected.length} items. ${rejected.length} failed.`);
-            } else {
-                toast.success(`Successfully approved ${ids.length} contracts.`);
-            }
-
-            // Refresh list
-            fetchApprovals();
-        } catch (error: any) {
-            toast.error('Batch approval encountered errors.');
-            fetchApprovals();
-        }
-    };
-
-    const handleView = (id: string) => {
-        // Find contract Id from approval Id
-        const approval = approvals.find(a => a.id === id);
-        if (approval) {
-            router.push(`/dashboard/contracts/${approval.contract.id}`);
-        }
-    };
 
     if (isLoading) {
         return (
@@ -146,12 +119,10 @@ export default function LegalApprovalsPage() {
                 </div>
             </div>
 
-            <ApprovalDataTable
+            <ApprovalReviewList
                 data={approvals}
                 onApprove={handleApprove}
                 onReject={handleReject}
-                onBulkApprove={handleBulkApprove}
-                onView={handleView}
                 isLoading={isLoading}
             />
         </div>
