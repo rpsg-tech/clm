@@ -323,6 +323,9 @@ export const api = {
     compareVersions: (id: string, from: string, to: string) =>
       authFetch<any>(`/contracts/${id}/versions/compare?from=${from}&to=${to}`),
 
+    compare: (id: string, from: string, to: string) =>
+      authFetch<any>(`/contracts/${id}/versions/compare?from=${from}&to=${to}`),
+
     restoreVersion: (id: string, versionId: string) =>
       authFetch<any>(`/contracts/${id}/versions/${versionId}/restore`, { method: 'POST' }),
   },
