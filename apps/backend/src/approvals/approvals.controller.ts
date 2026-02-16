@@ -60,23 +60,6 @@ export class ApprovalsController {
             comment
         );
 
-        // Audit log - contract returned, approval id is the param
-        await this.auditService.log({
-            organizationId: user.orgId,
-            contractId: contract.id,
-            userId: user.id,
-            action: AuditService.Actions.CONTRACT_APPROVED,
-            module: 'approvals',
-            targetType: 'Approval',
-            targetId: id,
-            metadata: {
-                comment,
-                contractId: contract.id,
-                contractTitle: contract.title,
-                type: approval.type, // Added type: LEGAL | FINANCE
-            } as Prisma.InputJsonValue,
-        });
-
         return contract;
     }
 
@@ -94,23 +77,6 @@ export class ApprovalsController {
             user.permissions,
             comment
         );
-
-        // Audit log
-        await this.auditService.log({
-            organizationId: user.orgId,
-            contractId: contract.id,
-            userId: user.id,
-            action: AuditService.Actions.CONTRACT_REJECTED,
-            module: 'approvals',
-            targetType: 'Approval',
-            targetId: id,
-            metadata: {
-                comment: comment,
-                contractId: contract.id,
-                contractTitle: contract.title,
-                type: approval.type,
-            } as Prisma.InputJsonValue,
-        });
 
         return contract;
     }
@@ -130,23 +96,6 @@ export class ApprovalsController {
             user.permissions,
             comment
         );
-
-        // Audit log
-        await this.auditService.log({
-            organizationId: user.orgId,
-            contractId: contract.id,
-            userId: user.id,
-            action: 'CONTRACT_REVISION_REQUESTED',
-            module: 'approvals',
-            targetType: 'Approval',
-            targetId: id,
-            metadata: {
-                comment: comment,
-                contractId: contract.id,
-                contractTitle: contract.title,
-                type: approval.type,
-            } as Prisma.InputJsonValue,
-        });
 
         return contract;
     }
@@ -196,21 +145,6 @@ export class ApprovalsController {
             reason,
         );
 
-        // Audit log
-        await this.auditService.log({
-            organizationId: user.orgId,
-            contractId: contract.id,
-            userId: user.id,
-            action: 'CONTRACT_ESCALATED_TO_LEGAL_HEAD',
-            module: 'approvals',
-            targetType: 'Contract',
-            targetId: contract.id,
-            metadata: {
-                reason,
-                escalatedBy: user.email,
-            } as Prisma.InputJsonValue,
-        });
-
         return contract;
     }
 
@@ -231,21 +165,6 @@ export class ApprovalsController {
             user.permissions,
             comment
         );
-
-        // Audit log
-        await this.auditService.log({
-            organizationId: user.orgId,
-            contractId: result.contract.id, // Access contract from result
-            userId: user.id,
-            action: 'CONTRACT_RETURNED_TO_MANAGER',
-            module: 'approvals',
-            targetType: 'Approval',
-            targetId: id,
-            metadata: {
-                comment,
-                contractId: result.contract.id,
-            } as Prisma.InputJsonValue,
-        });
 
         return result.contract;
     }

@@ -13,10 +13,11 @@ import {
     Search,
     Eye
 } from 'lucide-react';
-import { Button, Badge } from '@repo/ui';
+import { Button, Badge, Spinner } from '@repo/ui';
 import { api } from '@/lib/api-client';
 import { useToast } from '@/lib/toast-context';
 import { formatDistanceToNow } from 'date-fns';
+import { UploadCloud } from 'lucide-react';
 
 interface VersionHistoryViewProps {
     contractId: string;
@@ -36,6 +37,7 @@ interface ContractVersion {
     };
     changeLog?: {
         summary: string;
+        action?: string;
         changes: string[];
     };
 }
@@ -154,9 +156,18 @@ export function VersionHistoryView({ contractId, onCompare, onRestore, onPreview
                                             {version.changeLog.summary}
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-1.5 text-slate-400 text-sm italic">
-                                            <GitCommit className="w-3.5 h-3.5" />
-                                            Start of version history
+                                        <div className="text-sm text-slate-400 italic flex items-center gap-1.5">
+                                            {version.changeLog?.action?.includes('UPLOAD') ? (
+                                                <>
+                                                    <UploadCloud className="w-3.5 h-3.5" />
+                                                    Uploaded document
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <GitCommit className="w-3.5 h-3.5" />
+                                                    Modified contract content
+                                                </>
+                                            )}
                                         </div>
                                     )}
                                 </td>

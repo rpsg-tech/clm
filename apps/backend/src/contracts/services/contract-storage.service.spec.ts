@@ -2,25 +2,30 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ContractStorageService } from './contract-storage.service';
 import { StorageService } from '../../common/storage/storage.service';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
     createMockStorageService,
     createMockConfigService,
+    createMockPrismaService,
 } from '../../../test/utils/mock-factory';
 
 describe('ContractStorageService', () => {
     let service: ContractStorageService;
     let storageService: ReturnType<typeof createMockStorageService>;
     let configService: ReturnType<typeof createMockConfigService>;
+    let prismaService: ReturnType<typeof createMockPrismaService>;
 
     beforeEach(async () => {
         storageService = createMockStorageService();
         configService = createMockConfigService();
+        prismaService = createMockPrismaService();
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 ContractStorageService,
                 { provide: StorageService, useValue: storageService },
                 { provide: ConfigService, useValue: configService },
+                { provide: PrismaService, useValue: prismaService },
             ],
         }).compile();
 
@@ -31,139 +36,89 @@ describe('ContractStorageService', () => {
         jest.clearAllMocks();
     });
 
-    describe('uploadContractFile', () => {
-        it('should upload file to S3 with correct path', async () => {
+    describe('getSignedContractUploadUrl', () => {
+        it('should return presigned url for contract upload', async () => {
             // Arrange
             const contractId = 'contract-123';
-            const file = {
-                originalname: 'contract.pdf',
-                buffer: Buffer.from('test file content'),
-                mimetype: 'application/pdf',
-            } as Express.Multer.File;
+            const organizationId = 'org-123';
+            const fileName = 'contract.pdf';
+            const contentType = 'application/pdf';
+            const expectedUrl = 'https://s3.aws.com/signed-upload-url';
+
+            storageService.getUploadUrl.mockResolvedValue(expectedUrl);
 
             // Act
-            const result = await service.uploadContractFile(contractId, file);
+            const result = await service.getSignedContractUploadUrl(contractId, organizationId, fileName, contentType);
 
             // Assert
-            expect(storageService.uploadFile).toHaveBeenCalledWith({
-                file: file.buffer,
-                filename: expect.stringContaining('contract-123'),
-                contentType: 'application/pdf',
-                bucket: 'test-bucket',
-                folder: 'contracts',
-            });
-            expect(result).toEqual({
-                key: 'contracts/test-contract.pdf',
-                url: expect.stringContaining('s3.aws.com'),
-            });
+            expect(storageService.getUploadUrl).toHaveBeenCalledWith(
+                `organizations/${organizationId}/contracts/${contractId}/signed`,
+                fileName,
+                contentType
+            );
+            expect(result).toEqual(expectedUrl);
         });
+    });
 
-        it('should include organization ID in file path if provided', async () => {
+    describe('getDocumentUploadUrl', () => {
+        it('should return presigned url for document upload', async () => {
             // Arrange
-            const file = {
-                originalname: 'contract.pdf',
-                buffer: Buffer.from('test'),
-                mimetype: 'application/pdf',
-            } as Express.Multer.File;
+            const contractId = 'contract-123';
+            const organizationId = 'org-456';
+            const fileName = 'document.pdf';
+            const contentType = 'application/pdf';
+            const expectedUrl = 'https://s3.aws.com/signed-document-upload-url';
+
+            storageService.getUploadUrl.mockResolvedValue(expectedUrl);
 
             // Act
-            await service.uploadContractFile('contract-123', file, 'org-456');
+            const result = await service.getDocumentUploadUrl(contractId, organizationId, fileName, contentType);
 
             // Assert
-            expect(storageService.uploadFile).toHaveBeenCalledWith(
+            expect(storageService.getUploadUrl).toHaveBeenCalledWith(
+                `organizations/${organizationId}/contracts/${contractId}/documents`,
+                fileName,
+                contentType
+            );
+            expect(result).toEqual(expectedUrl);
+        });
+    });
+
+    describe('createAttachment', () => {
+        it('should create database record for uploaded file', async () => {
+            // Arrange
+            const contractId = 'contract-123';
+            const key = 'some-s3-key';
+            const fileName = 'file.pdf';
+            const fileSize = 1024;
+            const uploadedBy = 'user-1';
+
+            prismaService.contractAttachment.create.mockResolvedValue({
+                id: 'attachment-id',
+                contractId,
+                fileUrl: key,
+                fileName,
+                fileSize,
+                uploadedBy,
+                uploadedAt: new Date(),
+                deletedAt: null,
+            });
+
+            // Act
+            await service.createAttachment(contractId, key, fileName, fileSize, uploadedBy);
+
+            // Assert
+            expect(prismaService.contractAttachment.create).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    folder: expect.stringContaining('org-456'),
+                    data: expect.objectContaining({
+                        contractId,
+                        fileUrl: key,
+                        fileName,
+                        fileSize,
+                        uploadedBy,
+                    })
                 })
             );
-        });
-    });
-
-    describe('getSignedUrl', () => {
-        it('should generate pre-signed URL for file download', async () => {
-            // Arrange
-            const fileKey = 'contracts/contract-123/document.pdf';
-
-            // Act
-            const result = await service.getSignedUrl(fileKey);
-
-            // Assert
-            expect(storageService.getSignedUrl).toHaveBeenCalledWith({
-                key: fileKey,
-                expiresIn: 3600, // 1 hour
-            });
-            expect(result).toContain('signed-url');
-        });
-
-        it('should support custom expiration time', async () => {
-            // Arrange
-            const fileKey = 'contracts/test.pdf';
-            const customExpiry = 7200; // 2 hours
-
-            // Act
-            await service.getSignedUrl(fileKey, customExpiry);
-
-            // Assert
-            expect(storageService.getSignedUrl).toHaveBeenCalledWith({
-                key: fileKey,
-                expiresIn: customExpiry,
-            });
-        });
-    });
-
-    describe('deleteContractFile', () => {
-        it('should delete file from S3', async () => {
-            // Arrange
-            const fileKey = 'contracts/contract-123/document.pdf';
-
-            // Act
-            await service.deleteContractFile(fileKey);
-
-            // Assert
-            expect(storageService.deleteFile).toHaveBeenCalledWith(fileKey);
-        });
-    });
-
-    describe('getFileMetadata', () => {
-        it('should return file metadata', async () => {
-            // Arrange
-            const fileKey = 'contracts/test.pdf';
-
-            // Act
-            const result = await service.getFileMetadata(fileKey);
-
-            // Assert
-            expect(storageService.getFileMetadata).toHaveBeenCalledWith(fileKey);
-            expect(result).toEqual({
-                size: 1024,
-                contentType: 'application/pdf',
-            });
-        });
-    });
-
-    describe('error handling', () => {
-        it('should throw error when upload fails', async () => {
-            // Arrange
-            storageService.uploadFile.mockRejectedValue(new Error('S3 upload failed'));
-            const file = {
-                originalname: 'contract.pdf',
-                buffer: Buffer.from('test'),
-                mimetype: 'application/pdf',
-            } as Express.Multer.File;
-
-            // Act & Assert
-            await expect(
-                service.uploadContractFile('contract-123', file)
-            ).rejects.toThrow('S3 upload failed');
-        });
-
-        it('should throw error when file deletion fails', async () => {
-            // Arrange
-            storageService.deleteFile.mockRejectedValue(new Error('S3 delete failed'));
-
-            // Act & Assert
-            await expect(
-                service.deleteContractFile('contracts/test.pdf')
-            ).rejects.toThrow('S3 delete failed');
         });
     });
 });

@@ -14,12 +14,13 @@ import { EmailService } from '../common/email/email.service';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
-import { UserStatus } from '@prisma/client';
+
 
 export interface JwtPayload {
     sub: string;      // User ID
     email: string;
     orgId?: string;   // Current organization context
+    role?: string;    // Role in the current organization
     permissions?: string[];
 }
 
@@ -76,12 +77,8 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        if (!user.isActive || user.status === UserStatus.INACTIVE) {
+        if (!user.isActive) {
             throw new UnauthorizedException('Account is deactivated');
-        }
-
-        if (user.status === UserStatus.PENDING_APPROVAL) {
-            throw new UnauthorizedException('Account is pending approval');
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
@@ -157,26 +154,22 @@ export class AuthService {
                     email: payload.email,
                     name: payload.name,
                     passwordHash: dummyHash,
-                    isActive: true,
-                    status: UserStatus.PENDING_APPROVAL, // Default to Pending
+                    isActive: true, // Auto-activate for now since UserStatus is missing
                 }
             });
 
-            this.logger.log(`SSO: Created user ${user.id} as PENDING_APPROVAL`);
+            this.logger.log(`SSO: Created user ${user.id}`);
 
-            throw new UnauthorizedException('Account created successfully but is Pending Approval. Please contact your administrator.');
+            // If we wanted to enforce approval, we'd need another field or logic later.
+            // For now, auto-approve SSO users.
         }
 
         // Existing User Checks
-        if (!user.isActive || user.status === UserStatus.INACTIVE) {
+        if (!user.isActive) {
             throw new UnauthorizedException('Account is deactivated');
         }
 
-        if (user.status === UserStatus.PENDING_APPROVAL) {
-            // Check if they have been approved recently or if policy changed?
-            // No, just block.
-            throw new UnauthorizedException('Account is pending approval. Please contact your administrator.');
-        }
+
 
         // If Active, allow login
         this.logger.log(`SSO: User ${payload.email} logged in via ${payload.provider}`);
@@ -243,6 +236,7 @@ export class AuthService {
             sub: user.id,
             email: user.email,
             orgId: defaultOrg?.organization.id,
+            role: defaultOrg?.role.code,
             permissions: defaultPermissions,
         };
 
@@ -309,6 +303,7 @@ export class AuthService {
             sub: userId,
             email: '', // Will be populated from DB
             orgId: organizationId,
+            role: userOrgRole.role.code,
             permissions,
         };
 

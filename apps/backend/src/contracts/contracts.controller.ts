@@ -18,6 +18,7 @@ import { ContractsService } from './contracts.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgContextGuard } from '../auth/guards/org-context.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { ContractVersionService } from './services/contract-version.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
@@ -35,6 +36,7 @@ export class ContractsController {
         private readonly contractsService: ContractsService,
         private readonly auditService: AuditService,
         private readonly contractAnalysisService: ContractAnalysisService,
+        private readonly contractVersionService: ContractVersionService,
     ) { }
 
     @Post()
@@ -163,7 +165,7 @@ export class ContractsController {
         await this.contractsService.findById(id, user.orgId!);
 
         // Fetch logs (default 20 for performance)
-        return this.auditService.getByContract(id, limit ? Number(limit) : 20);
+        return this.auditService.getByContract(id, limit ? Number(limit) : 20, user.role);
     }
 
     @Post(':id/submit')
@@ -173,20 +175,7 @@ export class ContractsController {
         @Param('id') id: string,
         @Body('target') target?: 'LEGAL' | 'FINANCE',
     ) {
-        const contract = await this.contractsService.submitForApproval(id, user.orgId!, target);
-
-        // Audit log
-        await this.auditService.log({
-            organizationId: user.orgId,
-            contractId: id,
-            userId: user.id,
-            action: AuditService.Actions.CONTRACT_SUBMITTED,
-            module: 'contracts',
-            targetType: 'Contract',
-            targetId: id,
-            metadata: { newStatus: contract?.status || 'PENDING' } as Prisma.InputJsonValue,
-        });
-
+        const contract = await this.contractsService.submitForApproval(id, user.id, user.orgId!, target);
         return contract;
     }
 
@@ -195,24 +184,14 @@ export class ContractsController {
     async sendToCounterparty(
         @CurrentUser() user: AuthenticatedUser,
         @Param('id') id: string,
+        @Body() sendDto?: { recipients?: string[]; cc?: string[]; subject?: string; body?: string },
     ) {
-        const contract = await this.contractsService.sendToCounterparty(id, user.orgId!);
-
-        // Audit log
-        await this.auditService.log({
-            organizationId: user.orgId,
-            contractId: id,
-            userId: user.id,
-            action: AuditService.Actions.CONTRACT_SENT,
-            module: 'contracts',
-            targetType: 'Contract',
-            targetId: id,
-            metadata: {
-                counterparty: contract.counterpartyEmail,
-                sentAt: contract.sentAt,
-            } as Prisma.InputJsonValue,
-        });
-
+        const contract = await this.contractsService.sendToCounterparty(
+            id,
+            user.id,
+            user.orgId!,
+            sendDto
+        );
         return contract;
     }
 
@@ -314,13 +293,16 @@ export class ContractsController {
         @Body('key') key: string,
         @Body('filename') filename: string,
         @Body('fileSize') fileSize: number,
+        @Body('isFinal') isFinal?: boolean,
     ) {
         const attachment = await this.contractsService.confirmDocumentUpload(
             id,
             user.orgId!,
+            user.id,
             key,
             filename,
-            fileSize
+            fileSize,
+            isFinal
         );
 
         // Audit log
@@ -361,6 +343,48 @@ export class ContractsController {
         return this.contractsService.getVersions(id, user.orgId!);
     }
 
+    @Get(':id/versions/compare')
+    @Permissions('contract:history')
+    async compareVersions(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+        @Query('from') fromVersionId: string,
+        @Query('to') toVersionId: string,
+    ) {
+        // Use the specialized version service for Pro Hunk-based comparison
+        const comparison = await this.contractVersionService.compareVersions(
+            id,
+            fromVersionId,
+            toVersionId,
+        );
+
+        // Audit log
+        await this.auditService.log({
+            organizationId: user.orgId,
+            userId: user.id,
+            action: 'VERSIONS_COMPARED',
+            module: 'contracts',
+            targetType: 'Contract',
+            targetId: id,
+            metadata: {
+                fromVersionId,
+                toVersionId,
+            } as Prisma.InputJsonValue,
+        });
+
+        return comparison;
+    }
+
+    @Get(':id/versions/:versionId')
+    @Permissions('contract:history')
+    async getVersion(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+        @Param('versionId') versionId: string,
+    ) {
+        return this.contractsService.getVersion(id, versionId, user.orgId!);
+    }
+
     @Get(':id/versions/:versionId/changelog')
     @Permissions('contract:history')
     async getVersionChangelog(
@@ -385,38 +409,6 @@ export class ContractsController {
 
         return changelog;
     }
-
-    @Get(':id/compare')
-    @Permissions('contract:history')
-    async compareVersions(
-        @CurrentUser() user: AuthenticatedUser,
-        @Param('id') id: string,
-        @Query('from') fromVersionId: string,
-        @Query('to') toVersionId: string,
-    ) {
-        const comparison = await this.contractsService.compareVersions(
-            id,
-            fromVersionId,
-            toVersionId,
-            user.orgId!,
-        );
-
-        // Audit log
-        await this.auditService.log({
-            organizationId: user.orgId,
-            userId: user.id,
-            action: 'VERSIONS_COMPARED',
-            module: 'contracts',
-            targetType: 'Contract',
-            targetId: id,
-            metadata: {
-                fromVersionId,
-                toVersionId,
-            } as Prisma.InputJsonValue,
-        });
-
-        return comparison;
-    }
     @Post(':id/versions/:versionId/restore')
     @Permissions('contract:restore')
     async restoreVersion(
@@ -437,6 +429,33 @@ export class ContractsController {
             targetId: versionId,
             metadata: {
                 message: `Restored to a previous version`,
+            } as Prisma.InputJsonValue,
+        });
+
+        return contract;
+    }
+    @Post(':id/revert-status')
+    @Permissions('contract:revert')
+    async revertStatus(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+        @Body('reason') reason: string,
+    ) {
+        const contract = await this.contractsService.revertStatus(id, user.orgId!, user.id, reason);
+
+        // Audit log
+        await this.auditService.log({
+            organizationId: user.orgId,
+            contractId: id,
+            userId: user.id,
+            action: 'CONTRACT_REVERTED',
+            module: 'contracts',
+            targetType: 'Contract',
+            targetId: id,
+            metadata: {
+                reason,
+                previousStatus: 'ACTIVE',
+                newStatus: 'SENT_TO_COUNTERPARTY'
             } as Prisma.InputJsonValue,
         });
 

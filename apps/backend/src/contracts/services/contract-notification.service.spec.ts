@@ -43,26 +43,34 @@ describe('ContractNotificationService', () => {
         jest.clearAllMocks();
     });
 
-    describe('notifyContractSubmission', () => {
+    describe('notifyApprovalRequest', () => {
         it('should send email to legal approver when contract submitted', async () => {
             // Arrange
             const contractWithUser = {
                 ...mockContract,
                 createdByUser: mockUser,
             };
+            prismaService.user.findMany.mockResolvedValue([{ id: 'legal-user' } as any]);
 
             // Act
-            await service.notifyContractSubmission(contractWithUser, 'LEGAL');
+            await service.notifyApprovalRequest(
+                'org-123',
+                contractWithUser.id,
+                contractWithUser.title,
+                contractWithUser.reference,
+                mockUser.name,
+                'LEGAL'
+            );
 
             // Assert
-            expect(emailService.send).toHaveBeenCalledWith(expect.objectContaining({
-                to: 'legal@example.com',
-                subject: expect.stringContaining('New Contract Requires Your Approval'),
-                data: expect.objectContaining({
-                    contractTitle: mockContract.title,
-                    submittedBy: mockUser.name,
-                }),
-            }));
+            expect(emailService.sendApprovalRequest).toHaveBeenCalledWith(
+                'legal@example.com',
+                mockContract.title,
+                mockContract.reference,
+                'LEGAL',
+                mockUser.name,
+                expect.stringContaining('/dashboard/approvals/legal')
+            );
         });
 
         it('should send email to finance approver when finance approval needed', async () => {
@@ -71,15 +79,27 @@ describe('ContractNotificationService', () => {
                 ...mockContract,
                 createdByUser: mockUser,
             };
+            prismaService.user.findMany.mockResolvedValue([{ id: 'finance-user' } as any]);
 
             // Act
-            await service.notifyContractSubmission(contractWithUser, 'FINANCE');
+            await service.notifyApprovalRequest(
+                'org-123',
+                contractWithUser.id,
+                contractWithUser.title,
+                contractWithUser.reference,
+                mockUser.name,
+                'FINANCE'
+            );
 
             // Assert
-            expect(emailService.send).toHaveBeenCalledWith(expect.objectContaining({
-                to: 'finance@example.com',
-                subject: expect.stringContaining('New Contract Requires Your Approval'),
-            }));
+            expect(emailService.sendApprovalRequest).toHaveBeenCalledWith(
+                'finance@example.com',
+                mockContract.title,
+                mockContract.reference,
+                'FINANCE',
+                mockUser.name,
+                expect.stringContaining('/dashboard/approvals/finance')
+            );
         });
 
         it('should create in-app notification for approver', async () => {
@@ -93,10 +113,17 @@ describe('ContractNotificationService', () => {
             ]);
 
             // Act
-            await service.notifyContractSubmission(contractWithUser, 'LEGAL');
+            await service.notifyApprovalRequest(
+                'org-123',
+                contractWithUser.id,
+                contractWithUser.title,
+                contractWithUser.reference,
+                mockUser.name,
+                'LEGAL'
+            );
 
             // Assert
-            expect(notificationsService.createNotification).toHaveBeenCalled();
+            expect(notificationsService.create).toHaveBeenCalled();
         });
     });
 
@@ -107,9 +134,9 @@ describe('ContractNotificationService', () => {
 
             // Act
             await service.notifyRevisionRequest(
-                'contract-123',
-                'Test Service Agreement',
                 'user-123',
+                'Test Service Agreement',
+                'contract-123',
                 'Approver Name',
                 'Please update clause 5'
             );
@@ -132,79 +159,25 @@ describe('ContractNotificationService', () => {
 
             // Act
             await service.notifyRevisionRequest(
-                'contract-123',
-                'Test Service Agreement',
                 'user-123',
+                'Test Service Agreement',
+                'contract-123',
                 'Approver Name',
                 'Please update clause 5'
             );
 
             // Assert
-            expect(notificationsService.createNotification).toHaveBeenCalledWith({
+            expect(notificationsService.create).toHaveBeenCalledWith({
                 userId: 'user-123',
-                type: 'CONTRACT_UPDATE',
+                type: 'REVISION_REQUESTED',
                 title: expect.stringContaining('Revision Requested'),
                 message: expect.stringContaining('Approver Name'),
-                link: expect.stringContaining('/contracts/contract-123'),
+                link: expect.stringContaining('/contracts/contract-123/edit'),
             });
         });
     });
 
-    describe('notifyApprovalResult', () => {
-        it('should send approval email when contract approved', async () => {
-            // Arrange
-            prismaService.user.findUnique.mockResolvedValue(mockUser);
 
-            // Act
-            await service.notifyApprovalResult(
-                'contract-123',
-                'Test Service Agreement',
-                'user-123',
-                true,
-                'LEGAL',
-                'Approver Name',
-                'Looks good!'
-            );
-
-            // Assert
-            expect(emailService.send).toHaveBeenCalledWith(expect.objectContaining({
-                to: mockUser.email,
-                subject: expect.stringContaining('Approved'),
-                data: expect.objectContaining({
-                    contractTitle: 'Test Service Agreement',
-                    approverName: 'Approver Name',
-                    approvalType: 'Legal',
-                }),
-            }));
-        });
-
-        it('should send rejection email when contract rejected', async () => {
-            // Arrange
-            prismaService.user.findUnique.mockResolvedValue(mockUser);
-
-            // Act
-            await service.notifyApprovalResult(
-                'contract-123',
-                'Test Service Agreement',
-                'user-123',
-                false,
-                'FINANCE',
-                'Approver Name',
-                'Budget exceeded'
-            );
-
-            // Assert
-            expect(emailService.send).toHaveBeenCalledWith(expect.objectContaining({
-                to: mockUser.email,
-                subject: expect.stringContaining('Rejected'),
-                data: expect.objectContaining({
-                    contractTitle: 'Test Service Agreement',
-                    approvalType: 'Finance',
-                    comment: 'Budget exceeded',
-                }),
-            }));
-        });
-    });
 
     describe('notifyContractActivated', () => {
         it('should send activation email to contract creator', async () => {
@@ -217,7 +190,7 @@ describe('ContractNotificationService', () => {
             prismaService.contract.findUnique.mockResolvedValue(contractData as any);
 
             // Act
-            await service.notifyContractActivated('contract-123');
+            await service.notifyContractActivated('creator@example.com', 'Contract Title', 'REF-123', 'contract-123');
 
             // Assert
             expect(emailService.send).toHaveBeenCalledWith(expect.objectContaining({
@@ -225,8 +198,9 @@ describe('ContractNotificationService', () => {
                 template: 'CONTRACT_SIGNED' as any,
                 subject: expect.stringContaining('Fully Executed'),
                 data: expect.objectContaining({
-                    contractTitle: 'Test Service Agreement',
-                    contractReference: 'REF-2024-001',
+                    contractTitle: 'Contract Title',
+                    contractReference: 'REF-123',
+                    contractUrl: expect.any(String),
                 }),
             }));
         });

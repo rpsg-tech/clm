@@ -4,6 +4,31 @@ import * as DiffLib from 'diff';
 // Handle ESM/CJS interop for diff library
 const Diff = (DiffLib as any).default || DiffLib;
 
+import * as crypto from 'crypto';
+
+export interface Hunk {
+    sectionTitle?: string;
+    oldStart: number;
+    newStart: number;
+    oldLines: number;
+    newLines: number;
+    lines: Array<{
+        type: 'added' | 'removed' | 'context';
+        content: string;
+        lineNumber?: number;
+    }>;
+}
+
+export interface ChangeHunkResult {
+    hunks: Hunk[];
+    stats: {
+        additions: number;
+        deletions: number;
+        total: number;
+    };
+    contentHash: string;
+}
+
 export interface FieldChange {
     field: string;
     label: string;
@@ -323,6 +348,87 @@ export class DiffService {
         text = text.replace(/<\/h[1-6]>/gi, '\n');
         text = text.replace(/<[^>]*>/g, '');
         return text.trim();
+    }
+
+    /**
+     * Calculate SHA-256 hash of content
+     */
+    calculateHash(content: string): string {
+        return crypto.createHash('sha256').update(content || '').digest('hex');
+    }
+
+    /**
+     * Calculate changes as hunks (Pro Diffing)
+     * Returns structured hunks with context and section headers
+     */
+    async calculateHunks(oldContent: string, newContent: string): Promise<ChangeHunkResult> {
+        const oldText = this.stripHtml(oldContent);
+        const newText = this.stripHtml(newContent);
+        const contentHash = this.calculateHash(newText);
+
+        if (oldText === newText) {
+            return { hunks: [], stats: { additions: 0, deletions: 0, total: 0 }, contentHash };
+        }
+
+        // Use patch-style diffing to get logical hunks
+        const patch = Diff.createPatch('content.txt', oldText, newText, '', '', { context: 5 });
+        const parsedPatch = Diff.parsePatch(patch)[0];
+
+        const hunks: Hunk[] = parsedPatch.hunks.map((h: any) => {
+            const lines = h.lines.map((line: string) => {
+                const typeChar = line[0];
+                const content = line.substring(1);
+                let type: 'added' | 'removed' | 'context' = 'context';
+                if (typeChar === '+') type = 'added';
+                else if (typeChar === '-') type = 'removed';
+                return { type, content };
+            });
+
+            // Section Detection: Find nearest header above hunk
+            const sectionTitle = this.detectSection(oldText, h.oldStart);
+
+            return {
+                sectionTitle,
+                oldStart: h.oldStart,
+                newStart: h.newStart,
+                oldLines: h.oldLines,
+                newLines: h.newLines,
+                lines
+            };
+        });
+
+        const stats = {
+            additions: hunks.reduce((acc, h) => acc + h.lines.filter(l => l.type === 'added').length, 0),
+            deletions: hunks.reduce((acc, h) => acc + h.lines.filter(l => l.type === 'removed').length, 0),
+            total: hunks.length
+        };
+
+        return { hunks, stats, contentHash };
+    }
+
+    /**
+     * Finds the nearest header (Section X:) above a given line index
+     */
+    private detectSection(text: string, startLine: number): string | undefined {
+        const lines = text.split('\n');
+        // Look back up to 50 lines for a header
+        const searchRange = Math.max(0, startLine - 1);
+        const lookbackLimit = Math.max(0, searchRange - 50);
+
+        for (let i = searchRange; i >= lookbackLimit; i--) {
+            const line = lines[i]?.trim();
+            if (!line) continue;
+
+            // Common legal header patterns:
+            // 1. "SECTION 1: ..." 
+            // 2. "1. DEFINITIONS"
+            // 3. "ARTICLE IV"
+            const headerRegex = /^(SECTION\s+\d+|ARTICLE\s+[IVXLC]+|\d+\.\s+[A-Z\s]{5,})/i;
+            if (headerRegex.test(line)) {
+                return line.length > 50 ? line.substring(0, 47) + '...' : line;
+            }
+        }
+        return undefined;
     }
 
     /**

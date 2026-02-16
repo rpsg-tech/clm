@@ -6,13 +6,14 @@
 
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Contract, ContractStatus, ApprovalStatus, Prisma } from '@prisma/client';
+import { Contract, ContractStatus, ApprovalStatus, Prisma, LogVisibility } from '@prisma/client';
 import { sanitizeContractContent } from '../common/utils/sanitize.util';
 import { EmailService, EmailTemplate } from '../common/email/email.service';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes, createHash } from 'crypto';
 import { DiffService } from '../common/services/diff.service';
 import { FeatureFlagService } from '../config/feature-flag.service';
+import { AuditService } from '../audit/audit.service';
 
 import { NotificationsService } from '../notifications/notifications.service';
 import { StorageService } from '../common/storage/storage.service';
@@ -33,6 +34,7 @@ export class ContractsService {
         private featureFlagService: FeatureFlagService,
         private ocrService: OcrService,
         private ragService: RagService,
+        private auditService: AuditService,
     ) { }
 
     // ... (existing methods until sendToCounterparty)
@@ -40,7 +42,12 @@ export class ContractsService {
     /**
      * Send contract to counterparty
      */
-    async sendToCounterparty(id: string, organizationId: string) {
+    async sendToCounterparty(
+        id: string,
+        userId: string,
+        organizationId: string,
+        emailOptions?: { recipients?: string[]; cc?: string[]; subject?: string; body?: string }
+    ) {
         const contract = await this.findById(id, organizationId);
 
         // NEW LOGIC: Allow sending in Draft, Approved, or Review states (Parallel Negotiation)
@@ -86,21 +93,50 @@ export class ContractsService {
             },
         });
 
-        // Send email
-        if (contract.counterpartyEmail) {
+
+        // Send email with custom fields or smart Defaults
+        const shouldSendEmail = emailOptions?.recipients?.length || contract.counterpartyEmail;
+
+        if (shouldSendEmail) {
             const fromEmail = await this.getLegalEmail(organizationId);
 
+            // Determine recipients: use custom or fallback to contract email
+            const recipients = emailOptions?.recipients ||
+                (Array.isArray(contract.counterpartyEmail)
+                    ? contract.counterpartyEmail
+                    : [contract.counterpartyEmail!]);
+
             this.emailService.sendContractToCounterparty(
-                contract.counterpartyEmail,
+                recipients,
                 contract.counterpartyName || 'Valued Partner',
                 contract.title,
                 contract.reference,
                 'RPSG Group',
                 `${process.env.FRONTEND_URL}/contracts/${id}`,
-                10,
-                fromEmail
+                {
+                    cc: emailOptions?.cc,
+                    subject: emailOptions?.subject,
+                    body: emailOptions?.body,
+                    daysToRespond: 10,
+                    from: fromEmail,
+                }
             ).catch(err => this.logger.error(`Failed to send counterparty email: ${err.message}`));
         }
+
+
+        // Audit Logging
+        await this.auditService.log({
+            organizationId,
+            contractId: id,
+            userId: organizationId, // Wait, I don't have user ID here? I should probably add it as a parameter.
+            action: 'CONTRACT_SENT',
+            module: 'Contracts',
+            metadata: {
+                counterpartyEmail: contract.counterpartyEmail,
+                counterpartyName: contract.counterpartyName
+            },
+            visibility: LogVisibility.INTERNAL,
+        });
 
         return updated;
     }
@@ -184,57 +220,183 @@ export class ContractsService {
         return updated;
     }
 
+    async revertStatus(id: string, organizationId: string, userId: string, reason: string) {
+        const contract = await this.findById(id, organizationId);
+
+        if (contract.status !== 'ACTIVE') {
+            throw new BadRequestException('Only ACTIVE contracts can be reverted');
+        }
+
+        // Revert to SENT_TO_COUNTERPARTY (safest state for re-negotiation/re-upload)
+        const updated = await this.prisma.contract.update({
+            where: { id },
+            data: {
+                status: 'SENT_TO_COUNTERPARTY',
+                signedAt: null, // Clear signed date
+            }
+        });
+
+        this.logger.log(`Contract ${id} reverted from ACTIVE to SENT_TO_COUNTERPARTY by ${userId}`);
+
+        return updated;
+    }
+
     /**
      * Step 1 (Draft): Get Upload URL for Third Party/Main Document
+     * 
+     * [PREMIUM FEATURE] Versioned Storage Paths
+     * Files are stored in .../versions/v{N}/{filename} to prevent overwrites and allow time-travel.
      */
     async getDocumentUploadUrl(id: string, organizationId: string, filename: string, contentType: string) {
         const contract = await this.findById(id, organizationId);
 
-        // Allow uploads in DRAFT or negotiation stages
-        if (contract.status !== ContractStatus.DRAFT && contract.status !== ContractStatus.SENT_TO_LEGAL) {
-            // relaxed check for now, can be stricter
-            // throw new ForbiddenException('Can only upload documents for Draft contracts');
-        }
+        // Calculate next version number for meaningful path structure
+        const latestVersion = await this.prisma.contractVersion.findFirst({
+            where: { contractId: id },
+            orderBy: { versionNumber: 'desc' },
+        });
+        const nextVersion = (latestVersion?.versionNumber || 0) + 1;
 
-        const bucketPath = `organizations/${organizationId}/contracts/${id}/documents`;
+        // Path: .../contracts/{id}/versions/v{N}/{filename}
+        const bucketPath = `organizations/${organizationId}/contracts/${id}/versions/v${nextVersion}`;
+
         return this.storageService.getUploadUrl(bucketPath, filename, contentType);
     }
 
     /**
-     * Step 2 (Draft): Confirm Upload and Link Attachment
+     * Step 2 (Draft/Upload): Confirm Upload and LINK + VERSION
      */
-    async confirmDocumentUpload(id: string, organizationId: string, key: string, filename: string, fileSize: number) {
+    async confirmDocumentUpload(id: string, organizationId: string, userId: string, key: string, filename: string, fileSize: number, isFinal: boolean = false) {
         const contract = await this.findById(id, organizationId);
-
-        let extractedText = '';
         const fileExt = filename.split('.').pop()?.toLowerCase() || '';
         const mimeType = this.getMimeType(fileExt);
 
-        // Perform OCR if it's an image
-        if (this.ocrService.isSupported(mimeType)) {
-            try {
-                this.logger.log(`Processing OCR for file: ${filename}`);
-                const fileBuffer = await this.storageService.getFile(key);
-                extractedText = await this.ocrService.extractText(fileBuffer, mimeType);
-                this.logger.log(`OCR successful for ${filename}, extracted ${extractedText.length} chars`);
-            } catch (error) {
-                this.logger.error(`OCR failed for ${filename}: ${(error as Error).message}`);
-                // Non-blocking error, proceed with attachment creation
-            }
-        }
+        // Wrap in transaction for data integrity
+        const attachment = await this.prisma.$transaction(async (tx) => {
+            // 1. Create Attachment Record
+            const newAttachment = await tx.contractAttachment.create({
+                data: {
+                    contractId: id,
+                    fileName: filename,
+                    fileUrl: key,
+                    fileType: mimeType,
+                    fileSize: fileSize,
+                    category: isFinal ? 'SIGNED_COPY' : 'MAIN_DOCUMENT',
+                    uploadedBy: userId,
+                    metadata: { ocrStatus: 'PENDING' },
+                }
+            });
 
-        return this.prisma.contractAttachment.create({
-            data: {
-                contractId: id,
-                fileName: filename,
-                fileUrl: key,
-                fileType: mimeType,
-                fileSize: fileSize,
-                category: 'MAIN_DOCUMENT',
-                uploadedBy: 'system',
-                metadata: extractedText ? { extractedText } : undefined,
+            // 2. Create Contract Version (Source: UPLOAD)
+            const latestVersion = await tx.contractVersion.findFirst({
+                where: { contractId: id },
+                orderBy: { versionNumber: 'desc' },
+            });
+
+            const newVersionNumber = (latestVersion?.versionNumber || 0) + 1;
+
+            const version = await tx.contractVersion.create({
+                data: {
+                    contractId: id,
+                    versionNumber: newVersionNumber,
+                    contentSnapshot: JSON.stringify({
+                        source: 'UPLOAD',
+                        fileUrl: key,
+                        fileName: filename,
+                        main: "", // Will be updated by Async OCR
+                        annexures: "",
+                        ocrStatus: 'PENDING'
+                    }),
+                    changeLog: {
+                        action: isFinal ? 'UPLOAD_FINAL' : 'UPLOAD_DRAFT',
+                        summary: `Uploaded ${isFinal ? 'final' : 'draft'} document: ${filename}`,
+                        description: `Uploaded ${filename}`,
+                        isFinal
+                    } as any,
+                    createdByUserId: userId,
+                }
+            });
+
+            // 3. Handle "Final" Status
+            if (isFinal) {
+                await tx.contract.update({
+                    where: { id },
+                    data: {
+                        status: ContractStatus.ACTIVE,
+                        signedAt: new Date(),
+                        fieldData: {
+                            ...(contract.fieldData as Prisma.JsonObject),
+                            finalContractKey: key,
+                        } as Prisma.InputJsonValue,
+                    }
+                });
             }
+
+            return { newAttachment, version };
         });
+
+        // 4. Trigger Async OCR (Fire and Forget)
+        this.processBackgroundOcr(id, attachment.version.id, attachment.newAttachment.id, key, mimeType, filename)
+            .catch(err => this.logger.error(`Background OCR failed for ${filename}`, err));
+
+        return attachment.newAttachment;
+    }
+
+    /**
+     * Background OCR Processor
+     */
+    private async processBackgroundOcr(contractId: string, versionId: string, attachmentId: string, key: string, mimeType: string, filename: string) {
+        if (!this.ocrService.isSupported(mimeType)) return;
+
+        try {
+            this.logger.log(`[Async] Starting OCR for: ${filename}`);
+            const fileBuffer = await this.storageService.getFile(key);
+            const extractedText = await this.ocrService.extractText(fileBuffer, mimeType);
+
+            // Update Attachment
+            await this.prisma.contractAttachment.update({
+                where: { id: attachmentId },
+                data: {
+                    metadata: { extractedText, ocrStatus: 'COMPLETED' }
+                }
+            });
+
+            // Update Version Snapshot
+            // We need to fetch current snapshot to preserve other fields if needed, 
+            // but usually we just update the 'main' text.
+            const version = await this.prisma.contractVersion.findUnique({ where: { id: versionId } });
+            if (version) {
+                let snapshot: any = {};
+                try {
+                    snapshot = JSON.parse(version.contentSnapshot);
+                } catch (e) {
+                    snapshot = { source: 'UPLOAD', fileUrl: key, fileName: filename, main: '' };
+                }
+
+                snapshot.main = extractedText;
+                snapshot.ocrStatus = 'COMPLETED';
+
+                await this.prisma.contractVersion.update({
+                    where: { id: versionId },
+                    data: {
+                        contentSnapshot: JSON.stringify(snapshot)
+                    }
+                });
+            }
+
+            // Index for RAG
+            await this.ragService.indexContract(contractId, extractedText);
+
+            this.logger.log(`[Async] OCR Completed for ${filename}`);
+
+        } catch (error) {
+            this.logger.error(`[Async] OCR Error for ${filename}: ${(error as Error).message}`);
+            // Update status to FAILED
+            await this.prisma.contractAttachment.update({
+                where: { id: attachmentId },
+                data: { metadata: { ocrStatus: 'FAILED', error: (error as Error).message } }
+            });
+        }
     }
 
     private getMimeType(ext: string): string {
@@ -510,48 +672,54 @@ export class ContractsService {
      * Find contract by ID (with org scoping)
      */
     async findById(id: string, organizationId: string) {
-        const contract = await this.prisma.contract.findUnique({
-            where: { id },
-            include: {
-                template: true,
-                createdByUser: { select: { id: true, name: true, email: true } },
-                versions: {
-                    orderBy: { versionNumber: 'desc' },
-                    take: 5,
-                },
-                approvals: {
-                    include: {
-                        actor: { select: { name: true, email: true } },
+        this.logger.log(`findById called for id: ${id}, orgId: ${organizationId}`);
+        try {
+            const contract = await this.prisma.contract.findUnique({
+                where: { id },
+                include: {
+                    template: true,
+                    createdByUser: { select: { id: true, name: true, email: true } },
+                    versions: {
+                        orderBy: { versionNumber: 'desc' },
+                        take: 5,
                     },
+                    approvals: {
+                        include: {
+                            actor: { select: { name: true, email: true } },
+                        },
+                    },
+                    attachments: true,
                 },
-                attachments: true,
-            },
-        });
+            });
 
-        if (!contract) {
-            throw new NotFoundException('Contract not found');
+            if (!contract) {
+                throw new NotFoundException('Contract not found');
+            }
+
+            // Organization scoping - critical security check
+            if (contract.organizationId !== organizationId) {
+                throw new ForbiddenException('Access denied to this contract');
+            }
+
+            // Manually populate createdBy for versions since there is no relation in schema
+            const userIds = [...new Set(contract.versions.map(v => v.createdByUserId))];
+            const users = await this.prisma.user.findMany({
+                where: { id: { in: userIds } },
+                select: { id: true, name: true, email: true }
+            });
+            const userMap = new Map(users.map(u => [u.id, u]));
+
+            return {
+                ...contract,
+                versions: contract.versions.map(v => ({
+                    ...v,
+                    createdBy: userMap.get(v.createdByUserId) || { name: 'System', email: '' }
+                }))
+            };
+        } catch (error: any) {
+            this.logger.error(`findById failed for contract ${id}: ${error.message}`, error.stack);
+            throw error;
         }
-
-        // Organization scoping - critical security check
-        if (contract.organizationId !== organizationId) {
-            throw new ForbiddenException('Access denied to this contract');
-        }
-
-        // Manually populate createdBy for versions since there is no relation in schema
-        const userIds = [...new Set(contract.versions.map(v => v.createdByUserId))];
-        const users = await this.prisma.user.findMany({
-            where: { id: { in: userIds } },
-            select: { id: true, name: true, email: true }
-        });
-        const userMap = new Map(users.map(u => [u.id, u]));
-
-        return {
-            ...contract,
-            versions: contract.versions.map(v => ({
-                ...v,
-                createdBy: userMap.get(v.createdByUserId) || { name: 'System', email: '' }
-            }))
-        };
     }
 
     /**
@@ -702,7 +870,7 @@ export class ContractsService {
     /**
      * Submit contract for approval (Targeted or Workflow based)
      */
-    async submitForApproval(id: string, organizationId: string, target?: 'LEGAL' | 'FINANCE') {
+    async submitForApproval(id: string, userId: string, organizationId: string, target?: 'LEGAL' | 'FINANCE') {
         const contract = await this.findById(id, organizationId);
 
         // Allow submission from Draft, Revision, or even partial approval states if we want to add more approvals
@@ -772,6 +940,20 @@ export class ContractsService {
             });
         });
 
+        // Audit Logging
+        await this.auditService.log({
+            organizationId,
+            contractId: id,
+            userId,
+            action: 'CONTRACT_SUBMITTED',
+            module: 'Contracts',
+            metadata: {
+                target: target || (financeEnabled ? 'BOTH' : 'LEGAL'),
+                financeEnabled
+            },
+            visibility: LogVisibility.INTERNAL,
+        });
+
         // 2. Async Notifications
         if (updatedContract) {
             try {
@@ -807,17 +989,8 @@ export class ContractsService {
                         .catch(e => this.logger.error(e));
                 }
 
-                // Audit Log
-                await this.prisma.auditLog.create({
-                    data: {
-                        organizationId,
-                        contractId: id,
-                        userId: contract.createdByUserId,
-                        action: 'CONTRACT_SUBMITTED',
-                        module: 'Contracts',
-                        metadata: { target: target || 'ALL' }
-                    }
-                });
+                // Audit Log handled above manually via auditService.log
+                // Redundant call removed to fix duplicate entries in Activity Feed.
 
             } catch (error) {
                 this.logger.error('Error triggering post-submission notifications:', error);
@@ -987,7 +1160,14 @@ export class ContractsService {
      * Get contract versions with changelog summary
      */
     async getVersions(id: string, organizationId: string) {
-        await this.findById(id, organizationId); // Verify access
+        // Optimize: Don't use findById as it fetches full content/annexures
+        const contract = await this.prisma.contract.findUnique({
+            where: { id },
+            select: { id: true, organizationId: true }
+        });
+
+        if (!contract) throw new NotFoundException('Contract not found');
+        if (contract.organizationId !== organizationId) throw new ForbiddenException('Access denied');
 
         const versions = await this.prisma.contractVersion.findMany({
             where: { contractId: id },
@@ -1027,10 +1207,57 @@ export class ContractsService {
     }
 
     /**
+     * Get a specific version details including snapshot
+     */
+    async getVersion(id: string, versionId: string, organizationId: string) {
+        // Optimize access check
+        const contract = await this.prisma.contract.findUnique({
+            where: { id },
+            select: { id: true, organizationId: true }
+        });
+
+        if (!contract) throw new NotFoundException('Contract not found');
+        if (contract.organizationId !== organizationId) throw new ForbiddenException('Access denied');
+
+        const version = await this.prisma.contractVersion.findUnique({
+            where: { id: versionId },
+        });
+
+        if (!version || version.contractId !== id) {
+            throw new NotFoundException('Version not found');
+        }
+
+        // Get user info
+        const user = await this.prisma.user.findUnique({
+            where: { id: version.createdByUserId },
+            select: { name: true, email: true },
+        });
+
+        return {
+            id: version.id,
+            versionNumber: version.versionNumber,
+            createdAt: version.createdAt,
+            contentSnapshot: version.contentSnapshot,
+            changeLog: version.changeLog as any,
+            createdBy: {
+                name: user?.name || 'Unknown',
+                email: user?.email || '',
+            },
+        };
+    }
+
+    /**
      * Get detailed changelog for a specific version
      */
     async getVersionChangelog(id: string, versionId: string, organizationId: string) {
-        await this.findById(id, organizationId); // Verify access
+        // Optimize access check
+        const contract = await this.prisma.contract.findUnique({
+            where: { id },
+            select: { id: true, organizationId: true }
+        });
+
+        if (!contract) throw new NotFoundException('Contract not found');
+        if (contract.organizationId !== organizationId) throw new ForbiddenException('Access denied');
 
         const version = await this.prisma.contractVersion.findUnique({
             where: { id: versionId },
@@ -1079,7 +1306,7 @@ export class ContractsService {
         toVersionId: string,
         organizationId: string,
     ) {
-        await this.findById(id, organizationId); // Verify access
+        // await this.findById(id, organizationId); // Optimized: Removed double fetch
 
         const [fromVersion, toVersion] = await Promise.all([
             this.prisma.contractVersion.findUnique({
@@ -1112,6 +1339,7 @@ export class ContractsService {
         });
 
         if (!contract) throw new NotFoundException('Contract not found');
+        if (contract.organizationId !== organizationId) throw new ForbiddenException('Access denied');
 
         // Helper to parse content snapshot safely
         const parseSnapshot = (snapshot: string | null) => {

@@ -6,11 +6,12 @@
 
 import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { ApprovalStatus, ApprovalType, ContractStatus } from '@prisma/client';
+import { ApprovalStatus, ApprovalType, ContractStatus, LogVisibility } from '@prisma/client';
 
 import { EmailService, EmailTemplate } from '../common/email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class ApprovalsService {
@@ -21,6 +22,7 @@ export class ApprovalsService {
         private emailService: EmailService,
         private notificationsService: NotificationsService,
         private analyticsService: AnalyticsService,
+        private auditService: AuditService,
     ) { }
 
 
@@ -89,6 +91,7 @@ export class ApprovalsService {
             if (isLegalPending) {
                 newStatus = ContractStatus.SENT_TO_LEGAL;
             } else if (isFinancePending) {
+                // Fix: If Legal is approved but Finance is pending, status must be SENT_TO_FINANCE (or FINANCE_REVIEW_IN_PROGRESS)
                 newStatus = ContractStatus.FINANCE_REVIEW_IN_PROGRESS;
             } else {
                 // No pending reviews?
@@ -115,6 +118,21 @@ export class ApprovalsService {
             );
 
             return { contract: updatedContract, approval };
+        });
+
+        // Audit Logging
+        await this.auditService.log({
+            organizationId,
+            contractId: result.contract.id,
+            userId: actorId,
+            action: result.contract.status === ContractStatus.APPROVED ? 'CONTRACT_APPROVED' : `CONTRACT_${result.approval.type}_APPROVED`,
+            module: 'Contracts',
+            metadata: {
+                comment,
+                approvalType: result.approval.type,
+                fullyApproved: result.contract.status === ContractStatus.APPROVED
+            },
+            visibility: LogVisibility.INTERNAL,
         });
 
         // Notifications (Outside Transaction)
@@ -206,6 +224,20 @@ export class ApprovalsService {
             return { contract: updatedContract, approval };
         });
 
+        // Audit Logging
+        await this.auditService.log({
+            organizationId,
+            contractId: result.contract.id,
+            userId: actorId,
+            action: 'CONTRACT_REJECTED',
+            module: 'Contracts',
+            metadata: {
+                comment,
+                rejectionType: result.approval.type
+            },
+            visibility: LogVisibility.INTERNAL,
+        });
+
         // Notifications (Outside Transaction)
         try {
             const { contract: updatedContract, approval: updatedApproval } = result;
@@ -295,6 +327,17 @@ export class ApprovalsService {
             return { contract: updatedContract, approval };
         });
 
+        // Audit Logging (Visibility: LEGAL_ONLY)
+        await this.auditService.log({
+            organizationId,
+            contractId: result.contract.id,
+            userId: actorId,
+            action: 'CONTRACT_RETURNED_TO_MANAGER',
+            module: 'Contracts',
+            metadata: { comment },
+            visibility: LogVisibility.LEGAL_ONLY,
+        });
+
         // Notifications
         try {
             // Notify the Manager (escalatedBy)
@@ -366,6 +409,20 @@ export class ApprovalsService {
             );
 
             return { contract: updatedContract, approval };
+        });
+
+        // Audit Logging
+        await this.auditService.log({
+            organizationId,
+            contractId: result.contract.id,
+            userId: actorId,
+            action: 'CONTRACT_REVISION_REQUESTED',
+            module: 'Contracts',
+            metadata: {
+                comment,
+                source: result.approval.type
+            },
+            visibility: LogVisibility.INTERNAL,
         });
 
         // Notifications (Outside Transaction)
@@ -510,6 +567,20 @@ export class ApprovalsService {
             );
 
             return { contract: updatedContract, approval, legalHead };
+        });
+
+        // Audit Logging
+        await this.auditService.log({
+            organizationId,
+            contractId,
+            userId,
+            action: 'CONTRACT_ESCALATED',
+            module: 'Contracts',
+            metadata: {
+                reason: reason || 'Escalated for Legal Head review',
+                escalatedTo: result.legalHead.name
+            },
+            visibility: LogVisibility.INTERNAL,
         });
 
         // 6. Send notifications (outside transaction)

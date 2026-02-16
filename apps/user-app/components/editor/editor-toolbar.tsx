@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Editor } from '@tiptap/react';
+import { TableBuilder } from './menus/table-builder';
+import { KeyboardShortcutsHelp } from './menus/keyboard-shortcuts-help';
 import {
     Bold, Italic, Strikethrough, Underline, Code,
     List, ListOrdered, Quote, Minus, Undo, Redo,
     Link as LinkIcon, Image as ImageIcon, Table as TableIcon,
     Subscript as SubIcon, Superscript as SuperIcon,
-    Merge, Split, Scissors
+    Merge, Split, Scissors, Keyboard
 } from 'lucide-react';
 
 interface EditorToolbarProps {
@@ -16,6 +18,9 @@ interface EditorToolbarProps {
 
 export function EditorToolbar({ editor }: EditorToolbarProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [showTableBuilder, setShowTableBuilder] = useState(false);
+    const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+    const tableButtonRef = useRef<HTMLButtonElement>(null);
 
     if (!editor) {
         return null;
@@ -132,7 +137,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     };
 
     return (
-        <div className="flex flex-wrap items-center gap-1 p-2 bg-white border-b border-slate-100 sticky top-0 z-10 w-full">
+        <div className="flex flex-wrap items-center gap-2 px-4 py-3 bg-white border-b border-slate-200 sticky top-0 z-10 w-full shadow-sm">
             <input
                 type="file"
                 ref={fileInputRef}
@@ -142,27 +147,30 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             />
 
             {/* History */}
-            <div className="flex items-center gap-1 pr-2 border-r border-slate-100 mr-1">
-                <ToggleButton onClick={() => editor.chain().focus().undo().run()} title="Undo">
+            <div className="flex items-center gap-0.5 pr-2 border-r border-slate-200 mr-1">
+                <ToggleButton onClick={() => editor.chain().focus().undo().run()} title="Undo (Cmd+Z)">
                     <Undo size={16} />
                 </ToggleButton>
-                <ToggleButton onClick={() => editor.chain().focus().redo().run()} title="Redo">
+                <ToggleButton onClick={() => editor.chain().focus().redo().run()} title="Redo (Cmd+Shift+Z)">
                     <Redo size={16} />
                 </ToggleButton>
             </div>
 
             {/* Typography */}
-            <div className="flex items-center px-1 border-r border-slate-100 gap-1 mr-1">
+            <div className="flex items-center px-1 border-r border-slate-200 gap-2 mr-1">
                 <select
                     value={getCurrentHeadingValue()}
                     onChange={handleHeadingChange}
                     className="h-8 px-2 text-sm bg-transparent border border-gray-200 rounded hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-100 cursor-pointer text-slate-700 font-medium w-28"
                     title="Heading Level"
                 >
-                    <option value="p">Normal</option>
+                    <option value="p">Normal Text</option>
                     <option value="h1">Heading 1</option>
                     <option value="h2">Heading 2</option>
                     <option value="h3">Heading 3</option>
+                    <option value="h4">Heading 4</option>
+                    <option value="h5">Heading 5</option>
+                    <option value="h6">Heading 6</option>
                 </select>
                 <select
                     value={getCurrentFontValue()}
@@ -178,7 +186,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             </div>
 
             {/* Alignment */}
-            <div className="flex items-center px-1 border-r border-slate-100 mr-1">
+            <div className="flex items-center px-1 border-r border-slate-200 mr-1">
                 <select
                     value={getCurrentAlignValue()}
                     onChange={handleAlignChange}
@@ -193,7 +201,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             </div>
 
             {/* Basic Formatting */}
-            <div className="flex items-center gap-1 pr-2 border-r border-slate-100 mr-1">
+            <div className="flex items-center gap-0.5 pr-2 border-r border-slate-200 mr-1">
                 <ToggleButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive('bold')} title="Bold">
                     <Bold size={16} />
                 </ToggleButton>
@@ -222,7 +230,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
             </div>
 
             {/* Advanced Formatting */}
-            <div className="flex items-center gap-1 pr-2 border-r border-slate-100 mr-1">
+            <div className="flex items-center gap-0.5 pr-2 border-r border-slate-200 mr-1">
                 <ToggleButton onClick={() => editor.chain().focus().toggleSubscript().run()} isActive={editor.isActive('subscript')} title="Subscript">
                     <SubIcon size={16} />
                 </ToggleButton>
@@ -236,7 +244,7 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
 
 
             {/* Inserts */}
-            <div className="flex items-center gap-1 pr-2 border-r border-slate-100 mr-1">
+            <div className="flex items-center gap-0.5 pr-2 border-r border-slate-200 mr-1">
                 <select
                     onChange={(e) => {
                         const [key, label] = e.target.value.split('|');
@@ -266,9 +274,40 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                 <ToggleButton onClick={triggerImageUpload} isActive={false} title="Image">
                     <ImageIcon size={16} />
                 </ToggleButton>
-                <ToggleButton onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()} isActive={false} title="Table">
-                    <TableIcon size={16} />
-                </ToggleButton>
+
+                {/* Table Builder with Popover */}
+                <div className="relative">
+                    <button
+                        ref={tableButtonRef}
+                        onClick={() => setShowTableBuilder(!showTableBuilder)}
+                        className={`p-2 rounded-lg transition-all ${showTableBuilder
+                            ? 'bg-slate-900 text-white shadow-sm'
+                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                            }`}
+                        title="Insert Table"
+                        type="button"
+                    >
+                        <TableIcon size={16} />
+                    </button>
+
+                    {showTableBuilder && (
+                        <>
+                            {/* Backdrop */}
+                            <div
+                                className="fixed inset-0 z-10"
+                                onClick={() => setShowTableBuilder(false)}
+                            />
+
+                            {/* Popover */}
+                            <div className="absolute top-full left-0 mt-2 z-20">
+                                <TableBuilder
+                                    editor={editor}
+                                    onClose={() => setShowTableBuilder(false)}
+                                />
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Lists */}
@@ -287,57 +326,19 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
                 </ToggleButton>
             </div>
 
-            {/* Table Controls (Contextual) */}
-            {editor.isActive('table') && (
-                <div className="flex items-center gap-1 pl-2 border-l border-slate-100 ml-1 bg-slate-50 rounded-r-lg overflow-x-auto">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 mr-1">Table:</span>
+            {/* Keyboard Shortcuts Help Button */}
+            <button
+                onClick={() => setShowShortcutsHelp(true)}
+                className="p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900 rounded-lg transition-all"
+                title="Keyboard Shortcuts (? to open)"
+                type="button"
+            >
+                <Keyboard size={16} />
+            </button>
 
-                    {/* Cells */}
-                    <div className="flex gap-0.5">
-                        <ToggleButton onClick={() => editor.chain().focus().mergeCells().run()} title="Merge Cells">
-                            <Merge size={14} />
-                        </ToggleButton>
-                        <ToggleButton onClick={() => editor.chain().focus().splitCell().run()} title="Split Cell">
-                            <Split size={14} />
-                        </ToggleButton>
-                    </div>
-
-                    <div className="w-px h-4 bg-slate-300 mx-1"></div>
-
-                    {/* Columns */}
-                    <div className="flex gap-0.5 items-center">
-                        <ToggleButton onClick={() => editor.chain().focus().addColumnBefore().run()} title="Add Column Before">
-                            <span className="text-[10px] font-bold">+Col&lt;</span>
-                        </ToggleButton>
-                        <ToggleButton onClick={() => editor.chain().focus().addColumnAfter().run()} title="Add Column After">
-                            <span className="text-[10px] font-bold">+Col&gt;</span>
-                        </ToggleButton>
-                        <ToggleButton onClick={() => editor.chain().focus().deleteColumn().run()} title="Delete Column" className="text-rose-500 hover:bg-rose-50 hover:text-rose-600">
-                            <span className="text-[10px] font-bold px-1">×Col</span>
-                        </ToggleButton>
-                    </div>
-
-                    <div className="w-px h-4 bg-slate-300 mx-1"></div>
-
-                    {/* Rows */}
-                    <div className="flex gap-0.5 items-center">
-                        <ToggleButton onClick={() => editor.chain().focus().addRowBefore().run()} title="Add Row Before">
-                            <span className="text-[10px] font-bold">+Row^</span>
-                        </ToggleButton>
-                        <ToggleButton onClick={() => editor.chain().focus().addRowAfter().run()} title="Add Row After">
-                            <span className="text-[10px] font-bold">+Rowv</span>
-                        </ToggleButton>
-                        <ToggleButton onClick={() => editor.chain().focus().deleteRow().run()} title="Delete Row" className="text-rose-500 hover:bg-rose-50 hover:text-rose-600">
-                            <span className="text-[10px] font-bold px-1">×Row</span>
-                        </ToggleButton>
-                    </div>
-
-                    <div className="w-px h-4 bg-slate-300 mx-1"></div>
-
-                    <ToggleButton onClick={() => editor.chain().focus().deleteTable().run()} title="Delete Entire Table">
-                        <Scissors size={14} className="text-red-600" />
-                    </ToggleButton>
-                </div>
+            {/* Keyboard Shortcuts Help Dialog */}
+            {showShortcutsHelp && (
+                <KeyboardShortcutsHelp onClose={() => setShowShortcutsHelp(false)} />
             )}
         </div>
     );

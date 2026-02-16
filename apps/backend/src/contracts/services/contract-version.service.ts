@@ -8,9 +8,10 @@ import { DiffService } from '../../common/services/diff.service';
  */
 @Injectable()
 export class ContractVersionService {
-    private diffService = new DiffService();
-
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private diffService: DiffService
+    ) { }
 
     /**
      * Create initial version on contract creation
@@ -125,7 +126,7 @@ export class ContractVersionService {
     }
 
     /**
-     * Compare two versions
+     * Compare two versions (Pro Hunk-Based Comparison)
      */
     async compareVersions(contractId: string, fromVersionId: string, toVersionId: string) {
         const [fromVersion, toVersion, contract] = await Promise.all([
@@ -142,17 +143,30 @@ export class ContractVersionService {
         }
 
         // Parse content snapshots
-        const fromData = JSON.parse(fromVersion.contentSnapshot || '{}');
-        const toData = JSON.parse(toVersion.contentSnapshot || '{}');
+        const fromSnap = JSON.parse(fromVersion.contentSnapshot || '{}');
+        const toSnap = JSON.parse(toVersion.contentSnapshot || '{}');
 
-        // Use DiffService.compareVersions method
-        const diff = this.diffService.compareVersions(fromData, toData);
+        const fromMain = fromSnap.main || '';
+        const toMain = toSnap.main || '';
+        const fromAnnex = fromSnap.annexures || '';
+        const toAnnex = toSnap.annexures || '';
+
+        // Pro: Get Field Changes
+        const fieldChanges = this.diffService.compareVersions(fromSnap, toSnap).fieldChanges;
+
+        // Pro: Get Hunks for Main and Annexures
+        const [mainHunks, annexureHunks] = await Promise.all([
+            this.diffService.calculateHunks(fromMain, toMain),
+            this.diffService.calculateHunks(fromAnnex, toAnnex)
+        ]);
 
         return {
             contractTitle: contract?.title,
             fromVersion: fromVersion.versionNumber,
             toVersion: toVersion.versionNumber,
-            ...diff,
+            fieldChanges,
+            main: mainHunks,
+            annexures: annexureHunks
         };
     }
 }

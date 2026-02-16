@@ -625,33 +625,69 @@ export class EmailService {
     }
 
     /**
-     * Send contract to counterparty
+     * Send contract to counterparty (Enhanced with custom fields)
      */
     async sendContractToCounterparty(
-        to: string,
+        to: string | string[],
         counterpartyName: string,
         contractTitle: string,
         contractReference: string,
         organizationName: string,
         contractUrl: string,
-        daysToRespond = 10,
-        from?: string,
+        options?: {
+            cc?: string[];
+            subject?: string;
+            body?: string;
+            daysToRespond?: number;
+            from?: string;
+        }
     ): Promise<EmailResult> {
+        // Convert to array if string
+        const toAddresses = Array.isArray(to) ? to : [to];
+        const primaryRecipient = toAddresses[0];
+
+        // Use custom subject or default
+        const emailSubject = options?.subject || `Contract for Your Review: ${contractTitle}`;
+
+        // Use custom body or default template
+        let emailBody = options?.body;
+
+        if (!emailBody) {
+            // Default template with rich formatting
+            emailBody = `
+                <h1>Contract Ready for Review</h1>
+                <p>Dear ${counterpartyName},</p>
+                <p>We are pleased to share the following contract for your review and signature:</p>
+                <div class="info-box">
+                    <p><strong>Title:</strong> ${contractTitle}</p>
+                    <p><strong>Reference:</strong> ${contractReference}</p>
+                    <p><strong>From:</strong> ${organizationName}</p>
+                </div>
+                <p>Please review and respond within ${options?.daysToRespond || 10} business days.</p>
+                <p><a href="${contractUrl}" class="button">Review Contract</a></p>
+                <p>If you have any questions, please don't hesitate to reach out.</p>
+                <p>Best regards,<br>${organizationName} Team</p>
+            `;
+        }
+
         return this.send({
-            to,
-            from,
+            to: primaryRecipient,
+            cc: options?.cc,
+            from: options?.from,
             template: EmailTemplate.CONTRACT_SENT_TO_COUNTERPARTY,
-            subject: `Contract for Your Review: ${contractTitle}`,
+            subject: emailSubject,
             data: {
                 counterpartyName,
                 contractTitle,
                 contractReference,
                 organizationName,
                 contractUrl,
-                daysToRespond,
+                daysToRespond: options?.daysToRespond || 10,
+                customBody: emailBody,
             },
         });
     }
+
 
     /**
      * Send approval result notification

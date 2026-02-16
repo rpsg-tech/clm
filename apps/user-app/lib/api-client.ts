@@ -304,10 +304,10 @@ export const api = {
         body: JSON.stringify({ filename, contentType }),
       }),
 
-    confirmDocumentUpload: (id: string, key: string, filename: string, fileSize: number) =>
+    confirmDocumentUpload: (id: string, key: string, filename: string, fileSize: number, isFinal?: boolean) =>
       authFetch<any>(`/contracts/${id}/document/upload-confirm`, {
         method: 'POST',
-        body: JSON.stringify({ key, filename, fileSize }),
+        body: JSON.stringify({ key, filename, fileSize, isFinal }),
       }),
 
     getAttachmentDownloadUrl: (id: string, attachmentId: string) =>
@@ -315,11 +315,13 @@ export const api = {
 
     getVersions: (id: string) => authFetch<any[]>(`/contracts/${id}/versions`),
 
+    getVersion: (id: string, versionId: string) => authFetch<any>(`/contracts/${id}/versions/${versionId}`),
+
     getVersionChangelog: (id: string, versionId: string) =>
       authFetch<any>(`/contracts/${id}/versions/${versionId}/changelog`),
 
-    compare: (id: string, from: string, to: string) =>
-      authFetch<any>(`/contracts/${id}/compare?from=${from}&to=${to}`),
+    compareVersions: (id: string, from: string, to: string) =>
+      authFetch<any>(`/contracts/${id}/versions/compare?from=${from}&to=${to}`),
 
     restoreVersion: (id: string, versionId: string) =>
       authFetch<any>(`/contracts/${id}/versions/${versionId}/restore`, { method: 'POST' }),

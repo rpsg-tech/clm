@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ContractStatus, Prisma } from '@prisma/client';
 import { FeatureFlagService } from '../../config/feature-flag.service';
@@ -114,6 +114,15 @@ export class ContractWorkflowService {
      * Send contract to counterparty (status transition)
      */
     async sendToCounterparty(contractId: string) {
+        const contract = await this.prisma.contract.findUnique({
+            where: { id: contractId },
+            select: { status: true }
+        });
+
+        if (!contract || contract.status !== ContractStatus.APPROVED) {
+            throw new ForbiddenException('Contract must be approved before sending to counterparty');
+        }
+
         return this.prisma.contract.update({
             where: { id: contractId },
             data: {

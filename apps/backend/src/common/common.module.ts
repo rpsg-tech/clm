@@ -4,6 +4,7 @@ import { EmailService } from './email/email.service';
 import { EmailProcessor } from './email/email.processor';
 import { FeatureFlagService } from '../config/feature-flag.service';
 import { OcrService } from './services/ocr.service';
+import { DiffService } from './services/diff.service';
 
 @Global()
 @Module({
@@ -12,7 +13,7 @@ import { OcrService } from './services/ocr.service';
             name: 'email',
         }),
     ],
-    providers: [EmailService, EmailProcessor, FeatureFlagService, OcrService],
-    exports: [EmailService, FeatureFlagService, OcrService, BullModule],
+    providers: [EmailService, EmailProcessor, FeatureFlagService, OcrService, DiffService],
+    exports: [EmailService, FeatureFlagService, OcrService, BullModule, DiffService],
 })
 export class CommonModule { }

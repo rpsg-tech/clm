@@ -6,6 +6,7 @@ import {
     createMockPrismaService,
     createMockDiffService,
     mockContract,
+    mockUser,
     mockContractVersion,
 } from '../../../test/utils/mock-factory';
 
@@ -41,19 +42,28 @@ describe('ContractVersionService', () => {
                 versionNumber: 1,
                 contentSnapshot: JSON.stringify({ title: mockContract.title }),
             };
-            prismaService.contractVersion.findMany.mockResolvedValue([]);
+            prismaService.contractVersion.findFirst.mockResolvedValue(null);
             prismaService.contractVersion.create.mockResolvedValue(newVersion);
+            diffService.calculateChanges.mockReturnValue({
+                summary: 'Initial version created',
+                changeCount: 0,
+                changes: [],
+                createdBy: 'user@example.com',
+            });
 
             // Act
-            const result = await service.createVersion(mockContract, 'user-123');
+            const result = await service.createNewVersion(mockContract.id, 'user-123', null, { content: 'new' }, 'user@example.com');
 
             // Assert
             expect(prismaService.contractVersion.create).toHaveBeenCalledWith({
                 data: {
                     contractId: mockContract.id,
                     versionNumber: 1,
-                    contentSnapshot: expect.any(String),
-                    changeLog: null,
+                    contentSnapshot: '{"content":"new"}',
+                    changeLog: expect.objectContaining({
+                        summary: 'Initial version created',
+                        changeCount: 0,
+                    }),
                     createdByUserId: 'user-123',
                 },
             });
@@ -73,18 +83,18 @@ describe('ContractVersionService', () => {
                 changeLog: { changes: ['Updated amount'] },
             };
 
-            prismaService.contractVersion.findMany.mockResolvedValue(previousVersions);
+            prismaService.contractVersion.findFirst.mockResolvedValue(previousVersions[1] as any);
             prismaService.contractVersion.create.mockResolvedValue(newVersion);
-            diffService.calculateChangelog.mockReturnValue({
+            diffService.calculateChanges.mockReturnValue({
                 changes: ['Updated amount from $10,000 to $50,000'],
                 summary: 'Amount changed',
             });
 
             // Act
-            const result = await service.createVersion(mockContract, 'user-123');
+            const result = await service.createNewVersion(mockContract.id, 'user-123', null, { content: 'new' }, 'user@example.com');
 
             // Assert
-            expect(diffService.calculateChangelog).toHaveBeenCalled();
+            expect(diffService.calculateChanges).toHaveBeenCalled();
             expect(result.versionNumber).toBe(3);
             expect(result.changeLog).toEqual({ changes: ['Updated amount'] });
         });
@@ -99,9 +109,10 @@ describe('ContractVersionService', () => {
                 { ...mockContractVersion, id: 'v3', versionNumber: 3 },
             ];
             prismaService.contractVersion.findMany.mockResolvedValue(versions);
+            prismaService.user.findMany.mockResolvedValue([mockUser]);
 
             // Act
-            const result = await service.getVersionHistory('contract-123');
+            const result = await service.getVersions('contract-123');
 
             // Assert
             expect(prismaService.contractVersion.findMany).toHaveBeenCalledWith({
@@ -115,9 +126,10 @@ describe('ContractVersionService', () => {
         it('should return empty array if no versions exist', async () => {
             // Arrange
             prismaService.contractVersion.findMany.mockResolvedValue([]);
+            prismaService.user.findMany.mockResolvedValue([]);
 
             // Act
-            const result = await service.getVersionHistory('contract-123');
+            const result = await service.getVersions('contract-123');
 
             // Assert
             expect(result).toEqual([]);
@@ -127,11 +139,44 @@ describe('ContractVersionService', () => {
     describe('compareVersions', () => {
         it('should compare two versions and return diff', async () => {
             // Arrange
-            const v1 = {
-                ...mockContractVersion,
-                versionNumber: 1,
-                contentSnapshot: JSON.stringify({ title: 'Original Title', amount: 10000 }),
-            };
+            const v1 = { ...mockContractVersion, id: 'v1', versionNumber: 1, contentSnapshot: '{"text":"a"}' };
+            const v2 = { ...mockContractVersion, id: 'v2', versionNumber: 2, contentSnapshot: '{"text":"b"}' };
+            const contract = { title: 'Test Contract' };
+
+            prismaService.contractVersion.findUnique
+                .mockResolvedValueOnce(v1 as any)
+                .mockResolvedValueOnce(v2 as any);
+            prismaService.contract.findUnique.mockResolvedValue(contract as any);
+
+            diffService.compareVersions.mockReturnValue({ changes: [], additions: 1, deletions: 0 });
+
+            // Act
+            const result = await service.compareVersions('contract-123', '1', '2'); // Changed version numbers to strings
+
+            // Assert
+            expect(result).toEqual(expect.objectContaining({
+                contractTitle: 'Test Contract',
+                fromVersion: 1,
+                toVersion: 2,
+            }));
+        });
+
+        it('should return null if versions not found', async () => {
+            // Arrange
+            prismaService.contractVersion.findUnique
+                .mockResolvedValueOnce(null) // v1 not found
+                .mockResolvedValueOnce(null); // v2 not found
+            prismaService.contract.findUnique.mockResolvedValue({ title: 'Test Contract' } as any); // Mock contract for title
+
+            // Act
+            const result = await service.compareVersions('contract-123', '1', '2'); // Changed version numbers to strings
+
+            // Assert
+            expect(result).toBeNull();
+        });
+
+        it('should return null if one version is not found', async () => {
+            // Arrange
             const v2 = {
                 ...mockContractVersion,
                 id: 'v2',
@@ -140,60 +185,32 @@ describe('ContractVersionService', () => {
             };
 
             prismaService.contractVersion.findUnique
-                .mockResolvedValueOnce(v1)
-                .mockResolvedValueOnce(v2);
-            prismaService.contract.findUnique.mockResolvedValue(mockContract);
-            diffService.compareVersions.mockReturnValue({
-                fieldChanges: [
-                    { field: 'title', oldValue: 'Original Title', newValue: 'Updated Title' },
-                    { field: 'amount', oldValue: 10000, newValue: 50000 },
-                ],
-                contentDiff: { added: [], removed: [], modified: ['title', 'amount'] },
-            });
+                .mockResolvedValueOnce(null) // v1 not found
+                .mockResolvedValueOnce(v2 as any); // v2 found
+            prismaService.contract.findUnique.mockResolvedValue({ title: 'Test Contract' } as any); // Mock contract for title
 
             // Act
-            const result = await service.compareVersions('contract-123', 1, 2);
+            const result = await service.compareVersions('contract-123', '1', '2'); // Changed version numbers to strings
 
             // Assert
-            expect(diffService.compareVersions).toHaveBeenCalledWith(
-                { title: 'Original Title', amount: 10000 },
-                { title: 'Updated Title', amount: 50000 }
-            );
-            expect(result.fieldChanges).toHaveLength(2);
-            expect(result.fromVersion).toBe(1);
-            expect(result.toVersion).toBe(2);
-        });
-
-        it('should throw error if version not found', async () => {
-            // Arrange
-            prismaService.contractVersion.findUnique.mockResolvedValue(null);
-
-            // Act & Assert
-            await expect(
-                service.compareVersions('contract-123', 1, 2)
-            ).rejects.toThrow();
+            expect(result).toBeNull();
         });
     });
 
-    describe('getVersion', () => {
-        it('should return specific version by number', async () => {
+    describe('getVersionChangelog', () => {
+        it('should return the changelog for a specific version', async () => {
             // Arrange
-            const version = { ...mockContractVersion, versionNumber: 2 };
+            const version = { ...mockContractVersion, versionNumber: 2, changeLog: { changes: ['Updated amount'] } };
             prismaService.contractVersion.findUnique.mockResolvedValue(version);
 
             // Act
-            const result = await service.getVersion('contract-123', 2);
+            const result = await service.getVersionChangelog('contract-123', '2'); // Changed version number to string
 
             // Assert
             expect(prismaService.contractVersion.findUnique).toHaveBeenCalledWith({
-                where: {
-                    contractId_versionNumber: {
-                        contractId: 'contract-123',
-                        versionNumber: 2,
-                    },
-                },
+                where: { id: '2' },
             });
-            expect(result.versionNumber).toBe(2);
+            expect(result?.versionNumber).toBe(2);
         });
     });
 });

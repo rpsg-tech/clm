@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import {
-    Edit, Send, Upload, CheckCircle, XCircle, FileCheck, Shield, Ban, ArrowUpCircle, Loader2
+    Edit, Send, Upload, CheckCircle, XCircle, FileCheck, Shield, Ban, ArrowUpCircle, Loader2, History
 } from "lucide-react";
 
 // Hook
@@ -18,7 +18,8 @@ import { ActionButton } from "./dashboard/contracts/actions/action-button";
 import { ApproveDialog } from "./dashboard/contracts/actions/dialogs/approve-dialog";
 import { RejectDialog } from "./dashboard/contracts/actions/dialogs/reject-dialog";
 import { RevisionDialog } from "./dashboard/contracts/actions/dialogs/revision-dialog";
-import { SendDialog } from "./dashboard/contracts/actions/dialogs/send-dialog";
+import { EnhancedSendDialog, SendEmailPayload } from "./dashboard/contracts/actions/dialogs/send-dialog";
+
 import { CancelDialog } from "./dashboard/contracts/actions/dialogs/cancel-dialog";
 
 interface SmartActionButtonsProps {
@@ -50,7 +51,6 @@ export function SmartActionButtons({
     location = 'header'
 }: SmartActionButtonsProps) {
     const router = useRouter();
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const { role } = useAuth(); // Pass role if needed for extra checks, but hook handles most
 
     const { flags, dialogs, actions: hookActions } = useSmartActions({
@@ -58,13 +58,6 @@ export function SmartActionButtons({
         permissions,
         onAction
     });
-
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            onAction('upload_signed', file);
-        }
-    };
 
     // --- SIDEBAR LAYOUT ---
     if (location === 'sidebar') {
@@ -262,16 +255,6 @@ export function SmartActionButtons({
                     {/* 3. APPROVED ACTIONS */}
                     {contract.status === 'APPROVED' && (
                         <>
-                            <div className="hidden">
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleFileUpload}
-                                    accept=".pdf,.docx"
-                                    className="hidden"
-                                />
-                            </div>
-
                             {flags.showSendToCounterparty && (
                                 <ActionButton
                                     icon={Send}
@@ -287,7 +270,7 @@ export function SmartActionButtons({
                             <ActionButton
                                 icon={Upload}
                                 label="Upload Contract"
-                                onClick={() => fileInputRef.current?.click()}
+                                onClick={() => onAction('open_upload_dialog')}
                                 loading={loading}
                                 compact={compact}
                             />
@@ -296,31 +279,29 @@ export function SmartActionButtons({
 
                     {/* 4. SENT TO COUNTERPARTY ACTIONS */}
                     {contract.status === 'SENT_TO_COUNTERPARTY' && (
-                        <>
-                            <div className="hidden">
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleFileUpload}
-                                    accept=".pdf,.docx"
-                                    className="hidden"
-                                />
-                            </div>
-                            <ActionButton
-                                icon={Upload}
-                                label="Upload Contract"
-                                onClick={() => fileInputRef.current?.click()}
-                                loading={loading}
-                                compact={compact}
-                            />
-                        </>
+                        <ActionButton
+                            icon={Upload}
+                            label="Upload Contract"
+                            onClick={() => onAction('open_upload_dialog')}
+                            loading={loading}
+                            compact={compact}
+                        />
                     )}
 
                     {/* 5. ACTIVE STATE */}
+                    {/* 5. ACTIVE STATE */}
                     {contract.status === 'ACTIVE' && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
-                            <CheckCircle className="w-5 h-5 text-emerald-600" />
-                            <div className="text-xs font-bold text-emerald-800">Contract Active & Signed</div>
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
+                                <CheckCircle className="w-5 h-5 text-emerald-600" />
+                                <div className="text-xs font-bold text-emerald-800">Contract Active & Signed</div>
+                            </div>
+
+                            {/* Admin Revert Capability */}
+                            {permissions.canEdit && ( // Using specific permission check in parent or here?
+                                // We need access to auth context for specific permission check
+                                <RevertButton onAction={onAction} loading={loading} />
+                            )}
                         </div>
                     )}
 
@@ -348,12 +329,14 @@ export function SmartActionButtons({
                 onConfirm={hookActions.handleRequestRevision}
             />
 
-            <SendDialog
+            <EnhancedSendDialog
                 open={dialogs.showSendDialog}
                 onOpenChange={dialogs.setShowSendDialog}
                 onConfirm={hookActions.handleSendToCounterparty}
-                initialEmails={dialogs.recipientEmails}
+                contract={contract}
+                loading={loading}
             />
+
 
             <CancelDialog
                 open={dialogs.showCancelDialog}
@@ -361,5 +344,22 @@ export function SmartActionButtons({
                 onConfirm={hookActions.handleConfirmCancel}
             />
         </>
+    );
+}
+
+function RevertButton({ onAction, loading }: { onAction: any, loading: boolean }) {
+    const { hasPermission } = useAuth();
+
+    if (!hasPermission('contract:revert')) return null;
+
+    return (
+        <ActionButton
+            icon={History} // Ensure History is imported
+            label="Revert Status"
+            onClick={() => onAction('revert_status')}
+            loading={loading}
+            className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-300 ml-2"
+            compact={false}
+        />
     );
 }

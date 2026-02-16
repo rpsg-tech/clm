@@ -28,7 +28,8 @@ import {
     AlertTriangle,
     IndianRupee,
     Edit,
-    Ban
+    Ban,
+    UploadCloud
 } from 'lucide-react';
 import { SmartActionButtons } from '@/components/smart-action-buttons';
 import { ContractDiffView } from '@/components/contract-diff-view';
@@ -36,6 +37,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { FeatureGuard } from '@/components/feature-guard';
 import { ContractAssistantSidebar } from '@/components/contract-assistant-sidebar';
 import { EscalateDialog } from '@/components/escalate-dialog';
+import { ContractUploadDialog } from '@/components/contract-upload-dialog';
 
 
 interface Contract {
@@ -70,6 +72,7 @@ interface ActivityItem {
     role?: string;
     date: Date;
     meta?: any;
+    visibility?: string;
 }
 
 
@@ -108,6 +111,9 @@ function ContractDetailContent() {
     const [showCancelDialog, setShowCancelDialog] = useState(false);
     const [cancelReason, setCancelReason] = useState('');
     const [activeAction, setActiveAction] = useState<string | null>(null);
+    const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+    const [diffData, setDiffData] = useState<any>(null);
+    const [isDiffLoading, setIsDiffLoading] = useState(false);
 
 
     // Initial Fetch
@@ -149,6 +155,12 @@ function ContractDetailContent() {
 
     const handleAction = async (action: string, payload?: any) => {
         if (!contract) return;
+
+        if (action === 'open_upload_dialog') {
+            setIsUploadDialogOpen(true);
+            return;
+        }
+
         setActionLoading(true);
         try {
             if (action === 'submit') {
@@ -211,8 +223,35 @@ function ContractDetailContent() {
     };
 
     const handlePreview = async (version: any, diff: boolean = false) => {
-        setPreviewVersion(version);
+        // If snapshot is missing, fetch full details
+        let previewData = version;
+
         setIsDiffMode(diff);
+        setPreviewVersion(previewData); // Open modal immediately with what we have
+
+        if (!version.contentSnapshot && version.id !== 'current') {
+            try {
+                const fullVersion = await api.contracts.getVersion(contract!.id, version.id);
+                previewData = { ...version, ...fullVersion };
+                setPreviewVersion(previewData);
+            } catch (e) {
+                console.error("Failed to fetch version details", e);
+                toast.error("Error", "Failed to load version content");
+            }
+        }
+
+        if (diff) {
+            setIsDiffLoading(true);
+            try {
+                const data = await api.contracts.compareVersions(contract!.id, version.id, 'current');
+                setDiffData(data);
+            } catch (e) {
+                console.error("Failed to fetch diff data", e);
+                toast.error("Error", "Failed to calculate version difference");
+            } finally {
+                setIsDiffLoading(false);
+            }
+        }
     };
 
     const processVariables = (htmlContent: string, data: any) => {
@@ -224,6 +263,23 @@ function ContractDetailContent() {
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+    };
+
+    const getSnapshotContent = (snapshot: string | any) => {
+        if (!snapshot) return "";
+        if (typeof snapshot === 'string' && snapshot.trim().startsWith('{')) {
+            try {
+                const parsed = JSON.parse(snapshot);
+                // Return structured data if available, or just main text
+                return {
+                    main: parsed.main || parsed.extractedText || "",
+                    annexures: parsed.annexures || ""
+                };
+            } catch (e) {
+                return snapshot;
+            }
+        }
+        return snapshot;
     };
 
     // Prepare Activity Stream
@@ -259,11 +315,12 @@ function ContractDetailContent() {
                 id: `audit-${log.id}`,
                 type: 'AUDIT',
                 title: title,
-                user: log.user?.name || 'System', // Audit log should ideally expand user
+                user: log.user?.name || 'System',
                 role: log.user?.organizationRoles?.find((or: any) => or.organizationId === log.organizationId)?.role?.name
                     || log.user?.organizationRoles?.[0]?.role?.name,
                 date: new Date(log.createdAt),
-                meta: log.metadata
+                meta: log.metadata,
+                visibility: log.visibility
             });
         });
 
@@ -545,26 +602,75 @@ function ContractDetailContent() {
                                                         relative z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 bg-white transition-colors
                                                         ${i === 0 ? 'border-orange-500 text-orange-600 shadow-sm shadow-orange-100' : 'border-slate-200 text-slate-400 group-hover:border-slate-300'}
                                                     `}>
-                                                            {item.type === 'VERSION' ? <FileText className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                                                            {item.type === 'VERSION' ? (
+                                                                item.meta?.source === 'UPLOAD' ? <UploadCloud className="w-4 h-4" /> : <FileText className="w-4 h-4" />
+                                                            ) : <Clock className="w-4 h-4" />}
                                                         </div>
-                                                        <div className="pt-1">
-                                                            <div className={`text-sm font-bold ${i === 0 ? 'text-slate-900' : 'text-slate-600'}`}>
-                                                                {item.title}
+                                                        <div className="pt-1 flex-1 min-w-0">
+                                                            <div className="flex items-center justify-between gap-4">
+                                                                <div className={`text-sm font-bold ${i === 0 ? 'text-slate-900' : 'text-slate-600'}`}>
+                                                                    {item.title}
+                                                                </div>
+                                                                {item.visibility && item.visibility !== 'PUBLIC' && (
+                                                                    <Badge variant="outline" className={`text-[9px] px-1.5 py-0 h-4 uppercase tracking-tighter font-bold shadow-none ${item.visibility === 'LEGAL_ONLY' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                                                                        {item.visibility.replace('_', ' ')}
+                                                                    </Badge>
+                                                                )}
                                                             </div>
-                                                            <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5">
-                                                                <User className="w-3 h-3" />
-                                                                {item.user}
+                                                            <div className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                                                <span className="inline-flex items-center gap-1.5">
+                                                                    <User className="w-3 h-3" />
+                                                                    {item.user}
+                                                                </span>
                                                                 {item.role && (
-                                                                    <span className="ml-1 text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0 rounded border border-orange-100">
+                                                                    <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-1.5 py-0 rounded border border-orange-100">
                                                                         {item.role}
                                                                     </span>
                                                                 )}
-                                                                • {item.date.toLocaleDateString()}
-                                                            </div>
-                                                            {item.meta?.version && (
-                                                                <span className="inline-block mt-2 px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded border border-orange-100">
-                                                                    Version {item.meta.version}
+                                                                <span className="text-slate-300">•</span>
+                                                                <span className="font-medium">
+                                                                    {item.date.toLocaleDateString('en-IN', {
+                                                                        day: '2-digit',
+                                                                        month: 'short',
+                                                                        year: 'numeric',
+                                                                        hour: '2-digit',
+                                                                        minute: '2-digit'
+                                                                    })}
                                                                 </span>
+                                                            </div>
+
+                                                            {/* Detailed Metadata */}
+                                                            {item.meta && (
+                                                                <div className="mt-2 space-y-2">
+                                                                    {item.meta.comment && (
+                                                                        <div className="text-[13px] text-slate-700 bg-slate-50/80 p-3 rounded-lg border border-slate-100 italic">
+                                                                            &ldquo;{item.meta.comment}&rdquo;
+                                                                        </div>
+                                                                    )}
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {item.meta.target && (
+                                                                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded border border-indigo-100">
+                                                                                <Building2 className="w-3 h-3" />
+                                                                                Target: {item.meta.target}
+                                                                            </span>
+                                                                        )}
+                                                                        {item.meta.version && (
+                                                                            <span className="px-2 py-0.5 bg-orange-50 text-orange-600 text-[10px] font-bold rounded border border-orange-100">
+                                                                                Version {item.meta.version}
+                                                                            </span>
+                                                                        )}
+                                                                        {item.meta.source && (
+                                                                            <span className="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded border border-slate-200 uppercase">
+                                                                                Source: {item.meta.source}
+                                                                            </span>
+                                                                        )}
+                                                                        {item.meta.escalatedTo && (
+                                                                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-bold rounded border border-amber-100">
+                                                                                Escalated to: {item.meta.escalatedTo}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </div>
@@ -609,6 +715,7 @@ function ContractDetailContent() {
                                                 contractId={contract.id}
                                                 fromVersionId={comparisonVersions[0]}
                                                 toVersionId={comparisonVersions[1]}
+                                                versions={contract.versions || []}
                                                 onBack={() => setComparisonMode(false)}
                                             />
                                         ) : (
@@ -712,17 +819,74 @@ function ContractDetailContent() {
                         </DialogHeader>
 
                         <div className="flex-1 overflow-hidden bg-slate-100 flex items-center justify-center p-4">
-                            <div className="bg-white shadow-2xl w-full h-full max-w-[1000px] border border-slate-200 overflow-y-auto rounded-lg">
+                            <div className="bg-white shadow-2xl w-full h-full max-w-[1240px] border border-slate-200 overflow-y-auto rounded-lg">
                                 {isDiffMode ? (
-                                    <ContractDiffView
-                                        oldContent={previewVersion?.contentSnapshot || ''}
-                                        newContent={contract.content || ''}
-                                        oldVersionLabel={`v${previewVersion?.version}`}
-                                        newVersionLabel={`Current`}
-                                    />
+                                    isDiffLoading ? (
+                                        <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-400">
+                                            <Spinner size="lg" className="text-indigo-600" />
+                                            <p className="text-sm font-medium">Calculating professional differences...</p>
+                                        </div>
+                                    ) : (
+                                        <ContractDiffView
+                                            diffData={diffData}
+                                            oldVersionLabel={`v${previewVersion?.versionNumber}`}
+                                            newVersionLabel={`Current`}
+                                        />
+                                    )
                                 ) : (
-                                    <div className="p-16 prose prose-slate max-w-none">
-                                        <SafeHtml html={processVariables((previewVersion?.contentSnapshot || contract.content) + (contract.annexureData || ''), contract)} />
+                                    <div className="flex flex-col h-full overflow-y-auto">
+                                        {(() => {
+                                            if (previewVersion) {
+                                                const snapshot = getSnapshotContent(previewVersion.contentSnapshot);
+
+                                                // Handle PENDING OCR state
+                                                if (typeof snapshot === 'object' && snapshot.ocrStatus === 'PENDING') {
+                                                    return (
+                                                        <div className="flex flex-col items-center justify-center flex-1 text-slate-400 gap-4 p-20">
+                                                            <div className="relative">
+                                                                <FileText className="w-16 h-16 opacity-10 animate-pulse" />
+                                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                                    <Spinner size="sm" className="text-orange-400" />
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-center space-y-1">
+                                                                <p className="text-sm font-bold text-slate-700">Document Processing...</p>
+                                                                <p className="text-xs text-slate-500 max-w-[240px]">
+                                                                    We're currently extracting text from this document.
+                                                                    This usually takes a few seconds.
+                                                                </p>
+                                                            </div>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handlePreview(previewVersion, isDiffMode)}
+                                                                className="mt-2"
+                                                            >
+                                                                Refresh Preview
+                                                            </Button>
+                                                        </div>
+                                                    );
+                                                }
+
+                                                // If it's an object with split content (our new format)
+                                                return (
+                                                    <div className="p-16 prose prose-slate max-w-none">
+                                                        <SafeHtml html={processVariables(
+                                                            typeof snapshot === 'object'
+                                                                ? (snapshot.main || '') + (snapshot.annexures || '')
+                                                                : String(snapshot || ''),
+                                                            contract
+                                                        )} />
+                                                    </div>
+                                                );
+                                            }
+                                            // Current State
+                                            return (
+                                                <div className="p-16 prose prose-slate max-w-none">
+                                                    <SafeHtml html={processVariables((contract.content || '') + (contract.annexureData || ''), contract)} />
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 )}
                             </div>
@@ -736,6 +900,31 @@ function ContractDetailContent() {
                     contractId={contract?.id || ''}
                     contractTitle={contract?.title || ''}
                     onEscalate={handleEscalation}
+                />
+
+                <ContractUploadDialog
+                    isOpen={isUploadDialogOpen}
+                    onClose={() => setIsUploadDialogOpen(false)}
+                    contractId={contract?.id}
+                    contractTitle={contract?.title}
+                    onUploadComplete={async () => {
+                        setIsUploadDialogOpen(false);
+                        // Refresh data
+                        setIsLoading(true); // Show loading state
+                        try {
+                            const [data, logs] = await Promise.all([
+                                api.contracts.get(contract!.id),
+                                api.contracts.getAuditLogs(contract!.id)
+                            ]);
+                            setContract(data as any);
+                            setAuditLogs(logs);
+                            toast.success("Success", "Contract updated successfully");
+                        } catch (e) {
+                            console.error(e);
+                        } finally {
+                            setIsLoading(false);
+                        }
+                    }}
                 />
             </div>
         </div>

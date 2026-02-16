@@ -391,6 +391,8 @@ model AuditLog {
   ipAddress      String?
   userAgent      String?
   
+  visibility     LogVisibility @default(INTERNAL)
+  
   createdAt      DateTime @default(now())
 
   organization   Organization? @relation(fields: [organizationId], references: [id])
@@ -406,6 +408,12 @@ model AuditLog {
   @@index([createdAt])
   @@index([organizationId, createdAt]) // Audit trail sorting
   @@index([contractId, createdAt])
+}
+
+enum LogVisibility {
+  PUBLIC     // Visible to everyone (External/Counterparty)
+  INTERNAL   // Visible to all internal organization users (Default)
+  LEGAL_ONLY // Visible only to Legal Head, Legal Manager, and Admins
 }
 
 // ============ AI ANALYSIS ============

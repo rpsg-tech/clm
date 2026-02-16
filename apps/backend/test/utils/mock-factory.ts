@@ -24,6 +24,12 @@ export const createMockPrismaService = () => ({
         create: jest.fn(),
         findMany: jest.fn(),
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
+    },
+    contractAttachment: {
+        create: jest.fn(),
+        findMany: jest.fn(),
+        delete: jest.fn(),
     },
     user: {
         findUnique: jest.fn(),
@@ -50,6 +56,15 @@ export const createMockNotificationsService = () => ({
         isRead: false,
         createdAt: new Date(),
     }),
+    create: jest.fn().mockResolvedValue({
+        id: 'notif-123',
+        userId: 'user-123',
+        type: 'CONTRACT_UPDATE',
+        title: 'Test Notification',
+        message: 'Test message',
+        isRead: false,
+        createdAt: new Date(),
+    }),
     sendInAppNotification: jest.fn().mockResolvedValue(undefined),
 });
 
@@ -58,6 +73,7 @@ export const createMockStorageService = () => ({
         key: 'contracts/test-contract.pdf',
         url: 'https://s3.aws.com/bucket/contracts/test-contract.pdf',
     }),
+    getUploadUrl: jest.fn().mockResolvedValue('https://s3.aws.com/signed-url'),
     getSignedUrl: jest.fn().mockResolvedValue('https://s3.aws.com/signed-url'),
     deleteFile: jest.fn().mockResolvedValue(undefined),
     getFileMetadata: jest.fn().mockResolvedValue({
@@ -93,7 +109,7 @@ export const createMockAuditService = () => ({
 });
 
 export const createMockDiffService = () => ({
-    calculateChangelog: jest.fn().mockReturnValue({
+    calculateChanges: jest.fn().mockReturnValue({
         changes: [],
         summary: 'No changes',
     }),

@@ -17,10 +17,15 @@ import { Color } from '@tiptap/extension-color';
 import Underline from '@tiptap/extension-underline';
 import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
+import Highlight from '@tiptap/extension-highlight';
 import CharacterCount from '@tiptap/extension-character-count';
 import { useEffect, forwardRef, useImperativeHandle } from 'react';
 import { EditorToolbar } from './editor-toolbar';
 import { VariableExtension } from './extensions/variable-extension';
+import { FloatingTableToolbar } from './menus/floating-table-toolbar';
+import { SlashCommand } from './extensions/slash-command';
+import { slashCommandSuggestion } from './extensions/slash-command-suggestion';
+import { EditorBubbleMenu } from './menus/editor-bubble-menu';
 
 
 
@@ -53,10 +58,48 @@ export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(({ co
                 resizable: true,
             }),
             TableRow,
-            TableHeader,
-            TableCell,
+            TableHeader.extend({
+                addAttributes() {
+                    return {
+                        ...this.parent?.(),
+                        backgroundColor: {
+                            default: null,
+                            parseHTML: element => element.getAttribute('data-background-color'),
+                            renderHTML: attributes => {
+                                if (!attributes.backgroundColor) {
+                                    return {}
+                                }
+                                return {
+                                    'data-background-color': attributes.backgroundColor,
+                                    style: `background-color: ${attributes.backgroundColor}`,
+                                }
+                            },
+                        },
+                    }
+                },
+            }),
+            TableCell.extend({
+                addAttributes() {
+                    return {
+                        ...this.parent?.(),
+                        backgroundColor: {
+                            default: null,
+                            parseHTML: element => element.getAttribute('data-background-color'),
+                            renderHTML: attributes => {
+                                if (!attributes.backgroundColor) {
+                                    return {}
+                                }
+                                return {
+                                    'data-background-color': attributes.backgroundColor,
+                                    style: `background-color: ${attributes.backgroundColor}`,
+                                }
+                            },
+                        },
+                    }
+                },
+            }),
             TextAlign.configure({
-                types: ['heading', 'paragraph'],
+                types: ['heading', 'paragraph', 'tableCell', 'tableHeader'],
             }),
             Image.configure({
                 inline: true,
@@ -71,8 +114,12 @@ export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(({ co
             Underline,
             Subscript,
             Superscript,
+            Highlight.configure({ multicolor: true }),
             CharacterCount,
             VariableExtension, // Custom Variable Chip
+            SlashCommand.configure({
+                suggestion: slashCommandSuggestion as any,
+            }),
         ],
         content: content,
         editable: editable,
@@ -144,9 +191,14 @@ export const TipTapEditor = forwardRef<TipTapEditorRef, TipTapEditorProps>(({ co
             {editable && (
                 <div className="flex flex-col shrink-0">
                     <EditorToolbar editor={editor} />
-
                 </div>
             )}
+
+            {/* Floating Table Toolbar */}
+            {editable && <FloatingTableToolbar editor={editor} />}
+
+            {/* Bubble Menu for Text Selection */}
+            {editable && <EditorBubbleMenu editor={editor} />}
 
             {/* Editor Surface */}
             <div className="flex-1 overflow-y-auto w-full relative">

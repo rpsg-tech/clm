@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Download, ArrowRight, FileCheck, Calendar, User, IndianRupee, FileText, Sparkles } from "lucide-react";
+import { Check, Download, ArrowRight, FileCheck, Calendar, User, IndianRupee, FileText, Sparkles, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ContractAssistantSidebar } from "./contract-assistant-sidebar";
 
@@ -17,6 +17,7 @@ interface FinalReviewViewProps {
     isAiOpen?: boolean;
     onToggleAi?: (open: boolean) => void;
     contractId?: string;
+    onUploadSignedCopy?: () => void;
 }
 
 export function FinalReviewView({
@@ -30,7 +31,8 @@ export function FinalReviewView({
     className = "",
     isAiOpen = false,
     onToggleAi,
-    contractId
+    contractId,
+    onUploadSignedCopy
 }: FinalReviewViewProps) {
     const [isDownloading, setIsDownloading] = useState(false);
 
@@ -178,138 +180,118 @@ export function FinalReviewView({
         <div className={cn("flex h-full w-full bg-slate-50 relative", className)}>
 
             {/* LEFT SIDEBAR: Details & Actions */}
-            <div className="w-[320px] bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 h-full">
+            <div className="w-[320px] bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 h-full shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)]">
                 {/* Header */}
-                <div className="p-5 border-b border-slate-100 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center border border-orange-100 text-orange-600">
-                        <FileCheck size={16} />
+                <div className="p-6 pb-2">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+                            <FileCheck size={18} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide leading-none">Contract Review</h3>
+                            <p className="text-[10px] font-medium text-slate-400 mt-1 leading-none">Review details before submission</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wide leading-none">Contract Review</h3>
-                        <p className="text-[10px] text-slate-400 mt-1 leading-none">Review details before submission</p>
-                    </div>
+
+                    <div className="h-px bg-slate-100 w-full mb-6"></div>
                 </div>
 
                 {/* Details List */}
-                <div className="flex-1 overflow-y-auto p-5 space-y-8">
+                <div className="flex-1 overflow-y-auto px-6 space-y-8">
                     {/* Contract Title */}
-                    <div className="relative pl-4 border-l-2 border-orange-500">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
+                    <div className="relative pl-3 border-l-[3px] border-orange-500">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
                             Contract Title
                         </div>
-                        <h3 className="text-lg font-serif font-bold text-slate-900 leading-snug tracking-tight line-clamp-2" title={details.title}>
+                        <h3 className="text-xl font-serif font-bold text-slate-900 leading-tight mb-3">
                             {details.title || "Untitled Contract"}
                         </h3>
                         {templateName && (
-                            <div className="mt-2 inline-flex items-center px-2 py-0.5 rounded-md bg-orange-50 text-orange-700 text-[10px] font-bold uppercase tracking-wide border border-orange-100">
+                            <div className="inline-flex items-center px-2 py-1 rounded bg-orange-50 text-orange-700 text-[10px] font-bold uppercase tracking-wide border border-orange-100">
                                 {templateName}
                             </div>
                         )}
                     </div>
 
-                    {/* Counterparty Card */}
-                    <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-100 relative group hover:border-slate-200 transition-colors">
-                        <div className="absolute top-3 right-3 text-slate-300 group-hover:text-slate-400 transition-colors">
-                            <User size={14} />
+                    {/* Business Entity */}
+                    <div className="relative">
+                        <div className="flex items-center justify-between mb-1.5">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Entity</div>
+                            <User size={14} className="text-slate-300" />
                         </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Business Entity</div>
-                                <p className="text-sm font-bold text-slate-900 leading-tight">
-                                    {details.counterpartyBusinessName || "N/A"}
-                                </p>
-                            </div>
-
-                            <div className="pt-3 border-t border-slate-200/50">
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Point of Contact</div>
-                                <p className="text-sm font-medium text-slate-700 leading-tight">
-                                    {details.counterpartyName || "N/A"}
-                                </p>
-                            </div>
+                        <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
+                            <p className="text-sm font-bold text-slate-900 leading-tight">
+                                {details.counterpartyBusinessName || "InsightEdge Analytics Pvt. Ltd."}
+                            </p>
                         </div>
                     </div>
 
-                    {/* Financials & Term Grid */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                                <IndianRupee size={10} /> Total Value
-                            </div>
-                            <p className="text-2xl font-mono font-bold text-slate-900 tracking-tight">
+                    {/* Quick Stats Grid */}
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                        <div className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
+                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Value</div>
+                            <div className="text-sm font-mono font-bold text-slate-700">
                                 {details.amount ? `₹${Number(details.amount).toLocaleString('en-IN')}` : "-"}
-                            </p>
-                        </div>
-
-                        <div className="col-span-2 pt-2">
-                            <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                                <Calendar size={10} /> Contract Term
-                            </div>
-                            <div className="flex items-center gap-2 text-sm font-medium text-slate-800 bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">
-                                <span>{details.startDate ? new Date(details.startDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: '2-digit' }) : "-"}</span>
-                                <ArrowRight size={10} className="text-slate-300" />
-                                <span>{details.endDate ? new Date(details.endDate).toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: '2-digit' }) : "-"}</span>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Status Indicator */}
-                    <div className="mt-2 p-3 bg-emerald-50 rounded-lg border border-emerald-100/50 flex items-start gap-3">
-                        <div className="mt-0.5 w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                            <Check size={10} className="text-emerald-600" />
-                        </div>
-                        <div>
-                            <p className="text-xs font-bold text-emerald-800">Draft Completed</p>
-                            <p className="text-[10px] text-emerald-600/80 leading-relaxed mt-0.5">
-                                All required fields are populated. Ready for final review and approval.
-                            </p>
+                        <div className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
+                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Duration</div>
+                            <div className="text-sm font-bold text-slate-700">
+                                {details.startDate && details.endDate ? (
+                                    <span>
+                                        {Math.ceil((new Date(details.endDate).getTime() - new Date(details.startDate).getTime()) / (1000 * 60 * 60 * 24 * 30))} Months
+                                    </span>
+                                ) : "N/A"}
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Actions Footer */}
-                {/* Actions Footer - Premium "Designer Approved" Styles */}
-                <div className="p-4 border-t border-slate-100 bg-white/50 backdrop-blur-sm space-y-3 z-10">
+                <div className="p-6 border-t border-slate-100 bg-white z-10 space-y-3">
                     <button
                         onClick={onSubmit}
                         disabled={loading}
-                        className="w-full group relative overflow-hidden py-3 bg-slate-900 text-white font-bold rounded-xl transition-all duration-300 shadow-[0_4px_14px_0_rgba(15,23,42,0.39)] hover:shadow-[0_6px_20px_rgba(15,23,42,0.23)] hover:-translate-y-0.5 hover:bg-slate-800 active:translate-y-0 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none text-xs uppercase tracking-widest flex items-center justify-center"
+                        className="w-full py-3.5 bg-slate-900 text-white font-bold rounded-lg shadow-lg shadow-slate-900/20 hover:bg-black hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
                     >
-                        {loading ? (
-                            <span className="flex items-center gap-2 relative z-10"><div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Processing...</span>
-                        ) : (
-                            <span className="flex items-center gap-2 relative z-10">
-                                Finalise Draft
-                                <ArrowRight size={14} className="opacity-70 group-hover:translate-x-1 transition-transform duration-300" />
-                            </span>
+                        {loading ? "Processing..." : (
+                            <>
+                                Finalise Draft <ArrowRight size={14} />
+                            </>
                         )}
-                        {/* Subtle shine effect */}
-                        <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent z-0"></div>
                     </button>
 
                     <button
                         onClick={handleDownload}
                         disabled={isDownloading}
-                        className="w-full group py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl transition-all duration-300 hover:border-orange-200 hover:bg-orange-50/30 hover:text-orange-700 hover:shadow-md active:bg-orange-50 text-[10px] uppercase tracking-wide flex items-center justify-center disabled:opacity-50"
+                        className="w-full py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest"
                     >
-                        {isDownloading ? (
-                            <span className="flex items-center gap-2"><div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div> Saving...</span>
-                        ) : (
+                        {isDownloading ? "Saving..." : (
                             <>
-                                <Download size={14} className="mr-2 text-slate-400 group-hover:text-orange-500 transition-colors" />
-                                Download Draft
+                                <Download size={14} /> Download Draft
                             </>
                         )}
                     </button>
 
-                    {onBackToEdit && (
-                        <button
-                            onClick={onBackToEdit}
-                            className="w-full py-2 text-slate-400 font-bold rounded-lg transition-colors hover:text-slate-800 hover:bg-slate-50 text-[10px] uppercase tracking-widest"
-                        >
-                            Back to Edit
-                        </button>
-                    )}
+                    <div className="flex items-center justify-between pt-2">
+                        {onBackToEdit && (
+                            <button
+                                onClick={onBackToEdit}
+                                className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
+                            >
+                                Back to Edit
+                            </button>
+                        )}
+
+                        {onUploadSignedCopy && (
+                            <button
+                                onClick={onUploadSignedCopy}
+                                className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-orange-600 transition-colors"
+                            >
+                                <Upload size={12} /> Upload Signed Copy
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 

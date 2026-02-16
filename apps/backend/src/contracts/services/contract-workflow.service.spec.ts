@@ -81,11 +81,11 @@ describe('ContractWorkflowService', () => {
             });
 
             // Act
-            const result = await service.submitForApproval('contract-123', 'org-123');
+            const result = await service.submitForApproval('contract-123', 'org-123', 'user-123');
 
             // Assert
             expect(featureFlagService.isEnabled).toHaveBeenCalledWith('FINANCE_WORKFLOW', 'org-123');
-            expect(result.approvals).toHaveLength(2);
+            expect(result?.approvals).toHaveLength(2);
         });
     });
 
@@ -168,7 +168,7 @@ describe('ContractWorkflowService', () => {
                 ...approvedContract,
                 status: 'ACTIVE' as any,
                 signedAt: expect.any(Date),
-                fieldData: { signedDocumentKey: 'signed-doc-key' },
+                fieldData: { signedContractKey: 'signed-doc-key' },
             };
 
             prismaService.contract.findUnique.mockResolvedValue(approvedContract);
@@ -183,7 +183,12 @@ describe('ContractWorkflowService', () => {
                 data: {
                     status: 'ACTIVE',
                     signedAt: expect.any(Date),
-                    fieldData: { signedDocumentKey: 'signed-doc-key' },
+                    fieldData: {
+                        signedContractKey: 'signed-doc-key',
+                    },
+                },
+                include: {
+                    createdByUser: true,
                 },
             });
             expect(result.status).toBe('ACTIVE');

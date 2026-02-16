@@ -6,7 +6,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, LogVisibility } from '@prisma/client';
 
 export interface AuditLogEntry {
     organizationId?: string;
@@ -21,6 +21,7 @@ export interface AuditLogEntry {
     metadata?: Prisma.InputJsonValue;
     ipAddress?: string;
     userAgent?: string;
+    visibility?: LogVisibility;
 }
 
 @Injectable()
@@ -119,7 +120,7 @@ export class AuditService {
     }
 
     /**
-     * Get audit logs for an organization
+     * Get audit logs for an organization with visibility filtering
      */
     async getByOrganization(
         organizationId: string,
@@ -132,6 +133,7 @@ export class AuditService {
             to?: Date;
             skip?: number;
             take?: number;
+            viewerRole?: string;
         },
     ) {
         // Get child organizations to include in the list (Hierarchical view)
@@ -142,6 +144,9 @@ export class AuditService {
 
         const orgIds = [organizationId, ...childOrgs.map(o => o.id)];
 
+        // Visibility filter
+        const visibilityFilter = this.getVisibilityFilter(params?.viewerRole);
+
         return this.prisma.auditLog.findMany({
             where: {
                 organizationId: { in: orgIds },
@@ -149,6 +154,7 @@ export class AuditService {
                 action: params?.action,
                 userId: params?.userId,
                 targetId: params?.targetId,
+                visibility: { in: visibilityFilter },
                 createdAt: {
                     gte: params?.from,
                     lte: params?.to,
@@ -173,11 +179,16 @@ export class AuditService {
     }
 
     /**
-     * Get audit logs for a specific contract
+     * Get audit logs for a specific contract with visibility filtering
      */
-    async getByContract(contractId: string, limit = 20) {
+    async getByContract(contractId: string, limit = 50, viewerRole?: string) {
+        const visibilityFilter = this.getVisibilityFilter(viewerRole);
+
         return this.prisma.auditLog.findMany({
-            where: { contractId },
+            where: {
+                contractId,
+                visibility: { in: visibilityFilter }
+            },
             include: {
                 user: {
                     select: {
@@ -195,6 +206,23 @@ export class AuditService {
             orderBy: { createdAt: 'desc' },
             take: limit,
         });
+    }
+
+    /**
+     * Determine which logs are visible based on requester role
+     */
+    private getVisibilityFilter(role?: string): LogVisibility[] {
+        const publicInternal = [LogVisibility.PUBLIC, LogVisibility.INTERNAL];
+        const all = [LogVisibility.PUBLIC, LogVisibility.INTERNAL, LogVisibility.LEGAL_ONLY];
+
+        // Roles that can see LEGAL_ONLY logs
+        const privilegedRoles = ['LEGAL_HEAD', 'LEGAL_MANAGER', 'ENTITY_ADMIN', 'SUPER_ADMIN'];
+
+        if (role && privilegedRoles.includes(role)) {
+            return all;
+        }
+
+        return publicInternal;
     }
 
     /**

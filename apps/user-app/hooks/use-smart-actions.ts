@@ -87,10 +87,11 @@ export function useSmartActions({ contract, permissions, onAction }: UseSmartAct
         setShowCancelDialog(false);
     };
 
-    const handleSendToCounterparty = (recipients: string[]) => {
-        onAction('send', { recipients });
+    const handleSendToCounterparty = (payload: { recipients: string[]; cc?: string[]; subject: string; body: string }) => {
+        onAction('send', payload);
         setShowSendDialog(false);
     };
+
 
     const handleRequestRevision = (comment: string) => {
         // Identify which approval we are acting on (contextual)

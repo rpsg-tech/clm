@@ -9,6 +9,7 @@ import { DraftingWorkspace } from "@/components/drafting-workspace";
 import { FinalReviewView } from "@/components/final-review-view";
 import { ContractAssistantSidebar } from "@/components/contract-assistant-sidebar";
 import { ContractMetadataDialog } from "@/components/contract-metadata-dialog";
+import { ContractUploadDialog } from "@/components/contract-upload-dialog";
 import { api } from "@/lib/api-client";
 import { Template } from "@repo/types";
 import { Button, Spinner } from '@repo/ui';
@@ -47,6 +48,10 @@ export default function NewContractPage() {
     const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
     const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
     const [isUploadedContract, setIsUploadedContract] = useState(false);
+
+    // New Feature: Upload Signed Copy Flow
+    const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+    const [createdContractId, setCreatedContractId] = useState<string>("");
 
     // Cleanup object URL on unmount or file change
     useEffect(() => {
@@ -479,6 +484,56 @@ export default function NewContractPage() {
         }
     };
 
+    const handleUploadSignedFlow = async () => {
+        if (!selectedTemplate) return;
+        if (!validateForm()) {
+            showError("Validation Error", "Please fill in all required fields.");
+            return;
+        }
+
+        // 1. Create the contract first (if not already created?)
+        // For simplicity, we create a new DRAFT contract now.
+        setLoading(true);
+        try {
+            const finalAnnexureData = getOnlyAnnexuresHtml();
+            const payload = {
+                title: contractDetails.title,
+                templateId: selectedTemplate.id,
+                counterpartyName: contractDetails.counterpartyName,
+                counterpartyBusinessName: contractDetails.counterpartyBusinessName,
+                counterpartyEmail: contractDetails.counterpartyEmail,
+                startDate: contractDetails.startDate ? new Date(contractDetails.startDate).toISOString() : undefined,
+                endDate: contractDetails.endDate ? new Date(contractDetails.endDate).toISOString() : undefined,
+                amount: contractDetails.amount ? parseFloat(contractDetails.amount) : undefined,
+                description: contractDetails.description || "",
+                fieldData: {
+                    title: contractDetails.title,
+                    termSheet: editorContent,
+                    ...contractDetails
+                },
+                annexureData: finalAnnexureData,
+            };
+
+            // @ts-ignore
+            const newContract = await api.contracts.create(payload);
+            // @ts-ignore
+            setCreatedContractId(newContract.id);
+            setIsUploadDialogOpen(true);
+        } catch (error: any) {
+            console.error("Failed to create contract for upload:", error);
+            showError("Creation Failed", "Could not prepare contract for upload.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUploadComplete = (data: any) => {
+        setIsUploadDialogOpen(false);
+        // Redirect to the contract
+        // @ts-ignore
+        router.push(`/dashboard/contracts/${createdContractId}`);
+    };
+
     return (
         <div className="max-w-[1600px] mx-auto selection:bg-orange-100">
             {/* Header */}
@@ -581,6 +636,7 @@ export default function NewContractPage() {
                                     className="border-0 shadow-none rounded-none"
                                     isAiOpen={showAiPanel}
                                     onToggleAi={setShowAiPanel}
+                                    onUploadSignedCopy={handleUploadSignedFlow}
                                 />
                             </div>
                         )}
@@ -593,6 +649,14 @@ export default function NewContractPage() {
                 onClose={() => setIsMetadataDialogOpen(false)}
                 onConfirm={handleMetadataConfirm}
                 templateName={pendingTemplate?.name}
+            />
+
+            <ContractUploadDialog
+                isOpen={isUploadDialogOpen}
+                onClose={() => setIsUploadDialogOpen(false)}
+                contractId={createdContractId}
+                contractTitle={contractDetails.title}
+                onUploadComplete={handleUploadComplete}
             />
         </div>
     );
