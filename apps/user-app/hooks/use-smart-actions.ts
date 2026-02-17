@@ -22,7 +22,6 @@ export function useSmartActions({ contract, permissions, onAction }: UseSmartAct
     const [showSendDialog, setShowSendDialog] = useState(false);
     const [showRevisionDialog, setShowRevisionDialog] = useState(false);
     const [showApproveDialog, setShowApproveDialog] = useState(false);
-    const [showRejectDialog, setShowRejectDialog] = useState(false);
 
     // Action Context State
     const [activeApprovalType, setActiveApprovalType] = useState<'LEGAL' | 'FINANCE' | 'RETURN_TO_MANAGER' | null>(null);
@@ -120,9 +119,6 @@ export function useSmartActions({ contract, permissions, onAction }: UseSmartAct
         if (legalApproval) {
             onAction('return_to_manager', { id: legalApproval.id, comment });
         }
-        setShowRejectDialog(false); // Re-using Reject Dialog for Return? Or create new one? 
-        // Let's use Reject Dialog but with a specific type flag or just handle it.
-        // Actually, let's use a specific handling flow.
         setActiveApprovalType(null);
     };
 
@@ -136,29 +132,9 @@ export function useSmartActions({ contract, permissions, onAction }: UseSmartAct
         setActiveApprovalType(null);
     };
 
-    const handleReject = (comment: string) => {
-        if (activeApprovalType === 'RETURN_TO_MANAGER') {
-            handleReturnToManager(comment);
-            return;
-        }
-
-        if (activeApprovalType === 'LEGAL') {
-            onAction('reject_legal', { comment });
-        } else if (activeApprovalType === 'FINANCE') {
-            onAction('reject_finance', { comment });
-        }
-        setShowRejectDialog(false);
-        setActiveApprovalType(null);
-    };
-
     const openApproveDialog = (type: 'LEGAL' | 'FINANCE') => {
         setActiveApprovalType(type);
         setShowApproveDialog(true);
-    };
-
-    const openRejectDialog = (type: 'LEGAL' | 'FINANCE' | 'RETURN_TO_MANAGER') => {
-        setActiveApprovalType(type as any); // Cast for now or update state type
-        setShowRejectDialog(true);
     };
 
     const openSendToCounterpartyDialog = () => {
@@ -201,7 +177,6 @@ export function useSmartActions({ contract, permissions, onAction }: UseSmartAct
             showSendDialog, setShowSendDialog,
             showRevisionDialog, setShowRevisionDialog,
             showApproveDialog, setShowApproveDialog,
-            showRejectDialog, setShowRejectDialog,
             activeApprovalType, recipientEmails, setRecipientEmails
         },
         // Actions (Openers & Confirmers)
@@ -210,10 +185,8 @@ export function useSmartActions({ contract, permissions, onAction }: UseSmartAct
             handleSendToCounterparty,
             handleRequestRevision,
             handleApprove,
-            handleReject,
 
             openApproveDialog,
-            openRejectDialog,
             openSendToCounterpartyDialog,
             openCancelDialog,
             openRevisionDialog

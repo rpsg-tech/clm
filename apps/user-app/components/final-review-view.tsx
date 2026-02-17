@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Download, ArrowRight, FileCheck, Calendar, User, IndianRupee, FileText, Sparkles, Upload } from "lucide-react";
+import { Download, ArrowRight, FileCheck, Calendar, User, IndianRupee, FileText, Sparkles, Upload, Loader2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import { ContractAssistantSidebar } from "./contract-assistant-sidebar";
 
 interface FinalReviewViewProps {
@@ -12,6 +13,7 @@ interface FinalReviewViewProps {
     filePreviewUrl?: string | null;
     onSubmit: () => void;
     onBackToEdit?: () => void;
+    onReject?: (comment: string) => void;
     loading: boolean;
     className?: string;
     isAiOpen?: boolean;
@@ -27,6 +29,7 @@ export function FinalReviewView({
     filePreviewUrl,
     onSubmit,
     onBackToEdit,
+    onReject,
     loading,
     className = "",
     isAiOpen = false,
@@ -35,18 +38,15 @@ export function FinalReviewView({
     onUploadSignedCopy
 }: FinalReviewViewProps) {
     const [isDownloading, setIsDownloading] = useState(false);
+    const { hasPermission } = useAuth();
 
+    // ... handleDownload remains same ...
     const handleDownload = async () => {
         setIsDownloading(true);
         try {
-            // A. UPLOAD FLOW: Download original file directly
             if (filePreviewUrl) {
                 const a = document.createElement('a');
                 a.href = filePreviewUrl;
-                // Use title as filename, fallback to 'contract.pdf' (though it might be docx, browser handles blob type usually, but extension helps)
-                // Since we don't strictly know extension here without passing it, we can guess or just append .pdf if title lacks it, 
-                // but actually for uploads we restricted to PDF/DOC. 
-                // Let's use a safe name.
                 a.download = `${(details.title || 'contract').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_preview`;
                 document.body.appendChild(a);
                 a.click();
@@ -54,11 +54,7 @@ export function FinalReviewView({
                 return;
             }
 
-            // B. TEMPLATE FLOW: Generate from HTML
-            // 1. Prepare Content HTML
             const processedHtml = processVariables(content, details);
-
-            // 2. Wrap in proper HTML structure for the PDF service
             const fullHtml = `
                 <!DOCTYPE html>
                 <html>
@@ -68,21 +64,16 @@ export function FinalReviewView({
                     <style>
                         @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
                         @page { margin: 20mm 15mm; size: A4 portrait; }
-                        /* Stamp Paper Support (approx 5 inches) */
                         @page :first { margin-top: 125mm; }
-                        
                         body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; color: #000; margin: 0; padding: 0; }
                         .contract-pdf-wrapper { text-align: justify; width: 100%; background: white; }
-                        
                         h1, h2, h3, h4, h5, h6 { font-weight: bold; margin-top: 1.5em; margin-bottom: 0.8em; page-break-after: avoid; }
                         h1 { font-size: 18pt; text-align: center; text-transform: uppercase; margin-bottom: 24px; }
                         h2 { font-size: 16pt; border-bottom: 1px solid #eee; padding-bottom: 8px; }
-                        
                         p { margin-bottom: 1em; }
                         table { width: 100%; border-collapse: collapse; margin: 1.5em 0; font-size: 11pt; }
                         th, td { border: 1px solid #000; padding: 8px; text-align: left; vertical-align: top; page-break-inside: avoid; }
                         th { background-color: #f3f3f3; font-weight: bold; }
-                        
                         .page-break { page-break-before: always; }
                     </style>
                 </head>
@@ -94,7 +85,6 @@ export function FinalReviewView({
                 </html>
             `;
 
-            // 3. Call Serverless PDF Endpoint
             const response = await fetch('/api/pdf', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -103,7 +93,6 @@ export function FinalReviewView({
 
             if (!response.ok) throw new Error('Failed to generate PDF');
 
-            // 4. Trigger Download
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -116,47 +105,33 @@ export function FinalReviewView({
 
         } catch (error) {
             console.error('PDF Download failed:', error);
-            // Optionally add toast here if context is available, for now console log is sufficient as per original
         } finally {
             setIsDownloading(false);
         }
     };
 
-    // Variable placement logic
     const processVariables = (htmlContent: string, data: any) => {
         if (!htmlContent) return "";
-
         const replacer = (key: string) => {
             const normalizedKey = key.trim();
-            // Map common variances if needed
             const lookupKey = normalizedKey === 'Client Name' ? 'counterpartyName' :
                 normalizedKey === 'Client Email' ? 'counterpartyEmail' :
                     normalizedKey === 'Business Name' ? 'counterpartyBusinessName' :
                         normalizedKey === 'Contract Title' ? 'title' : normalizedKey;
-
             const val = data[lookupKey] || data[normalizedKey];
-
             if (val) {
                 if (lookupKey === 'amount') return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(val));
                 if (lookupKey === 'startDate' || lookupKey === 'endDate') return new Date(val).toLocaleDateString();
                 return val;
             }
-
-            // Fallback for visual debugging
             return `<span class="bg-yellow-100 text-yellow-800 px-1 rounded border border-yellow-200 font-mono text-xs">{{${normalizedKey}}}</span>`;
         };
-
         let processed = htmlContent;
-
-        // 1. Match legacy format: <span data-variable="key">Label</span>
         processed = processed.replace(/<span[^>]*data-variable="([^"]+)"[^>]*>.*?<\/span>/g, (match, key) => {
             const val = replacer(key);
-            return val.includes('{{') ? match : val; // Only replace if value found
+            return val.includes('{{') ? match : val;
         });
-
-        // 2. Match TipTap node format: Any span with data-type="variable"
         processed = processed.replace(/<span[^>]*data-type="variable"[^>]*>.*?<\/span>/g, (match, attrs) => {
-            // Need to extract ID from the match string more reliably if attributes are mixed
             const idMatch = match.match(/id="([^"]+)"/);
             const key = idMatch ? idMatch[1] : null;
             if (key) {
@@ -165,135 +140,128 @@ export function FinalReviewView({
             }
             return match;
         });
-
-        // 3. Match Handlebars format: {{variableName}}
-        processed = processed.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
-            return replacer(key);
-        });
-
+        processed = processed.replace(/\{\{([^}]+)\}\}/g, (match, key) => replacer(key));
         return processed;
     };
 
     const processedContent = processVariables(content, details);
 
+    const MetaDataRow = ({ label, value, icon: Icon }: { label: string, value: string | React.ReactNode, icon?: any }) => (
+        <div className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-0">
+            <div className="flex items-center gap-2">
+                {Icon && <Icon size={12} className="text-slate-400" />}
+                <span className="text-[11px] font-semibold text-slate-500">{label}</span>
+            </div>
+            <span className="text-[11px] font-semibold text-slate-800 truncate max-w-[160px]">{value}</span>
+        </div>
+    );
+
     return (
         <div className={cn("flex h-full w-full bg-slate-50 relative", className)}>
 
             {/* LEFT SIDEBAR: Details & Actions */}
-            <div className="w-[320px] bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 h-full shadow-[4px_0_24px_-12px_rgba(0,0,0,0.1)]">
-                {/* Header */}
-                <div className="p-6 pb-2">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
-                            <FileCheck size={18} strokeWidth={2.5} />
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide leading-none">Contract Review</h3>
-                            <p className="text-[10px] font-medium text-slate-400 mt-1 leading-none">Review details before submission</p>
+            <div className="w-[340px] bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 h-full">
+                {/* Header removed for space */}
+
+                {/* Content Area */}
+                <div className="px-4 py-3 space-y-4">
+                    {/* 1. Contract Identity */}
+                    <div className="space-y-3 pt-2">
+                        <div className="p-3 rounded-xl border border-slate-200 bg-slate-50">
+                            <h3 className="text-sm font-semibold text-slate-900 leading-snug">
+                                {details.title || "Untitled Contract"}
+                            </h3>
+                            {templateName && (
+                                <div className="mt-2 inline-flex items-center px-2 py-0.5 rounded-md bg-white text-slate-600 text-[10px] font-semibold border border-slate-200">
+                                    {templateName}
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    <div className="h-px bg-slate-100 w-full mb-6"></div>
-                </div>
-
-                {/* Details List */}
-                <div className="flex-1 overflow-y-auto px-6 space-y-8">
-                    {/* Contract Title */}
-                    <div className="relative pl-3 border-l-[3px] border-orange-500">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">
-                            Contract Title
-                        </div>
-                        <h3 className="text-xl font-serif font-bold text-slate-900 leading-tight mb-3">
-                            {details.title || "Untitled Contract"}
-                        </h3>
-                        {templateName && (
-                            <div className="inline-flex items-center px-2 py-1 rounded bg-orange-50 text-orange-700 text-[10px] font-bold uppercase tracking-wide border border-orange-100">
-                                {templateName}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Business Entity */}
-                    <div className="relative">
-                        <div className="flex items-center justify-between mb-1.5">
-                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Entity</div>
-                            <User size={14} className="text-slate-300" />
-                        </div>
-                        <div className="p-3 bg-slate-50 border border-slate-100 rounded-lg">
-                            <p className="text-sm font-bold text-slate-900 leading-tight">
-                                {details.counterpartyBusinessName || "InsightEdge Analytics Pvt. Ltd."}
-                            </p>
+                    {/* 2. Parties Involved */}
+                    <div className="space-y-2">
+                        <h4 className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.18em] px-1">Engagement details</h4>
+                        <div className="p-3 rounded-xl border border-slate-200 bg-white space-y-1">
+                            <MetaDataRow
+                                icon={User}
+                                label="Business Entity"
+                                value={details.counterpartyBusinessName || "N/A"}
+                            />
+                            <MetaDataRow
+                                icon={User}
+                                label="Point of Contact"
+                                value={details.counterpartyName || "N/A"}
+                            />
                         </div>
                     </div>
 
-                    {/* Quick Stats Grid */}
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                        <div className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
-                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Value</div>
-                            <div className="text-sm font-mono font-bold text-slate-700">
-                                {details.amount ? `₹${Number(details.amount).toLocaleString('en-IN')}` : "-"}
-                            </div>
-                        </div>
-                        <div className="p-3 bg-white border border-slate-100 rounded-lg shadow-sm">
-                            <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Duration</div>
-                            <div className="text-sm font-bold text-slate-700">
-                                {details.startDate && details.endDate ? (
-                                    <span>
-                                        {Math.ceil((new Date(details.endDate).getTime() - new Date(details.startDate).getTime()) / (1000 * 60 * 60 * 24 * 30))} Months
-                                    </span>
-                                ) : "N/A"}
-                            </div>
+                    {/* 3. Key Financials & Terms */}
+                    <div className="space-y-2 pb-4">
+                        <h4 className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.18em] px-1">Commercial terms</h4>
+                        <div className="p-3 rounded-xl border border-slate-200 bg-white space-y-1">
+                            <MetaDataRow
+                                icon={IndianRupee}
+                                label="Contract Value"
+                                value={details.amount ? `₹${Number(details.amount).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : "-"}
+                            />
+                            <MetaDataRow
+                                icon={Calendar}
+                                label="Start Date"
+                                value={details.startDate ? new Date(details.startDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}
+                            />
+                            <MetaDataRow
+                                icon={Calendar}
+                                label="Expiry Date"
+                                value={details.endDate ? new Date(details.endDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : "-"}
+                            />
                         </div>
                     </div>
                 </div>
 
                 {/* Actions Footer */}
-                <div className="p-6 border-t border-slate-100 bg-white z-10 space-y-3">
-                    <button
-                        onClick={onSubmit}
-                        disabled={loading}
-                        className="w-full py-3.5 bg-slate-900 text-white font-bold rounded-lg shadow-lg shadow-slate-900/20 hover:bg-black hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
-                    >
-                        {loading ? "Processing..." : (
-                            <>
-                                Finalise Draft <ArrowRight size={14} />
-                            </>
-                        )}
-                    </button>
-
-                    <button
-                        onClick={handleDownload}
-                        disabled={isDownloading}
-                        className="w-full py-2.5 bg-white border border-slate-200 text-slate-600 font-bold rounded-lg hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest"
-                    >
-                        {isDownloading ? "Saving..." : (
-                            <>
-                                <Download size={14} /> Download Draft
-                            </>
-                        )}
-                    </button>
-
-                    <div className="flex items-center justify-between pt-2">
+                <div className="p-4 border-t border-slate-100 bg-white">
+                    <div className="flex items-center gap-2">
                         {onBackToEdit && (
                             <button
                                 onClick={onBackToEdit}
-                                className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
+                                className="relative group px-3 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 flex items-center justify-center"
+                                aria-label="Back to Edit"
                             >
-                                Back to Edit
+                                <ArrowRight size={12} className="rotate-180" />
+                                <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                                    Back to Edit
+                                </span>
                             </button>
                         )}
-
-                        {onUploadSignedCopy && (
-                            <button
-                                onClick={onUploadSignedCopy}
-                                className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-orange-600 transition-colors"
-                            >
-                                <Upload size={12} /> Upload Signed Copy
-                            </button>
-                        )}
+                        <button
+                            onClick={onSubmit}
+                            disabled={loading}
+                            className="flex-1 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-black transition-all duration-200 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+                        >
+                            {loading ? <Loader2 size={14} className="animate-spin" /> : (
+                                <>
+                                    Finalise Draft <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                </>
+                            )}
+                        </button>
+                        <button
+                            onClick={handleDownload}
+                            disabled={isDownloading}
+                            className="relative group px-3 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 flex items-center justify-center"
+                            aria-label="Download contract"
+                        >
+                            {isDownloading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                            <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                                Download
+                            </span>
+                        </button>
                     </div>
                 </div>
+
             </div>
+
+            {/* Dialogs */}
 
             {/* MAIN CONTENT: Document Workspace */}
             <div className="flex-1 flex flex-col min-w-0 bg-slate-200/50">
@@ -316,9 +284,9 @@ export function FinalReviewView({
                 </div>
 
                 <div className="flex-1 flex min-h-0 overflow-hidden relative">
-                    <div className={`flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth flex ${filePreviewUrl ? '' : 'justify-center'}`}>
+                    <div className={`flex-1 overflow-y-auto p-3 md:p-6 scroll-smooth flex ${filePreviewUrl ? '' : 'justify-center'}`}>
                         {/* Contract Paper Container */}
-                        <div className={`w-full relative pb-12 transition-all duration-500 ease-out animate-in slide-in-from-bottom-4 fade-in ${filePreviewUrl ? 'h-full' : 'max-w-[850px]'}`}>
+                        <div className={`w-full relative pb-4 transition-all duration-500 ease-out animate-in slide-in-from-bottom-4 fade-in ${filePreviewUrl ? 'h-full' : 'max-w-[850px]'}`}>
                             {/* Realistic Paper Shadow Effect for HTML Content Only */}
                             {!filePreviewUrl && (
                                 <div className="absolute top-4 left-4 w-full h-full bg-slate-900/10 rounded-[2px] blur-md transform translate-y-4"></div>
@@ -327,7 +295,7 @@ export function FinalReviewView({
                                 <div className="absolute top-0 left-0 w-full h-full bg-white shadow-[0_2px_40px_-12px_rgba(0,0,0,0.1)] rounded-[1px] -z-10"></div>
                             )}
 
-                            <div className={`${filePreviewUrl ? 'h-full' : 'bg-white min-h-[1100px] ring-1 ring-black/5'} relative z-0 flex flex-col items-center`}>
+                            <div className={`${filePreviewUrl ? 'h-full' : 'bg-white ring-1 ring-black/5'} relative z-0 flex flex-col items-center`}>
 
                                 {/* Decorative Head (Subtle) */}
                                 {!filePreviewUrl && (
@@ -335,7 +303,7 @@ export function FinalReviewView({
                                 )}
 
                                 {/* Content */}
-                                <div className={`${filePreviewUrl ? 'p-0 w-full h-full' : 'p-8 md:p-12 flex-1 w-full'}`}>
+                                <div className={`${filePreviewUrl ? 'p-0 w-full h-full' : 'p-6 md:p-10 flex-1 w-full'}`}>
                                     <style jsx global>{`
                                         .contract-content {
                                             font-family: 'Times New Roman', serif;
@@ -365,10 +333,6 @@ export function FinalReviewView({
                                     </div>
                                 </div>
 
-                                {/* Footer: Page Number Simulation */}
-                                <div className="absolute bottom-6 left-0 w-full text-center pointer-events-none">
-                                    <span className="text-[10px] text-slate-300 font-serif">Page 1</span>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -382,7 +346,8 @@ export function FinalReviewView({
                             embedded
                             className="h-full"
                             contractId={contractId}
-                            content={content}
+                            content={processedContent}
+                            details={details}
                         />
                     </div>
                 </div>

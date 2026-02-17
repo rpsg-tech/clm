@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User, Sparkles, AlertCircle, Search, ArrowRight } from "lucide-react";
 import { Template } from "@repo/types";
 import { Button, Badge } from "@repo/ui";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
     role: "user" | "system";
@@ -196,7 +198,11 @@ export function AIAssistantView({ onTemplateSelect, templates, onShowAll }: { on
                                 ? "bg-slate-900 text-white rounded-tr-sm shadow-md"
                                 : "bg-white text-slate-600 border border-slate-100 rounded-tl-sm shadow-sm"
                                 }`}>
-                                <p className="whitespace-pre-wrap">{msg.content}</p>
+                                <div className="prose prose-sm prose-slate max-w-none">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {msg.content}
+                                    </ReactMarkdown>
+                                </div>
                             </div>
 
                             {/* Template Suggestions Carousel */}

@@ -537,7 +537,7 @@ export default function NewContractPage() {
     return (
         <div className="max-w-[1600px] mx-auto selection:bg-orange-100">
             {/* Header */}
-            <div className="flex flex-col gap-3 mb-4 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col gap-2 mb-2 md:flex-row md:items-start md:justify-between">
                 <div className="flex flex-col space-y-1">
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Create New Contract</h1>
                 </div>
@@ -569,7 +569,7 @@ export default function NewContractPage() {
             </div>
 
             {/* Main Content Area */}
-            <div className="min-h-[500px]">
+            <div className="min-h-0">
                 {isLoadingTemplates ? (
                     <div className="flex h-[400px] items-center justify-center">
                         <div className="flex flex-col items-center gap-4">
@@ -624,7 +624,7 @@ export default function NewContractPage() {
                         )}
 
                         {viewMode === "review" && (
-                            <div className="flex h-[calc(100vh-220px)] min-h-[520px] w-full border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative animate-in fade-in zoom-in-95 duration-500">
+                            <div className="flex h-[calc(100svh-200px)] w-full border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative animate-in fade-in zoom-in-95 duration-500">
                                 <FinalReviewView
                                     content={getFinalDocumentContent()}
                                     details={contractDetails || {}}
@@ -632,6 +632,11 @@ export default function NewContractPage() {
                                     filePreviewUrl={filePreviewUrl}
                                     onSubmit={handleContractSubmit}
                                     onBackToEdit={() => setViewMode("draft")}
+                                    onReject={(comment) => {
+                                        console.log("Contract discarded/rejected with comment:", comment);
+                                        setViewMode("draft");
+                                        // Specific rejection logic for creation phase could be added here
+                                    }}
                                     loading={loading}
                                     className="border-0 shadow-none rounded-none"
                                     isAiOpen={showAiPanel}

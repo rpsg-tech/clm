@@ -4,9 +4,10 @@ import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import {
-    Edit, Send, Upload, CheckCircle, XCircle, FileCheck, Shield, Ban, ArrowUpCircle, Loader2, History
+    Edit, Send, Upload, CheckCircle, FileCheck, Shield, Ban, ArrowUpCircle, Loader2, History, Clock
 } from "lucide-react";
 
+import { Button, cn } from "@repo/ui";
 // Hook
 import { useSmartActions } from "../hooks/use-smart-actions";
 
@@ -16,7 +17,6 @@ import { ActionButton } from "./dashboard/contracts/actions/action-button";
 
 // Dialogs
 import { ApproveDialog } from "./dashboard/contracts/actions/dialogs/approve-dialog";
-import { RejectDialog } from "./dashboard/contracts/actions/dialogs/reject-dialog";
 import { RevisionDialog } from "./dashboard/contracts/actions/dialogs/revision-dialog";
 import { EnhancedSendDialog, SendEmailPayload } from "./dashboard/contracts/actions/dialogs/send-dialog";
 
@@ -165,14 +165,6 @@ export function SmartActionButtons({
                                         compact={compact}
                                     />
                                     <ActionButton
-                                        icon={XCircle}
-                                        label="Reject (Finance)"
-                                        onClick={() => hookActions.openRejectDialog('FINANCE')}
-                                        loading={loading}
-                                        className="border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-300"
-                                        compact={compact}
-                                    />
-                                    <ActionButton
                                         icon={CheckCircle}
                                         label="Approve (Finance)"
                                         variant="primary"
@@ -195,25 +187,6 @@ export function SmartActionButtons({
                                         compact={compact}
                                     />
                                     <ActionButton
-                                        icon={XCircle}
-                                        label={contract.status === 'PENDING_LEGAL_HEAD' ? "Reject (Legal Head)" : "Reject (Legal)"}
-                                        onClick={() => hookActions.openRejectDialog('LEGAL')}
-                                        loading={loading}
-                                        className="border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-300"
-                                        compact={compact}
-                                    />
-                                    {flags.showReturnToManager && (
-                                        <ActionButton
-                                            icon={Edit}
-                                            label="Return to Manager"
-                                            subLabel="Request Changes from Legal Team"
-                                            onClick={() => hookActions.openRejectDialog('RETURN_TO_MANAGER')}
-                                            loading={loading}
-                                            className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-300"
-                                            compact={compact}
-                                        />
-                                    )}
-                                    <ActionButton
                                         icon={CheckCircle}
                                         label={contract.status === 'PENDING_LEGAL_HEAD' ? "Approve (Legal Head)" : "Approve (Legal)"}
                                         variant="primary"
@@ -222,6 +195,17 @@ export function SmartActionButtons({
                                         className="bg-indigo-600 hover:bg-indigo-700"
                                         compact={compact}
                                     />
+                                    {flags.showReturnToManager && (
+                                        <ActionButton
+                                            icon={Edit}
+                                            label="Return to Manager"
+                                            subLabel="Request Changes from Legal Team"
+                                            onClick={() => hookActions.handleRequestRevision("Return for internal revision")}
+                                            loading={loading}
+                                            className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-300"
+                                            compact={compact}
+                                        />
+                                    )}
                                     {flags.showEscalateToHead && (
                                         <ActionButton
                                             icon={ArrowUpCircle}
@@ -238,15 +222,35 @@ export function SmartActionButtons({
 
                             {/* Pending State Indicators (if not approver) */}
                             {(flags.isLegalPending && !permissions.canApproveLegal) && (
-                                <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-100 rounded-lg">
-                                    <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
-                                    <span className="text-xs font-bold text-indigo-700">Waiting for Legal Review</span>
+                                <div className={cn(
+                                    "group relative flex items-center gap-2.5 rounded-xl border border-indigo-100 bg-indigo-50/50 text-indigo-700 transition-all duration-300 w-full sm:w-auto",
+                                    compact ? "px-3 py-2" : "pl-3 pr-4 py-2.5"
+                                )}>
+                                    <div className={cn(
+                                        "flex items-center justify-center rounded-md bg-white text-indigo-500 border border-indigo-100 transition-all duration-300 shrink-0",
+                                        compact ? "w-7 h-7" : "w-8 h-8"
+                                    )}>
+                                        <Clock className={cn(compact ? "w-3.5 h-3.5" : "w-4 h-4")} />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className={cn("font-bold leading-none tracking-wide", compact ? "text-[11px]" : "text-xs")}>Waiting for Legal Review</div>
+                                    </div>
                                 </div>
                             )}
                             {(flags.isFinancePending && !permissions.canApproveFinance) && (
-                                <div className="flex items-center gap-2 px-4 py-2 bg-cyan-50 border border-cyan-100 rounded-lg">
-                                    <Loader2 className="w-4 h-4 text-cyan-500 animate-spin" />
-                                    <span className="text-xs font-bold text-cyan-700">Waiting for Finance Review</span>
+                                <div className={cn(
+                                    "group relative flex items-center gap-2.5 rounded-xl border border-cyan-100 bg-cyan-50/50 text-cyan-700 transition-all duration-300 w-full sm:w-auto",
+                                    compact ? "px-3 py-2" : "pl-3 pr-4 py-2.5"
+                                )}>
+                                    <div className={cn(
+                                        "flex items-center justify-center rounded-md bg-white text-cyan-500 border border-cyan-100 transition-all duration-300 shrink-0",
+                                        compact ? "w-7 h-7" : "w-8 h-8"
+                                    )}>
+                                        <Clock className={cn(compact ? "w-3.5 h-3.5" : "w-4 h-4")} />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className={cn("font-bold leading-none tracking-wide", compact ? "text-[11px]" : "text-xs")}>Waiting for Finance Review</div>
+                                    </div>
                                 </div>
                             )}
                         </>
@@ -289,20 +293,28 @@ export function SmartActionButtons({
                     )}
 
                     {/* 5. ACTIVE STATE */}
-                    {/* 5. ACTIVE STATE */}
                     {contract.status === 'ACTIVE' && (
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-lg">
-                                <CheckCircle className="w-5 h-5 text-emerald-600" />
-                                <div className="text-xs font-bold text-emerald-800">Contract Active & Signed</div>
+                        <>
+                            <div className={cn(
+                                "group relative flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50/50 text-emerald-700 transition-all duration-300 w-full sm:w-auto",
+                                compact ? "px-3 py-2" : "pl-3 pr-4 py-2.5"
+                            )}>
+                                <div className={cn(
+                                    "flex items-center justify-center rounded-md bg-white text-emerald-600 border border-emerald-100 transition-all duration-300 shrink-0 shadow-sm",
+                                    compact ? "w-7 h-7" : "w-8 h-8"
+                                )}>
+                                    <CheckCircle className={cn(compact ? "w-3.5 h-3.5" : "w-4 h-4")} strokeWidth={2.5} />
+                                </div>
+                                <div className="text-left">
+                                    <div className={cn("font-bold leading-none tracking-wider uppercase", compact ? "text-[10px]" : "text-[11px]")}>Active & Signed</div>
+                                </div>
                             </div>
 
                             {/* Admin Revert Capability */}
-                            {permissions.canEdit && ( // Using specific permission check in parent or here?
-                                // We need access to auth context for specific permission check
-                                <RevertButton onAction={onAction} loading={loading} />
+                            {permissions.canEdit && (
+                                <RevertButton onAction={onAction} loading={loading} compact={compact} />
                             )}
-                        </div>
+                        </>
                     )}
 
                 </div>
@@ -314,13 +326,6 @@ export function SmartActionButtons({
                 onOpenChange={dialogs.setShowApproveDialog}
                 onConfirm={hookActions.handleApprove}
                 type={dialogs.activeApprovalType as 'LEGAL' | 'FINANCE' | null}
-            />
-
-            <RejectDialog
-                open={dialogs.showRejectDialog}
-                onOpenChange={dialogs.setShowRejectDialog}
-                onConfirm={hookActions.handleReject}
-                type={dialogs.activeApprovalType}
             />
 
             <RevisionDialog
@@ -347,19 +352,19 @@ export function SmartActionButtons({
     );
 }
 
-function RevertButton({ onAction, loading }: { onAction: any, loading: boolean }) {
+function RevertButton({ onAction, loading, compact }: { onAction: any, loading: boolean, compact: boolean }) {
     const { hasPermission } = useAuth();
 
     if (!hasPermission('contract:revert')) return null;
 
     return (
         <ActionButton
-            icon={History} // Ensure History is imported
+            icon={History}
             label="Revert Status"
             onClick={() => onAction('revert_status')}
             loading={loading}
-            className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-300 ml-2"
-            compact={false}
+            className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-300"
+            compact={compact}
         />
     );
 }

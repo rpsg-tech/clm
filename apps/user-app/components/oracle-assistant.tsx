@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Sparkles, X, Send, Bot, Paperclip, Maximize2, Minimize2, ChevronDown, ArrowRight, FileText, TrendingUp, Clock, AlertCircle, Users, GitBranch, Zap, DollarSign, CheckCircle } from 'lucide-react';
 import { cn } from '@repo/ui';
 import { useAuth } from '@/lib/auth-context';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 /* -------------------------------------------------------------------------------------------------
  * LUMINA ORACLE AI ASSISTANT (Floating Widget)
@@ -44,9 +46,10 @@ interface OracleMessage {
 // Tier 1 Quick Action Chips
 const quickActions = {
     contracts: [
-        { icon: FileText, label: 'Pending drafts', query: 'show draft contracts', color: 'orange' },
-        { icon: Clock, label: 'Expiring soon', query: 'show contracts expiring in 30 days', color: 'amber' }, // Explicit days hit regex
-        { icon: DollarSign, label: 'High value', query: 'show contracts over 100000', color: 'emerald' }, // Explicit amount
+        { icon: Clock, label: 'Pending drafts', query: 'show draft contracts', color: 'orange' },
+        { icon: Clock, label: 'Created last 2 days', query: 'contracts created in the last 2 days', color: 'indigo' },
+        { icon: Clock, label: 'Expiring soon', query: 'show contracts expiring in 30 days', color: 'amber' },
+        { icon: DollarSign, label: 'High value', query: 'show contracts over 100000', color: 'emerald' },
     ],
     team: [
         { icon: Users, label: 'Legal team', query: 'show legal team', color: 'blue' },
@@ -200,17 +203,39 @@ export function OracleAssistant() {
         <button
             key={contract.id}
             onClick={() => handleContractClick(contract.id)}
-            className="w-full bg-slate-800/40 border border-slate-700/50 rounded-lg p-2.5 hover:border-orange-500/50 hover:bg-slate-800/60 transition-all cursor-pointer group text-left mb-2"
+            className="w-full bg-slate-800/40 border border-slate-700/50 rounded-lg p-2.5 hover:border-orange-500/50 hover:bg-slate-800/60 transition-all cursor-pointer group text-left mb-2 active:scale-[0.98]"
         >
             <div className="flex justify-between items-start mb-1">
-                <h4 className="font-semibold text-slate-100 text-xs group-hover:text-orange-400 transition-colors line-clamp-1">{contract.title}</h4>
-                <span className="text-[10px] text-slate-500 shrink-0 ml-2">{contract.reference}</span>
+                <h4 className="font-semibold text-slate-100 text-[11px] group-hover:text-orange-400 transition-colors line-clamp-1">{contract.title}</h4>
+                <span className="text-[9px] text-slate-500 shrink-0 ml-2 font-mono uppercase">{contract.reference}</span>
             </div>
-            <div className="flex justify-between items-center text-[10px] text-slate-400">
-                <span>{contract.status}</span>
-                {contract.amount && (
-                    <span>₹{contract.amount.toLocaleString()}</span>
-                )}
+            {contract.counterpartyName && (
+                <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-1.5 opacity-80">
+                    <Users className="w-2.5 h-2.5 shrink-0" />
+                    <span className="truncate">{contract.counterpartyName}</span>
+                </div>
+            )}
+            <div className="flex justify-between items-center text-[10px]">
+                <div className="flex items-center gap-1.5">
+                    <div className={cn(
+                        "w-1.5 h-1.5 rounded-full ring-4 ring-opacity-10",
+                        contract.status === 'ACTIVE' ? "bg-emerald-500 ring-emerald-500" :
+                            contract.status === 'DRAFT' ? "bg-orange-500 ring-orange-500" :
+                                "bg-slate-500 ring-slate-500"
+                    )} />
+                    <span className="text-slate-400 font-medium">{contract.status}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    {contract.endDate && (
+                        <span className="text-slate-500 flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5" />
+                            Exp: {contract.endDate}
+                        </span>
+                    )}
+                    {contract.amount && (
+                        <span className="text-orange-300/90 font-semibold drop-shadow-sm">₹{Number(contract.amount).toLocaleString('en-IN')}</span>
+                    )}
+                </div>
             </div>
         </button>
     );
@@ -481,13 +506,15 @@ export function OracleAssistant() {
                                 <div className="flex flex-col gap-1 max-w-[85%]">
                                     <div
                                         className={cn(
-                                            "p-3 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap",
+                                            "p-3 rounded-2xl text-sm leading-relaxed shadow-sm prose prose-invert prose-sm",
                                             msg.role === 'assistant'
                                                 ? "bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none"
                                                 : "bg-orange-600 text-white rounded-tr-none shadow-orange-900/20"
                                         )}
                                     >
-                                        {msg.content}
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                            {msg.content}
+                                        </ReactMarkdown>
                                     </div>
 
                                     {/* Assistant Rich Data */}

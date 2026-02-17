@@ -62,7 +62,7 @@ export function ContractStageIndicator({ currentStatus }: { currentStatus: strin
                                 {isCompleted ? (
                                     <CheckCircle size={18} strokeWidth={3} />
                                 ) : isCurrent ? (
-                                    <Loader2 size={18} className="animate-spin-slow" />
+                                    <Loader2 size={18} />
                                 ) : (
                                     <Circle size={18} />
                                 )}

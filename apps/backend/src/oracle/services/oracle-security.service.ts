@@ -26,6 +26,7 @@ export interface FilteredContractData {
     endDate: Date | null;
     createdAt: Date;
     counterpartyName: string | null;
+    counterpartyBusinessName: string | null;
 }
 
 @Injectable()
@@ -70,6 +71,13 @@ export class OracleSecurityService {
             searchTerm?: string;
             reference?: string;
             limit?: number;
+            // New advanced filters
+            startDateMin?: string | Date;
+            startDateMax?: string | Date;
+            endDateMin?: string | Date;
+            endDateMax?: string | Date;
+            createdSinceDays?: number;
+            counterpartyName?: string;
         }
     ): Promise<FilteredContractData[]> {
         const where: any = {
@@ -105,8 +113,40 @@ export class OracleSecurityService {
             where.OR = [
                 { title: { contains: filters.searchTerm, mode: 'insensitive' } },
                 { reference: { contains: filters.searchTerm, mode: 'insensitive' } },
-                { counterpartyName: { contains: filters.searchTerm, mode: 'insensitive' } }
+                { counterpartyName: { contains: filters.searchTerm, mode: 'insensitive' } },
+                { counterpartyBusinessName: { contains: filters.searchTerm, mode: 'insensitive' } }
             ];
+        }
+
+        if (filters?.counterpartyName) {
+            where.OR = [
+                ...(where.OR || []),
+                { counterpartyName: { contains: filters.counterpartyName, mode: 'insensitive' } },
+                { counterpartyBusinessName: { contains: filters.counterpartyName, mode: 'insensitive' } }
+            ];
+        }
+
+        // Relative Date: Created in the last N days
+        if (filters?.createdSinceDays) {
+            const sinceDate = new Date();
+            sinceDate.setDate(sinceDate.getDate() - filters.createdSinceDays);
+            where.createdAt = { ...where.createdAt, gte: sinceDate };
+        }
+
+        // Absolute Date Ranges: Start Date
+        if (filters?.startDateMin || filters?.startDateMax) {
+            where.startDate = {
+                ...(filters.startDateMin && { gte: new Date(filters.startDateMin) }),
+                ...(filters.startDateMax && { lte: new Date(filters.startDateMax) }),
+            };
+        }
+
+        // Absolute Date Ranges: End Date
+        if (filters?.endDateMin || filters?.endDateMax) {
+            where.endDate = {
+                ...(filters.endDateMin && { gte: new Date(filters.endDateMin) }),
+                ...(filters.endDateMax && { lte: new Date(filters.endDateMax) }),
+            };
         }
 
         if (filters?.expiringDays) {
@@ -132,6 +172,7 @@ export class OracleSecurityService {
                 endDate: true,
                 createdAt: true,
                 counterpartyName: true,
+                counterpartyBusinessName: true,
                 // CRITICAL: Never select content, fieldData, or annexureData
             },
             take: filters?.limit || 50,
@@ -187,7 +228,7 @@ export class OracleSecurityService {
             startDate: c.startDate?.toISOString().split('T')[0],
             endDate: c.endDate?.toISOString().split('T')[0],
             createdAt: c.createdAt.toISOString().split('T')[0],
-            counterpartyName: c.counterpartyName
+            counterpartyName: c.counterpartyName || c.counterpartyBusinessName
         }));
     }
 

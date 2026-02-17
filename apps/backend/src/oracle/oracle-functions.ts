@@ -32,6 +32,18 @@ export const ORACLE_FUNCTIONS = [
                     minAmount: {
                         type: "number",
                         description: "Minimum contract amount"
+                    },
+                    maxAmount: {
+                        type: "number",
+                        description: "Maximum contract amount"
+                    },
+                    createdSinceDays: {
+                        type: "number",
+                        description: "Only count contracts created in the last N days"
+                    },
+                    counterpartyName: {
+                        type: "string",
+                        description: "Filter by counterparty or business name (fuzzy match)"
                     }
                 }
             }
@@ -67,7 +79,31 @@ export const ORACLE_FUNCTIONS = [
                     },
                     searchTerm: {
                         type: "string",
-                        description: "Search in title, reference, or counterparty name"
+                        description: "Search in title or reference"
+                    },
+                    counterpartyName: {
+                        type: "string",
+                        description: "Specific filter for counterparty or business name"
+                    },
+                    createdSinceDays: {
+                        type: "number",
+                        description: "Contracts created in the last N days"
+                    },
+                    startDateMin: {
+                        type: "string",
+                        description: "Contracts starting on or after this date (ISO format)"
+                    },
+                    startDateMax: {
+                        type: "string",
+                        description: "Contracts starting on or before this date (ISO format)"
+                    },
+                    endDateMin: {
+                        type: "string",
+                        description: "Contracts ending on or after this date (ISO format)"
+                    },
+                    endDateMax: {
+                        type: "string",
+                        description: "Contracts ending on or before this date (ISO format)"
                     },
                     limit: {
                         type: "number",

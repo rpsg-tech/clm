@@ -11,6 +11,8 @@ import { api } from '@/lib/api-client';
 import { Button, Badge } from '@repo/ui';
 import { useToast } from '@/lib/toast-context';
 import { Sparkles, ArrowRight, X, Bot, Wand2, FileText, Check } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ClauseSuggestion {
     title: string;
@@ -239,9 +241,11 @@ function AiAssistantContent({ onInsertClause, selectedText, onClose }: { onInser
                                                 {s.confidence ? Math.round(s.confidence * 100) : 0}% MATCH
                                             </Badge>
                                         </div>
-                                        <p className="text-xs text-slate-600 mb-3 leading-relaxed line-clamp-4 group-hover:line-clamp-none transition-all">
-                                            {s.content}
-                                        </p>
+                                        <div className="text-xs text-slate-600 mb-3 leading-relaxed group-hover:line-clamp-none transition-all prose prose-sm prose-slate">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                {s.content}
+                                            </ReactMarkdown>
+                                        </div>
                                         <Button size="sm" variant="outline" className="w-full text-xs h-8 border-slate-200 text-slate-600 hover:border-orange-500 hover:text-orange-600 hover:bg-orange-50" onClick={() => handleInsert(s.content)}>
                                             Insert Clause
                                         </Button>
@@ -275,8 +279,10 @@ function AiAssistantContent({ onInsertClause, selectedText, onClose }: { onInser
                                     <Check size={16} />
                                     <span>Improved Version</span>
                                 </div>
-                                <div className="text-sm text-slate-700 mb-4 bg-green-50/50 p-3 rounded-lg border border-green-100/50 leading-relaxed">
-                                    {improvement.improved}
+                                <div className="text-sm text-slate-700 mb-4 bg-green-50/50 p-3 rounded-lg border border-green-100/50 leading-relaxed prose prose-sm prose-slate">
+                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        {improvement.improved}
+                                    </ReactMarkdown>
                                 </div>
                                 <Button size="sm" className="w-full bg-green-600 hover:bg-green-700 text-white h-9" onClick={() => handleInsert(improvement.improved)}>
                                     Replace Original

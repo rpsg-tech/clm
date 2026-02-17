@@ -49,7 +49,6 @@ export function StatusIndicator({ status, compact = false }: StatusIndicatorProp
                 ${compact ? 'h-9 shadow-sm bg-white border-slate-200' : 'w-fit'}
             `}>
                 <div className={`relative flex items-center justify-center w-2.5 h-2.5`}>
-                    <div className={`absolute w-full h-full rounded-full ${colorClass} ${shouldPulse ? 'animate-ping opacity-75' : ''}`} />
                     <div className={`relative w-2.5 h-2.5 rounded-full ${colorClass}`} />
                 </div>
                 <span className="text-sm font-bold text-slate-800 tracking-tight">{displayStatus}</span>

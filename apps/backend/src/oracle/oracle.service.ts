@@ -61,8 +61,14 @@ export class OracleService {
     ): Promise<OracleResponse> {
         this.logger.log(`Oracle request from user ${userId}: "${dto.query}"`);
 
-        // Sanitize query
-        const sanitizedQuery = this.routerService.sanitizeQuery(dto.query);
+        // Phase 0: AI Normalization (Typo Resilience)
+        const normalizedQuery = await this.normalizeQuery(dto.query);
+        if (normalizedQuery !== dto.query) {
+            this.logger.log(`Normalized query: "${dto.query}" -> "${normalizedQuery}"`);
+        }
+
+        // Phase 1: Sanitize
+        const sanitizedQuery = this.routerService.sanitizeQuery(normalizedQuery);
 
         try {
             // TIER 1: Pattern Matching (No AI)
@@ -684,6 +690,40 @@ Answer the user's question based on this context.`;
         } catch (error) {
             this.logger.error(`Failed to save conversation: ${error}`);
             // Don't throw - conversation saving is not critical
+        }
+    }
+
+    /**
+     * Phase 0: Query Normalization (Typo Resilience)
+     * Corrects spelling, expands abbreviations, and stabilizes intent.
+     */
+    private async normalizeQuery(query: string): Promise<string> {
+        // Skip for very short queries
+        if (query.length < 3) return query;
+
+        try {
+            const prompt = `You are a query normalization engine for a CLM (Contract Lifecycle Management) system. 
+Your task is to correct spelling mistakes, typos, and grammatical errors in user queries while preserving the original intent. 
+If the query is already clear, return it exactly as is.
+Return ONLY the corrected query string, nothing else. Do not add any conversational filler.
+
+Examples:
+- "Karan Mehra contract detaisl" -> "Karan Mehra contract details"
+- "last 2 day create contract" -> "contracts created in the last 2 days"
+- "NDA with Acme corp" -> "NDA with Acme Corp"
+- "contracts above 50L" -> "contracts above 50 Lakhs"
+
+Query: "${query}"`;
+
+            const normalized = await this.aiService.chat(prompt, "", {
+                provider: 'openai',
+                model: 'gpt-4o-mini'
+            });
+
+            return normalized.replace(/^"|"$/g, '').trim();
+        } catch (error) {
+            this.logger.error('Failed to normalize query, falling back to original:', error);
+            return query;
         }
     }
 }

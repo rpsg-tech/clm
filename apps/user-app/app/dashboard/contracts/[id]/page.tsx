@@ -770,7 +770,9 @@ function ContractDetailContent() {
                                     embedded
                                     className="h-full"
                                     contractId={contract.id}
-                                    content={contract.content}
+                                    content={processVariables(contract.content || "", contract)}
+                                    details={contract}
+                                    versionData={diffData ? { changelog: diffData.summary || "Significant changes detected between versions." } : undefined}
                                 />
                             </div>
                         </div>

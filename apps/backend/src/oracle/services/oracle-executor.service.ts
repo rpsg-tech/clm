@@ -31,16 +31,23 @@ export class OracleExecutorService {
         args: {
             status?: ContractStatus;
             createdToday?: boolean;
+            createdSinceDays?: number;
             expiringDays?: number;
             minAmount?: number;
+            maxAmount?: number;
+            counterpartyName?: string;
         }
     ): Promise<{ count: number; scope: string }> {
         const scope = this.securityService.determineScope(permissions);
 
-        const filters: any = {};
-        if (args.status) filters.status = args.status;
-        if (args.minAmount) filters.minAmount = args.minAmount;
-        if (args.expiringDays) filters.expiringDays = args.expiringDays;
+        const filters: any = {
+            status: args.status,
+            minAmount: args.minAmount,
+            maxAmount: args.maxAmount,
+            expiringDays: args.expiringDays,
+            createdSinceDays: args.createdSinceDays,
+            counterpartyName: args.counterpartyName
+        };
 
         const contracts = await this.securityService.fetchAllowedContracts(
             userId,
@@ -72,6 +79,8 @@ export class OracleExecutorService {
             expiringDays?: number;
             minAmount?: number;
             maxAmount?: number;
+            createdSinceDays?: number;
+            counterpartyName?: string;
             searchTerm?: string;
             limit?: number;
         }
@@ -82,6 +91,8 @@ export class OracleExecutorService {
             ...(args.expiringDays && { expiringDays: args.expiringDays }),
             ...(args.minAmount && { minAmount: args.minAmount }),
             ...(args.maxAmount && { maxAmount: args.maxAmount }),
+            ...(args.createdSinceDays && { createdSinceDays: args.createdSinceDays }),
+            ...(args.counterpartyName && { counterpartyName: args.counterpartyName }),
             ...(args.searchTerm && { searchTerm: args.searchTerm }),
             limit: Math.min(args.limit || 10, 50) // Cap at 50
         };
@@ -625,6 +636,16 @@ export class OracleExecutorService {
 
             case 'search_contracts':
                 return this.searchContracts(userId, organizationId, permissions, args);
+
+            // Intent-based mappings (Tier 1)
+            case 'LIST_BY_STATUS':
+                return this.listContracts(userId, organizationId, permissions, args);
+            case 'LIST_BY_DATE':
+                return this.listContracts(userId, organizationId, permissions, { createdSinceDays: args.days });
+            case 'LIST_BY_AMOUNT':
+                return this.listContracts(userId, organizationId, permissions, args);
+            case 'LIST_BY_COUNTERPARTY':
+                return this.listContracts(userId, organizationId, permissions, { counterpartyName: args.counterparty });
 
             default:
                 throw new Error(`Unknown function: ${functionName}`);
