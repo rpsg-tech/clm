@@ -51,8 +51,8 @@ export class EnvironmentVariables {
     // ============ Redis ============
 
     @IsString()
-    @IsNotEmpty()
-    REDIS_URL: string;
+    @IsOptional()
+    REDIS_URL?: string;
 
     // ============ JWT Authentication ============
 
