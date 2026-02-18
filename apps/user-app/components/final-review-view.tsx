@@ -5,6 +5,7 @@ import { Download, ArrowRight, FileCheck, Calendar, User, IndianRupee, FileText,
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { ContractAssistantSidebar } from "./contract-assistant-sidebar";
+import { Button } from "@repo/ui";
 
 interface FinalReviewViewProps {
     content: string;
@@ -62,18 +63,21 @@ export function FinalReviewView({
                     <meta charset="utf-8">
                     <title>${details.title || 'Contract'}</title>
                     <style>
-                        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
                         @page { margin: 20mm 15mm; size: A4 portrait; }
-                        @page :first { margin-top: 125mm; }
-                        body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; color: #000; margin: 0; padding: 0; }
+                        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 11pt; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; letter-spacing: -0.01em; }
                         .contract-pdf-wrapper { text-align: justify; width: 100%; background: white; }
-                        h1, h2, h3, h4, h5, h6 { font-weight: bold; margin-top: 1.5em; margin-bottom: 0.8em; page-break-after: avoid; }
-                        h1 { font-size: 18pt; text-align: center; text-transform: uppercase; margin-bottom: 24px; }
-                        h2 { font-size: 16pt; border-bottom: 1px solid #eee; padding-bottom: 8px; }
-                        p { margin-bottom: 1em; }
-                        table { width: 100%; border-collapse: collapse; margin: 1.5em 0; font-size: 11pt; }
-                        th, td { border: 1px solid #000; padding: 8px; text-align: left; vertical-align: top; page-break-inside: avoid; }
-                        th { background-color: #f3f3f3; font-weight: bold; }
+                        .contract-content { max-width: 800px; margin: 0 auto; padding: 40px; }
+                        h1 { font-size: 24pt; font-weight: 900; margin: 0 0 8px 0; letter-spacing: -0.025em; line-height: 1.2; }
+                        h2 { font-size: 18pt; font-weight: 700; margin: 24px 0 12px 0; letter-spacing: -0.02em; line-height: 1.3; }
+                        h3 { font-size: 14pt; font-weight: 700; margin: 20px 0 10px 0; letter-spacing: -0.015em; line-height: 1.3; }
+                        p { margin: 0 0 12px 0; font-weight: 400; }
+                        ul, ol { margin: 12px 0; padding-left: 24px; }
+                        li { margin-bottom: 6px; }
+                        strong { font-weight: 700; }
+                        table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+                        th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
+                        th { background-color: #f8fafc; font-weight: 700; }
                         .page-break { page-break-before: always; }
                     </style>
                 </head>
@@ -157,10 +161,10 @@ export function FinalReviewView({
     );
 
     return (
-        <div className={cn("flex h-full w-full bg-slate-50 relative", className)}>
+        <div className={cn("flex flex-col lg:flex-row h-full w-full bg-slate-50 relative overflow-hidden", className)}>
 
-            {/* LEFT SIDEBAR: Details & Actions */}
-            <div className="w-[340px] bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 h-full">
+            {/* SIDEBAR: Details & Metadata (Top on mobile, left on desktop) */}
+            <div className="w-full lg:w-[340px] bg-white border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col shrink-0 z-20 overflow-y-auto lg:overflow-visible max-h-[30vh] lg:max-h-full">
                 {/* Header removed for space */}
 
                 {/* Content Area */}
@@ -219,49 +223,47 @@ export function FinalReviewView({
                     </div>
                 </div>
 
-                {/* Actions Footer */}
-                <div className="p-4 border-t border-slate-100 bg-white">
-                    <div className="flex items-center gap-2">
+                {/* Desktop-only Actions Footer (Inside sidebar) */}
+                <div className="hidden lg:block p-4 border-t border-slate-100 bg-white">
+                    <div className="flex flex-col gap-2">
                         {onBackToEdit && (
-                            <button
+                            <Button
                                 onClick={onBackToEdit}
-                                className="relative group px-3 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 flex items-center justify-center"
+                                variant="outline"
+                                size="default"
+                                className="relative group w-full"
                                 aria-label="Back to Edit"
                             >
-                                <ArrowRight size={12} className="rotate-180" />
-                                <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
-                                    Back to Edit
-                                </span>
-                            </button>
+                                <ArrowRight size={16} className="rotate-180 mr-2" />
+                                <span className="font-bold uppercase tracking-widest text-[11px]">Edit Content</span>
+                            </Button>
                         )}
-                        <button
+                        <Button
                             onClick={onSubmit}
                             disabled={loading}
-                            className="flex-1 py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-black transition-all duration-200 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+                            variant="default"
+                            size="lg"
+                            className="w-full uppercase tracking-widest text-[11px] h-11"
                         >
                             {loading ? <Loader2 size={14} className="animate-spin" /> : (
                                 <>
-                                    Finalise Draft <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                    <FileCheck size={14} className="mr-2" />
+                                    Confirm & Submit
                                 </>
                             )}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             onClick={handleDownload}
                             disabled={isDownloading}
-                            className="relative group px-3 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:border-slate-300 hover:bg-slate-50 transition-all duration-200 flex items-center justify-center"
-                            aria-label="Download contract"
+                            variant="outline"
+                            className="w-full flex items-center justify-center gap-2 uppercase tracking-widest text-[11px]"
                         >
-                            {isDownloading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
-                            <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 rounded-md bg-slate-900 px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
-                                Download
-                            </span>
-                        </button>
+                            {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                            Download PDF
+                        </Button>
                     </div>
                 </div>
-
             </div>
-
-            {/* Dialogs */}
 
             {/* MAIN CONTENT: Document Workspace */}
             <div className="flex-1 flex flex-col min-w-0 bg-slate-200/50">
@@ -306,14 +308,14 @@ export function FinalReviewView({
                                 <div className={`${filePreviewUrl ? 'p-0 w-full h-full' : 'p-6 md:p-10 flex-1 w-full'}`}>
                                     <style jsx global>{`
                                         .contract-content {
-                                            font-family: 'Times New Roman', serif;
-                                            font-size: 12pt;
+                                            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                                            font-size: 11pt;
                                             line-height: 1.6;
                                             color: #1a1a1a;
                                             width: 100%;
                                             height: 100%;
+                                            letter-spacing: -0.01em;
                                         }
-                                        /* ... styles ... */
                                     `}</style>
 
                                     <div className="contract-content">
@@ -332,7 +334,6 @@ export function FinalReviewView({
                                         )}
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     </div>
@@ -350,6 +351,45 @@ export function FinalReviewView({
                             details={details}
                         />
                     </div>
+                </div>
+            </div>
+
+            {/* Mobile Actions Footer (Pinned at the bottom of the screen) */}
+            <div className="lg:hidden p-4 border-t border-slate-200 bg-white shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] z-50 shrink-0">
+                <div className="flex items-center gap-3">
+                    {onBackToEdit && (
+                        <Button
+                            onClick={onBackToEdit}
+                            variant="outline"
+                            size="icon"
+                            className="h-12 w-12 rounded-xl border-slate-200"
+                        >
+                            <ArrowRight size={18} className="rotate-180" />
+                        </Button>
+                    )}
+                    <Button
+                        onClick={onSubmit}
+                        disabled={loading}
+                        variant="default"
+                        size="lg"
+                        className="flex-1 h-12 rounded-xl text-xs font-bold uppercase tracking-widest"
+                    >
+                        {loading ? <Loader2 size={16} className="animate-spin" /> : (
+                            <>
+                                <FileCheck size={16} className="mr-2" />
+                                Confirm & Submit
+                            </>
+                        )}
+                    </Button>
+                    <Button
+                        onClick={handleDownload}
+                        disabled={isDownloading}
+                        variant="outline"
+                        size="icon"
+                        className="h-12 w-12 rounded-xl border-slate-200"
+                    >
+                        {isDownloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={18} />}
+                    </Button>
                 </div>
             </div>
         </div>

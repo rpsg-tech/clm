@@ -117,7 +117,12 @@ export function SmartActionButtons({
                 )}
 
                 {/* Right: Actions Toolbar */}
-                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 ${compact ? 'ml-auto' : 'w-full lg:w-auto ml-auto'}`}>
+                <div className={cn(
+                    "gap-2",
+                    compact
+                        ? "flex items-center ml-auto"
+                        : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full lg:w-auto ml-auto"
+                )}>
 
                     {/* 1. SUBMISSION ACTIONS */}
                     {flags.showRequestFinance && (
@@ -170,7 +175,6 @@ export function SmartActionButtons({
                                         variant="primary"
                                         onClick={() => hookActions.openApproveDialog('FINANCE')}
                                         loading={loading}
-                                        className="bg-emerald-600 hover:bg-emerald-700"
                                         compact={compact}
                                     />
                                 </>
@@ -192,7 +196,6 @@ export function SmartActionButtons({
                                         variant="primary"
                                         onClick={() => hookActions.openApproveDialog('LEGAL')}
                                         loading={loading}
-                                        className="bg-indigo-600 hover:bg-indigo-700"
                                         compact={compact}
                                     />
                                     {flags.showReturnToManager && (
@@ -266,7 +269,6 @@ export function SmartActionButtons({
                                     variant="primary"
                                     onClick={hookActions.openSendToCounterpartyDialog}
                                     loading={loading}
-                                    className="bg-purple-600 hover:bg-purple-700"
                                     compact={compact}
                                 />
                             )}

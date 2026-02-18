@@ -303,3 +303,50 @@ button:active {
   height: 0;
   pointer-events: none;
 }
+
+/* ============ TYPOGRAPHY UTILITIES ============ */
+/* Consistent heading and body text styles across the application */
+
+.text-h1 {
+  @apply text-4xl font-black tracking-tighter leading-tight;
+}
+
+.text-h2 {
+  @apply text-3xl font-black tracking-tighter leading-snug;
+}
+
+.text-h3 {
+  @apply text-2xl font-bold tracking-tight leading-snug;
+}
+
+.text-h4 {
+  @apply text-xl font-bold tracking-tight leading-normal;
+}
+
+.text-h5 {
+  @apply text-lg font-bold tracking-normal leading-normal;
+}
+
+.text-h6 {
+  @apply text-base font-bold tracking-normal leading-normal;
+}
+
+.text-body-lg {
+  @apply text-base font-normal tracking-normal;
+}
+
+.text-body {
+  @apply text-sm font-normal tracking-normal;
+}
+
+.text-body-sm {
+  @apply text-xs font-normal tracking-wide;
+}
+
+.text-label {
+  @apply text-xs font-bold uppercase tracking-[0.1em];
+}
+
+.text-caption {
+  @apply text-[10px] font-bold uppercase tracking-[0.15em];
+}

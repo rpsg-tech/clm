@@ -16,9 +16,7 @@ const stages = [
     { value: 'SENT_TO_FINANCE', label: 'Finance Review' },
     { value: 'APPROVED', label: 'Approved' },
     { value: 'SENT_TO_COUNTERPARTY', label: 'Sent to Counterparty' },
-    { value: 'COUNTERSIGNED', label: 'Received from User' }, // Assuming this maps to countersigned or similar
     { value: 'ACTIVE', label: 'Active' },
-    { value: 'REJECTED', label: 'Sent Back to User' }, // Mapping REJECTED to "Sent Back to User" flavor
 ];
 
 export function StageFilter({ value, onChange }: StageFilterProps) {
@@ -30,10 +28,10 @@ export function StageFilter({ value, onChange }: StageFilterProps) {
         <div className="relative">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between min-w-[220px] px-4 py-2.5 bg-white border border-neutral-200 rounded-lg text-sm text-neutral-700 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-primary-100 transition-all shadow-sm"
+                className="flex items-center justify-between w-full lg:min-w-[220px] px-4 py-2.5 bg-white border-2 border-neutral-200 rounded-xl text-sm text-neutral-700 font-semibold hover:border-primary-500 hover:text-primary-600 focus:outline-none focus:ring-4 focus:ring-primary-500/10 transition-all duration-300 shadow-sm active:scale-[0.98]"
             >
-                <span className="font-medium">{selectedLabel}</span>
-                <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <span>{selectedLabel}</span>
+                <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isOpen && (
@@ -46,9 +44,9 @@ export function StageFilter({ value, onChange }: StageFilterProps) {
                                     onChange(stage.value);
                                     setIsOpen(false);
                                 }}
-                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-colors ${value === stage.value
-                                        ? 'bg-primary-50 text-primary-700 font-medium'
-                                        : 'text-neutral-600 hover:bg-neutral-50'
+                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center justify-between transition-all duration-200 ${value === stage.value
+                                    ? 'bg-primary-50 text-primary-700 font-semibold'
+                                    : 'text-neutral-600 hover:bg-neutral-50 font-normal'
                                     }`}
                             >
                                 {stage.label}

@@ -19,6 +19,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { StorageService } from '../common/storage/storage.service';
 import { OcrService } from '../common/services/ocr.service';
 import { RagService } from '../ai/rag/rag.service';
+import { ContractNotificationService } from './services/contract-notification.service';
 
 @Injectable()
 export class ContractsService {
@@ -35,6 +36,7 @@ export class ContractsService {
         private ocrService: OcrService,
         private ragService: RagService,
         private auditService: AuditService,
+        private contractNotificationService: ContractNotificationService,
     ) { }
 
     // ... (existing methods until sendToCounterparty)
@@ -201,20 +203,17 @@ export class ContractsService {
             include: { createdByUser: true }
         });
 
-        // Notify creator
+        // Notify creator of document upload
         const contractWithUser = updated as any;
         if (contractWithUser.createdByUser?.email) {
-            this.emailService.send({
-                to: contractWithUser.createdByUser.email,
-                template: 'CONTRACT_SIGNED' as any,
-                subject: `Contract Active: ${updated.title}`,
-                data: {
-                    contractTitle: updated.title,
-                    contractReference: updated.reference,
-                    signedDate: new Date().toLocaleDateString(),
-                    contractUrl: `${process.env.FRONTEND_URL}/dashboard/contracts/${id}`,
-                },
-            }).catch(err => this.logger.error(`Failed to send activation email: ${err.message}`));
+            // Log for audit but don't block
+            this.contractNotificationService.notifyCounterpartyDocumentUploaded(
+                updated.createdByUserId,
+                updated.counterpartyBusinessName || updated.counterpartyName || 'Counterparty',
+                updated.title,
+                updated.reference || 'N/A',
+                updated.id,
+            ).catch(err => this.logger.error(`Failed to send counterparty upload notification: ${err.message}`));
         }
 
         return updated;

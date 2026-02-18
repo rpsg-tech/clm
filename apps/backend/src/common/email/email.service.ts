@@ -39,6 +39,7 @@ export enum EmailTemplate {
     // Notifications
     GENERIC_NOTIFICATION = 'GENERIC_NOTIFICATION',
     REVISION_REQUESTED = 'REVISION_REQUESTED',
+    COUNTERPARTY_UPLOADED_DOCUMENT = 'COUNTERPARTY_UPLOADED_DOCUMENT',
 }
 
 // Email payload interface
@@ -509,6 +510,21 @@ export class EmailService {
                 `,
                 text: 'Revision requested for: {{contractTitle}}. Comment: {{comment}}',
             },
+            [EmailTemplate.COUNTERPARTY_UPLOADED_DOCUMENT]: {
+                subject: '📎 Signed Document Received: {{contractTitle}}',
+                html: `
+                    <h1>Document Uploaded</h1>
+                    <p>Great news! {{counterpartyName}} has uploaded a signed copy:</p>
+                    <div class="info-box success">
+                        <p><strong>Contract:</strong> {{contractTitle}}</p>
+                        <p><strong>Reference:</strong> {{contractReference}}</p>
+                        <p><strong>Uploaded:</strong> {{uploadDate}}</p>
+                    </div>
+                    <p><a href="{{contractUrl}}" class="button">Review Document</a></p>
+                    <p>Next steps: Review the document and activate the contract.</p>
+                `,
+                text: 'Signed document received for {{contractTitle}}',
+            },
         };
     }
 
@@ -649,43 +665,44 @@ export class EmailService {
         // Use custom subject or default
         const emailSubject = options?.subject || `Contract for Your Review: ${contractTitle}`;
 
-        // Use custom body or default template
-        let emailBody = options?.body;
+        // ✅ FIX: Use custom body if provided
+        let htmlContent: string;
+        let plainText: string;
 
-        if (!emailBody) {
-            // Default template with rich formatting
-            emailBody = `
-                <h1>Contract Ready for Review</h1>
-                <p>Dear ${counterpartyName},</p>
-                <p>We are pleased to share the following contract for your review and signature:</p>
-                <div class="info-box">
-                    <p><strong>Title:</strong> ${contractTitle}</p>
-                    <p><strong>Reference:</strong> ${contractReference}</p>
-                    <p><strong>From:</strong> ${organizationName}</p>
-                </div>
-                <p>Please review and respond within ${options?.daysToRespond || 10} business days.</p>
-                <p><a href="${contractUrl}" class="button">Review Contract</a></p>
-                <p>If you have any questions, please don't hesitate to reach out.</p>
-                <p>Best regards,<br>${organizationName} Team</p>
-            `;
+        if (options?.body) {
+            // User provided custom HTML, wrap in base template
+            htmlContent = this.wrapInBaseTemplate(options.body);
+            plainText = options.body.replace(/<[^>]*>?/gm, ''); // Simple fallback for text version
+        } else {
+            // Use default template
+            const content = this.buildEmailContent({
+                to: primaryRecipient,
+                template: EmailTemplate.CONTRACT_SENT_TO_COUNTERPARTY,
+                subject: emailSubject,
+                data: {
+                    counterpartyName,
+                    contractTitle,
+                    contractReference,
+                    organizationName,
+                    contractUrl,
+                    daysToRespond: options?.daysToRespond || 10,
+                },
+            });
+            htmlContent = content.html;
+            plainText = content.text;
         }
 
-        return this.send({
-            to: primaryRecipient,
-            cc: options?.cc,
-            from: options?.from,
-            template: EmailTemplate.CONTRACT_SENT_TO_COUNTERPARTY,
-            subject: emailSubject,
-            data: {
-                counterpartyName,
-                contractTitle,
-                contractReference,
-                organizationName,
-                contractUrl,
-                daysToRespond: options?.daysToRespond || 10,
-                customBody: emailBody,
-            },
-        });
+        // Send using the direct processing method to respect our local htmlContent
+        if (this.isDevelopment) {
+            return this.mockSend({ to: primaryRecipient, template: EmailTemplate.CONTRACT_SENT_TO_COUNTERPARTY, data: {}, subject: emailSubject }, emailSubject, htmlContent);
+        }
+
+        return await this.sendWithRetry(
+            { to: primaryRecipient, template: EmailTemplate.CONTRACT_SENT_TO_COUNTERPARTY, data: {}, subject: emailSubject },
+            emailSubject,
+            htmlContent,
+            plainText
+        );
     }
 
 
@@ -715,6 +732,31 @@ export class EmailService {
                 reason: comment,
                 contractUrl,
             },
+        });
+    }
+
+    /**
+     * Send notification that counterparty uploaded a document
+     */
+    async sendCounterpartyUploadNotification(
+        to: string,
+        counterpartyName: string,
+        contractTitle: string,
+        contractReference: string,
+        contractUrl: string,
+    ): Promise<EmailResult> {
+        return this.send({
+            to,
+            template: EmailTemplate.COUNTERPARTY_UPLOADED_DOCUMENT,
+            subject: `📎 Signed Document Received: ${contractTitle}`,
+            data: {
+                counterpartyName,
+                contractTitle,
+                contractReference,
+                uploadDate: new Date().toLocaleDateString(),
+                contractUrl,
+            },
+            priority: 'high',
         });
     }
 }

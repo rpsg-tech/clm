@@ -144,6 +144,52 @@ export class ContractNotificationService {
     }
 
     /**
+     * Notify creator when counterparty uploads a signed document
+     */
+    async notifyCounterpartyDocumentUploaded(
+        creatorUserId: string,
+        counterpartyName: string,
+        contractTitle: string,
+        contractReference: string,
+        contractId: string,
+    ) {
+        try {
+            const creator = await this.prisma.user.findUnique({
+                where: { id: creatorUserId },
+                select: { email: true }
+            });
+
+            if (!creator?.email) {
+                this.logger.warn(`No email found for user ${creatorUserId}`);
+                return;
+            }
+
+            const contractUrl = `${this.configService.get('FRONTEND_URL')}/dashboard/contracts/${contractId}`;
+
+            await this.emailService.sendCounterpartyUploadNotification(
+                creator.email,
+                counterpartyName,
+                contractTitle,
+                contractReference,
+                contractUrl,
+            );
+
+            // In-app notification
+            await this.notificationsService.create({
+                userId: creatorUserId,
+                type: 'DOCUMENT_RECEIVED',
+                title: 'Signed Document Received',
+                message: `${counterpartyName} uploaded signed document for ${contractTitle}`,
+                link: `/dashboard/contracts/${contractId}`,
+            });
+
+            this.logger.log(`Notified creator ${creatorUserId} of document upload from ${counterpartyName}`);
+        } catch (error) {
+            this.logger.error(`Failed to send counterparty document upload notification:`, error);
+        }
+    }
+
+    /**
      * Notify creator when contract becomes active
      */
     async notifyContractActivated(

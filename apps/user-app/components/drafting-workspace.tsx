@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@repo/ui";
+import { Button, Input } from "@repo/ui";
 import { ArrowLeft, ArrowRight, Settings, Minimize2, Maximize2, User, Calendar, CreditCard, Search, Check } from "lucide-react";
 import { ContractEditorView } from "@/components/contract-editor-view";
 import { AnnexureItem } from "@/components/annexures-view";
@@ -104,11 +104,12 @@ export function DraftingWorkspace({
     }, [activeDocId, onStepChange, startWithLaunchpad]);
 
     return (
-        <div className="flex min-h-[500px] border border-slate-200 rounded-3xl overflow-hidden bg-white shadow-2xl shadow-slate-200/50 animate-in fade-in zoom-in-95 duration-500">
+        <div className="flex flex-col lg:flex-row min-h-[500px] border border-slate-200 rounded-3xl overflow-hidden bg-white shadow-2xl shadow-slate-200/50 animate-in fade-in zoom-in-95 duration-500 relative">
             {/* LEFT SIDEBAR: METADATA FORM */}
             <div className={`
-                flex-shrink-0 border-r border-slate-200 bg-slate-50/50 transition-all duration-300 ease-in-out flex flex-col relative z-20
-                ${sidebarOpen ? 'w-[320px] opacity-100' : 'w-0 opacity-0 overflow-hidden'}
+                absolute inset-y-0 left-0 z-40 lg:relative lg:inset-auto lg:z-20
+                flex-shrink-0 border-r border-slate-200 bg-white lg:bg-slate-50/50 transition-all duration-300 ease-in-out flex flex-col
+                ${sidebarOpen ? 'w-[320px] translate-x-0 opacity-100 shadow-2xl lg:shadow-none' : 'w-0 -translate-x-full lg:translate-x-0 opacity-0 overflow-hidden lg:w-0'}
             `}>
                 <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white/80 backdrop-blur-sm">
                     <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide flex items-center gap-2">
@@ -123,19 +124,15 @@ export function DraftingWorkspace({
                 <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
                     {/* Title */}
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Title</label>
-                        <input
+                        <Input
                             type="text"
+                            label="Title"
                             value={contractDetails.title || ""}
                             onChange={(e) => handleDetailChange("title", e.target.value)}
                             placeholder="Contract Title"
-                            className={`w-full text-sm font-bold p-2.5 rounded-lg border bg-white outline-none focus:ring-2 transition-all shadow-sm ${errors.title
-                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
-                                : "border-slate-200 focus:border-orange-500 focus:ring-orange-500/20"
-                                }`}
-                            disabled={false}
+                            error={errors.title}
+                            required
                         />
-                        {errors.title && <p className="text-[10px] text-red-500 mt-1">{errors.title}</p>}
                     </div>
 
                     {/* Counterparty */}
@@ -143,13 +140,11 @@ export function DraftingWorkspace({
                         <div className="flex items-center gap-2 text-xs font-bold text-orange-600">
                             <User className="w-3.5 h-3.5" /> Counterparty
                         </div>
-                        <input
+                        <Input
                             type="text"
                             value={contractDetails.counterpartyName || ""}
                             onChange={(e) => handleDetailChange("counterpartyName", e.target.value)}
                             placeholder="Company or Individual Name"
-                            className="w-full text-sm p-2 rounded-lg border border-slate-200 bg-white outline-none focus:border-orange-500 shadow-sm"
-                            disabled={false}
                         />
                     </div>
 
@@ -159,27 +154,19 @@ export function DraftingWorkspace({
                             <Calendar className="w-3.5 h-3.5" /> Timeline
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                            <div>
-                                <label className="text-[10px] font-semibold text-slate-500 uppercase">Start</label>
-                                <input
-                                    type="date"
-                                    value={contractDetails.startDate || ""}
-                                    onChange={(e) => handleDetailChange("startDate", e.target.value)}
-                                    className="w-full text-sm p-2 rounded-lg border border-slate-200 bg-white outline-none focus:border-orange-500 shadow-sm"
-                                    disabled={false}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[10px] font-semibold text-slate-500 uppercase">End</label>
-                                <input
-                                    type="date"
-                                    value={contractDetails.endDate || ""}
-                                    onChange={(e) => handleDetailChange("endDate", e.target.value)}
-                                    className="w-full text-sm p-2 rounded-lg border border-slate-200 bg-white outline-none focus:border-orange-500 shadow-sm"
-                                    disabled={false}
-                                />
-                            </div>
-                            {errors.date && <p className="text-[10px] text-red-500 mt-1 col-span-2">{errors.date}</p>}
+                            <Input
+                                type="date"
+                                label="Start"
+                                value={contractDetails.startDate || ""}
+                                onChange={(e) => handleDetailChange("startDate", e.target.value)}
+                            />
+                            <Input
+                                type="date"
+                                label="End"
+                                value={contractDetails.endDate || ""}
+                                onChange={(e) => handleDetailChange("endDate", e.target.value)}
+                                error={errors.date}
+                            />
                         </div>
                     </div>
 
@@ -189,22 +176,29 @@ export function DraftingWorkspace({
                             <CreditCard className="w-3.5 h-3.5" /> Value
                         </div>
                         <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
-                            <input
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs z-10">₹</span>
+                            <Input
                                 type="number"
                                 value={contractDetails.amount || ""}
                                 onChange={(e) => handleDetailChange("amount", e.target.value)}
-                                className="w-full text-sm p-2 pl-6 rounded-lg border border-slate-200 bg-white outline-none focus:border-orange-500 font-mono shadow-sm"
-                                disabled={false}
+                                className="pl-8 font-mono"
                             />
                         </div>
                     </div>
                 </div>
             </div>
 
+            {/* Sidebar Backdrop (Mobile Only) */}
+            {sidebarOpen && (
+                <div
+                    className="fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-30 lg:hidden"
+                    onClick={() => setSidebarOpen(false)}
+                />
+            )}
+
             {/* DOCUMENT NAVIGATION SIDEBAR (NEW) */}
             {!startWithLaunchpad && !filePreviewUrl && (
-                <div className="w-[300px] border-r border-slate-200 bg-slate-50">
+                <div className="w-full lg:w-[300px] border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-50 shrink-0">
                     <ContractNavigationSidebar
                         items={navItems}
                         activeId={activeDocId}
@@ -213,7 +207,7 @@ export function DraftingWorkspace({
                         onSelect={handleSelectDocument}
                         onAddAnnexure={onAddAnnexure}
                         onRemoveAnnexure={onRemoveAnnexure}
-                        className="h-full"
+                        className="h-auto lg:h-full"
                     />
                 </div>
             )}
@@ -242,11 +236,14 @@ export function DraftingWorkspace({
                             {!filePreviewUrl && (
                                 <Button
                                     onClick={onBack}
-                                    variant="ghost"
-                                    className="text-slate-600 hover:text-slate-900 h-8 px-3 rounded-full flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide border border-slate-200 bg-white hover:bg-slate-50 shadow-sm"
+                                    variant="outline"
+                                    size="sm"
+                                    className="uppercase text-[9px] sm:text-[10px] tracking-wide px-2 sm:px-3"
                                     title="Change Template"
                                 >
-                                    <Search size={14} /> Change Template
+                                    <Search size={14} className="hidden sm:inline" />
+                                    <span className="sm:inline">Change</span>
+                                    <span className="hidden sm:inline ml-1">Template</span>
                                 </Button>
                             )}
                             <div className="flex items-center gap-2">
@@ -254,11 +251,13 @@ export function DraftingWorkspace({
                                 <Button
                                     onClick={onNext}
                                     disabled={!allAnnexuresVisited}
-                                    className="bg-slate-900 hover:bg-orange-600 text-white font-bold uppercase text-[10px] tracking-wide h-8 px-4 rounded-full shadow-md shadow-slate-900/20 transition-all flex items-center gap-2 hover:shadow-orange-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    variant="default"
+                                    size="default"
+                                    className="uppercase text-[9px] sm:text-[10px] tracking-wide h-8 px-2 sm:px-4"
                                     title={!allAnnexuresVisited ? 'Review all annexures before proceeding' : 'Proceed to Final Review'}
                                 >
-                                    <Check className="w-3.5 h-3.5" />
-                                    Final Review
+                                    <Check className="w-3.5 h-3.5 hidden sm:inline mr-1" />
+                                    Review
                                 </Button>
                             </div>
                         </div>

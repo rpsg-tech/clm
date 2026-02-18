@@ -144,8 +144,8 @@ export function DashboardSidebar({ className, onClose }: DashboardSidebarProps) 
 
                         {!isCollapsed && (
                             <div className="flex flex-col">
-                                <span className="text-white font-bold text-lg tracking-tight">LUMINA</span>
-                                <span className="text-slate-400 text-xs font-medium">CLM Enterprise</span>
+                                <span className="text-white font-black text-xl tracking-tighter leading-none">LUMINA</span>
+                                <span className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Enterprise CLM</span>
                             </div>
                         )}
                     </Link>
@@ -197,9 +197,11 @@ export function DashboardSidebar({ className, onClose }: DashboardSidebarProps) 
                                 </Tooltip>
                             ) : (
                                 <Link href="/dashboard/contracts/new" onClick={onClose}>
-                                    <div className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold bg-orange-500/10 border border-orange-500/20 text-orange-500 hover:bg-orange-500 hover:text-white transition-all group cursor-pointer shadow-sm hover:shadow-orange-500/20">
-                                        <Plus className="w-5 h-5 transition-transform group-hover:rotate-90 duration-300 shrink-0" />
-                                        <span>Create New Contract</span>
+                                    <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-orange-500/15 to-orange-600/5 border border-orange-500/20 text-orange-500 hover:from-orange-500 hover:to-orange-600 hover:text-white transition-all duration-300 group cursor-pointer shadow-sm hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0">
+                                        <div className="w-5 h-5 rounded-lg bg-orange-500/20 flex items-center justify-center group-hover:bg-white/20 transition-colors">
+                                            <Plus className="w-4 h-4 transition-transform group-hover:rotate-90 duration-500 shrink-0" />
+                                        </div>
+                                        <span className="tracking-tight">Create New Contract</span>
                                     </div>
                                 </Link>
                             )}
@@ -247,19 +249,19 @@ export function DashboardSidebar({ className, onClose }: DashboardSidebarProps) 
                                     href={item.href}
                                     onClick={onClose}
                                     className={cn(
-                                        "flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all group border",
+                                        "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 group border",
                                         isActive
-                                            ? 'bg-orange-500/10 text-orange-500 border-orange-500/20 shadow-sm'
-                                            : 'text-slate-400 hover:bg-orange-500/5 hover:text-orange-500 hover:border-orange-500/10 border-transparent'
+                                            ? 'bg-orange-500/10 text-orange-500 border-orange-500/20 shadow-[0_2px_10px_-3px_rgba(249,115,22,0.2)]'
+                                            : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 border-transparent hover:border-slate-700/50'
                                     )}
                                 >
                                     <item.icon className={cn(
-                                        "w-5 h-5 transition-all duration-200 shrink-0",
+                                        "w-5 h-5 transition-all duration-300 shrink-0",
                                         isActive
                                             ? 'text-orange-500'
-                                            : 'text-slate-500 group-hover:text-orange-500 group-hover:scale-110'
+                                            : 'text-slate-500 group-hover:text-orange-400 group-hover:scale-110'
                                     )} />
-                                    <span className="truncate">{item.name}</span>
+                                    <span className="truncate tracking-tight">{item.name}</span>
                                 </Link>
                             );
                         })}

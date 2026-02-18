@@ -13,31 +13,64 @@ export class ExpiryScheduler {
         private emailService: EmailService,
     ) { }
 
+    @Cron(CronExpression.EVERY_DAY_AT_9AM)
     async handleContractExpiry() {
-        this.logger.log('Running contract expiry check via API trigger...');
+        this.logger.log('🔍 Running contract expiry check...');
 
-        const today = new Date();
-        const thirtyDaysFromNow = new Date();
-        thirtyDaysFromNow.setDate(today.getDate() + 30);
+        const now = new Date();
+        const thresholds = [30, 7, 1];
 
-        // Find contracts expiring in exactly 30 days
-        // In a real app, strict date matching or a range query logic would be used
-        // Here we just look for active contracts where "fieldData" might contain an expiry date
-        // Since schema doesn't have expiryDate column, we'll assume we iterate active contracts
-        // OR add the column. For M-06 completion based on existing schema, we might check status.
-        // Wait, "Contract" model has no expiryDate. It's in fieldData?
+        for (const days of thresholds) {
+            const targetDate = new Date();
+            targetDate.setDate(now.getDate() + days);
+            targetDate.setHours(0, 0, 0, 0);
 
-        // Plan M-06 says: "Check for expiring contracts daily".
-        // Use "EXPIRED" status? No, check dates.
+            const nextDay = new Date(targetDate);
+            nextDay.setDate(targetDate.getDate() + 1);
 
-        // Since schema update wasn't part of M-06 explicitly (only scheduled job),
-        // I will assume expiry date is within the dynamic fieldData or logic is status-based.
-        // Actually, let's just log for now as a placeholder unless I modify schema.
-        // The implementation plan L-03 says "Add missing database indexes", implying schema changes in Phase 4.
+            // Find contracts expiring on the exact target date
+            const expiringContracts = await this.prisma.contract.findMany({
+                where: {
+                    status: 'ACTIVE',
+                    endDate: {
+                        gte: targetDate,
+                        lt: nextDay,
+                    },
+                },
+                include: {
+                    createdByUser: {
+                        select: {
+                            email: true,
+                            name: true
+                        }
+                    }
+                }
+            });
 
-        // I'll implement a simple check for contracts that *should* expire. 
-        // Or assume there's a convention.
+            for (const contract of expiringContracts) {
+                if (!contract.createdByUser?.email) continue;
 
-        this.logger.log('Expiry check completed (Mock implementation until schema update).');
+                try {
+                    await this.emailService.send({
+                        to: contract.createdByUser.email,
+                        template: 'CONTRACT_EXPIRING' as any,
+                        subject: `⚠️ Contract Expiring in ${days} Day${days > 1 ? 's' : ''}: ${contract.title}`,
+                        data: {
+                            contractTitle: contract.title,
+                            contractReference: contract.reference || 'N/A',
+                            expiryDate: contract.endDate?.toLocaleDateString() || 'N/A',
+                            daysRemaining: days.toString(),
+                            contractUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/contracts/${contract.id}`,
+                        },
+                        priority: days <= 7 ? 'high' : 'normal',
+                    });
+                    this.logger.log(`Sent ${days}-day expiry reminder for contract ${contract.id} to ${contract.createdByUser.email}`);
+                } catch (error) {
+                    this.logger.error(`Failed to send ${days}-day expiry reminder for contract ${contract.id}:`, error);
+                }
+            }
+        }
+
+        this.logger.log('✅ Contract expiry check completed.');
     }
 }

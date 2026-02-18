@@ -19,7 +19,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                 {label && (
                     <label
                         htmlFor={inputId}
-                        className="block text-sm font-medium text-neutral-700 mb-1.5"
+                        className="block text-xs font-bold text-neutral-700 uppercase tracking-[0.1em] mb-2"
                     >
                         {label}
                         {props.required && <span className="text-error ml-1">*</span>}
@@ -29,13 +29,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                     type={type}
                     id={inputId}
                     className={cn(
-                        "flex h-10 w-full rounded-lg border bg-white px-3 py-2 text-sm transition-colors",
+                        "flex h-10 w-full rounded-xl border-2 bg-white px-3 py-2 text-sm transition-all duration-200",
                         "placeholder:text-neutral-400",
-                        "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1",
+                        "focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10",
                         "disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-400",
                         error
-                            ? "border-error focus:ring-error"
-                            : "border-neutral-300 hover:border-neutral-400",
+                            ? "border-error focus:border-error-dark focus:ring-error/10"
+                            : "border-neutral-200 hover:border-neutral-300",
                         className
                     )}
                     ref={ref}
@@ -49,7 +49,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
                     </p>
                 )}
                 {error && (
-                    <p id={`${inputId}-error`} className="mt-1.5 text-xs text-error" role="alert">
+                    <p id={`${inputId}-error`} className="mt-1.5 text-xs text-error font-semibold" role="alert">
                         {error}
                     </p>
                 )}

@@ -624,7 +624,7 @@ export default function NewContractPage() {
                         )}
 
                         {viewMode === "review" && (
-                            <div className="flex h-[calc(100svh-200px)] w-full border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative animate-in fade-in zoom-in-95 duration-500">
+                            <div className="flex h-[calc(100svh-90px)] md:h-[calc(100svh-140px)] w-full border border-slate-200 rounded-2xl overflow-hidden bg-slate-50 relative animate-in fade-in zoom-in-95 duration-500">
                                 <FinalReviewView
                                     content={getFinalDocumentContent()}
                                     details={contractDetails || {}}

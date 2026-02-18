@@ -1,3 +1,4 @@
+import { PrismaClient } from '@prisma/client';
 
 // Mock/Minimal versions for script
 const prisma = new PrismaClient();

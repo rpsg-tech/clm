@@ -390,8 +390,8 @@ function ContractDetailContent() {
     return (
         <div className="h-[calc(100vh-140px)] w-full relative overflow-hidden bg-slate-50/50 flex flex-col rounded-xl border border-slate-200 shadow-sm">
             {/* 1. COMPACT HEADER (Toolbar Style) */}
-            <div className="min-h-[64px] py-3 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-start justify-between px-4 sm:px-6 shadow-sm">
-                <div className="flex items-start gap-4 mt-0.5">
+            <div className="min-h-[56px] lg:min-h-[64px] py-2 lg:py-3 bg-white border-b border-slate-200 sticky top-0 z-30 flex items-center justify-between px-3 sm:px-6 shadow-sm">
+                <div className="flex-1 min-w-0 flex items-center gap-2.5 lg:gap-4">
                     <Link href="/dashboard/contracts" className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:border-slate-300 transition-all">
                         <ArrowLeft className="w-4 h-4" />
                     </Link>
@@ -400,13 +400,13 @@ function ContractDetailContent() {
                             onClick={() => setIsInfoOpen(!isInfoOpen)}
                             variant="ghost"
                             size="sm"
-                            className={`h-9 w-9 p-0 rounded-full transition-colors mt-0.5 ${isInfoOpen ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                            className={`h-9 w-9 p-0 rounded-full transition-colors shrink-0 ${isInfoOpen ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
                             title="Contract Info"
                         >
                             <FileText className="w-4 h-4" />
                         </Button>
-                        <div className="flex flex-col gap-1.5 overflow-hidden">
-                            <h1 className="text-base font-bold text-slate-900 leading-tight truncate max-w-[400px]" title={contract.title}>
+                        <div className="flex flex-col gap-0.5 overflow-hidden min-w-0">
+                            <h1 className="text-sm lg:text-base font-bold text-slate-900 leading-tight truncate" title={contract.title}>
                                 {contract.title}
                             </h1>
                             <div className="flex items-center gap-2">
@@ -421,21 +421,23 @@ function ContractDetailContent() {
                 </div>
 
                 {/* ACTION TOOLBAR - Preserved SmartActionButtons */}
-                <div className="flex items-start gap-3">
-                    {/* AI Button - Subtle */}
-                    <FeatureGuard feature="AI_CONTRACT_REVIEW">
-                        <Button
-                            onClick={() => setIsAnalysisOpen(!isAnalysisOpen)}
-                            variant="ghost"
-                            size="sm"
-                            className={`h-9 w-9 p-0 rounded-full transition-colors ${isAnalysisOpen ? 'bg-orange-100 text-orange-600' : 'text-orange-500 hover:bg-orange-50 hover:text-orange-600'}`}
-                            title="AI Assistant"
-                        >
-                            <Sparkles className="w-4 h-4" />
-                        </Button>
-                    </FeatureGuard>
+                <div className="flex items-center gap-1.5 lg:gap-3 shrink-0 ml-2">
+                    <div className="flex items-center gap-1 lg:gap-2">
+                        {/* AI Button - Subtle */}
+                        <FeatureGuard feature="AI_CONTRACT_REVIEW">
+                            <Button
+                                onClick={() => setIsAnalysisOpen(!isAnalysisOpen)}
+                                variant="ghost"
+                                size="sm"
+                                className={`h-8 w-8 lg:h-9 lg:w-9 p-0 rounded-full transition-colors ${isAnalysisOpen ? 'bg-orange-100 text-orange-600' : 'text-orange-500 hover:bg-orange-50 hover:text-orange-600'}`}
+                                title="AI Assistant"
+                            >
+                                <Sparkles className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+                            </Button>
+                        </FeatureGuard>
 
-                    <div className="h-8 w-px bg-slate-200 mx-1" />
+                        <div className="h-6 lg:h-8 w-px bg-slate-200 mx-0.5 lg:mx-1" />
+                    </div>
 
                     <SmartActionButtons
                         contract={contract}
@@ -450,12 +452,13 @@ function ContractDetailContent() {
             </div>
 
             {/* 2. MAIN LAYOUT: Sidebars + Workspace */}
-            <div className="flex-1 w-full flex overflow-hidden min-h-0">
+            <div className="flex-1 w-full flex flex-col lg:flex-row overflow-hidden min-h-0 relative">
 
                 {/* LEFT SIDEBAR - "CONTRACT INFO" */}
                 <div className={`
-                    border-r border-slate-200 bg-slate-50/30 transition-all duration-300 ease-in-out flex flex-col shrink-0 overflow-y-auto overflow-x-hidden
-                    ${isInfoOpen ? 'w-[320px] opacity-100 p-6' : 'w-0 opacity-0 p-0'}
+                    absolute inset-y-0 left-0 z-40 lg:relative lg:inset-auto
+                    border-r border-slate-200 bg-white lg:bg-slate-50/30 transition-all duration-300 ease-in-out flex flex-col shrink-0 overflow-y-auto overflow-x-hidden
+                    ${isInfoOpen ? 'w-[320px] opacity-100 p-6 shadow-2xl lg:shadow-none translate-x-0' : 'w-0 opacity-0 p-0 -translate-x-full lg:translate-x-0'}
                 `}>
                     <div className="w-[272px] space-y-6">
                         {/* SMART ACTIONS - Status & Sidebar Buttons */}
@@ -544,28 +547,36 @@ function ContractDetailContent() {
                     </div>
                 </div>
 
+                {/* Info Sidebar Backdrop - Mobile Only */}
+                {isInfoOpen && (
+                    <div
+                        className="fixed inset-0 bg-slate-900/20 backdrop-blur-[2px] z-30 lg:hidden"
+                        onClick={() => setIsInfoOpen(false)}
+                    />
+                )}
+
                 {/* THE WORKSPACE */}
                 <div className="flex-1 min-w-0 min-h-0 p-6 flex flex-col items-center">
                     <div className="w-full max-w-[1000px] flex flex-col flex-1 min-h-0">
 
                         {/* TABS HEADER */}
-                        <div className="bg-white rounded-t-xl border border-slate-200 border-b-0 px-4 pt-2 flex items-center justify-between shrink-0">
-                            <div className="flex items-center gap-6">
+                        <div className="bg-white rounded-t-xl border border-slate-200 border-b-0 px-3 lg:px-4 pt-1.5 lg:pt-2 flex items-center justify-between shrink-0 overflow-x-auto custom-scrollbar no-scrollbar">
+                            <div className="flex items-center gap-3 sm:gap-6 min-w-max">
                                 <button
                                     onClick={() => setActiveTab('document')}
-                                    className={`pb-3 text-sm font-bold border-b-2 transition-all duration-200 ${activeTab === 'document' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'}`}
+                                    className={`pb-3 text-xs sm:text-sm font-bold border-b-2 transition-all duration-200 whitespace-nowrap ${activeTab === 'document' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'}`}
                                 >
                                     Document Preview
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('history')}
-                                    className={`pb-3 text-sm font-bold border-b-2 transition-all duration-200 ${activeTab === 'history' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'}`}
+                                    className={`pb-3 text-xs sm:text-sm font-bold border-b-2 transition-all duration-200 whitespace-nowrap ${activeTab === 'history' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'}`}
                                 >
                                     Version History
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('overview')}
-                                    className={`pb-3 text-sm font-bold border-b-2 transition-all duration-200 ${activeTab === 'overview' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'}`}
+                                    className={`pb-3 text-xs sm:text-sm font-bold border-b-2 transition-all duration-200 whitespace-nowrap ${activeTab === 'overview' ? 'border-orange-600 text-orange-600' : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-200'}`}
                                 >
                                     Activity Feed
                                 </button>
@@ -573,10 +584,11 @@ function ContractDetailContent() {
 
                             <button
                                 onClick={() => setIsAnalysisOpen(!isAnalysisOpen)}
-                                className={`pb-3 text-sm font-bold flex items-center gap-2 transition-all duration-200 ${isAnalysisOpen ? 'text-orange-600' : 'text-slate-400 hover:text-orange-500'}`}
+                                className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-1.5 sm:gap-2 transition-all duration-200 whitespace-nowrap ml-3 ${isAnalysisOpen ? 'text-orange-600' : 'text-slate-400 hover:text-orange-500'}`}
                             >
-                                <Sparkles className={`w-4 h-4 ${isAnalysisOpen ? 'fill-orange-600/10' : ''}`} />
-                                AI Assistant
+                                <Sparkles className={`w-3 h-3 sm:w-4 sm:h-4 ${isAnalysisOpen ? 'fill-orange-600/10' : ''}`} />
+                                <span className="hidden sm:inline">AI Assistant</span>
+                                <span className="sm:hidden">AI</span>
                             </button>
                         </div>
 
@@ -586,24 +598,24 @@ function ContractDetailContent() {
                                 {activeTab === 'overview' && (
                                     <div className="p-6 overflow-y-auto min-h-0 flex-1">
                                         <div className="max-w-2xl">
-                                            <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-2">
+                                            <h3 className="text-sm font-bold text-slate-900 mb-5 lg:mb-6 flex items-center gap-2">
                                                 <History className="w-4 h-4 text-slate-400" />
                                                 Latest Updates
                                             </h3>
 
-                                            <div className="space-y-0 relative pl-4">
+                                            <div className="space-y-0 relative pl-1.5 lg:pl-4">
                                                 {/* Timeline Line */}
-                                                <div className="absolute left-[15px] top-2 bottom-6 w-0.5 bg-slate-100" />
+                                                <div className="absolute left-[13px] lg:left-[15px] top-2 bottom-6 w-0.5 bg-slate-100" />
 
                                                 {activityStream.map((item, i) => (
-                                                    <div key={item.id} className="flex gap-4 relative pb-8 last:pb-0 group">
+                                                    <div key={item.id} className="flex gap-3 lg:gap-4 relative pb-6 lg:pb-8 last:pb-0 group">
                                                         <div className={`
-                                                        relative z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 bg-white transition-colors
+                                                        relative z-10 w-7 h-7 lg:w-8 lg:h-8 rounded-full border-2 flex items-center justify-center shrink-0 bg-white transition-colors
                                                         ${i === 0 ? 'border-orange-500 text-orange-600 shadow-sm shadow-orange-100' : 'border-slate-200 text-slate-400 group-hover:border-slate-300'}
                                                     `}>
                                                             {item.type === 'VERSION' ? (
-                                                                item.meta?.source === 'UPLOAD' ? <UploadCloud className="w-4 h-4" /> : <FileText className="w-4 h-4" />
-                                                            ) : <Clock className="w-4 h-4" />}
+                                                                item.meta?.source === 'UPLOAD' ? <UploadCloud className="w-3.5 h-3.5 lg:w-4 lg:h-4" /> : <FileText className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+                                                            ) : <Clock className="w-3.5 h-3.5 lg:w-4 lg:h-4" />}
                                                         </div>
                                                         <div className="pt-1 flex-1 min-w-0">
                                                             <div className="flex items-center justify-between gap-4">
