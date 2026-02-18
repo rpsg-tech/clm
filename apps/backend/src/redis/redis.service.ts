@@ -12,7 +12,7 @@ import Redis from 'ioredis';
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(RedisService.name);
-    private client: Redis;
+    private client: Redis | null = null;
     private isConnected = false;
 
     // Key prefixes for different use cases
@@ -25,7 +25,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     };
 
     constructor(private configService: ConfigService) {
-        const redisUrl = this.configService.get<string>('REDIS_URL', 'redis://localhost:6379');
+        const redisUrl = this.configService.get<string>('REDIS_URL');
+
+        if (!redisUrl) {
+            this.logger.warn('REDIS_URL not set — running without Redis (caching, rate limiting use in-memory fallbacks)');
+            return;
+        }
 
         this.client = new Redis(redisUrl, {
             retryStrategy: (times: number) => {
@@ -61,8 +66,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     async onModuleDestroy() {
-        await this.client.quit();
-        this.logger.log('Redis disconnected');
+        if (this.client) {
+            await this.client.quit();
+            this.logger.log('Redis disconnected');
+        }
     }
 
     /**
@@ -86,7 +93,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         }
 
         const key = `${this.KEY_PREFIX.TOKEN_BLACKLIST}${jti}`;
-        await this.client.setex(key, expiresInSeconds, '1');
+        await this.client!.setex(key, expiresInSeconds, '1');
         this.logger.debug(`Token blacklisted: ${jti}`);
     }
 
@@ -99,7 +106,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         }
 
         const key = `${this.KEY_PREFIX.TOKEN_BLACKLIST}${jti}`;
-        const result = await this.client.get(key);
+        const result = await this.client!.get(key);
         return result !== null;
     }
 
@@ -115,11 +122,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         }
 
         const key = `${this.KEY_PREFIX.LOGIN_ATTEMPTS}${email.toLowerCase()}`;
-        const attempts = await this.client.incr(key);
+        const attempts = await this.client!.incr(key);
 
         // Set expiry on first attempt (15 minutes)
         if (attempts === 1) {
-            await this.client.expire(key, 15 * 60);
+            await this.client!.expire(key, 15 * 60);
         }
 
         return attempts;
@@ -134,7 +141,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         }
 
         const key = `${this.KEY_PREFIX.LOGIN_ATTEMPTS}${email.toLowerCase()}`;
-        const attempts = await this.client.get(key);
+        const attempts = await this.client!.get(key);
         return attempts ? parseInt(attempts, 10) : 0;
     }
 
@@ -147,7 +154,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         }
 
         const key = `${this.KEY_PREFIX.LOGIN_ATTEMPTS}${email.toLowerCase()}`;
-        await this.client.del(key);
+        await this.client!.del(key);
     }
 
     /**
@@ -167,7 +174,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         }
 
         const key = `${this.KEY_PREFIX.LOGIN_ATTEMPTS}${email.toLowerCase()}`;
-        const ttl = await this.client.ttl(key);
+        const ttl = await this.client!.ttl(key);
         return ttl > 0 ? ttl : 0;
     }
 
@@ -182,7 +189,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         }
 
         const key = `${this.KEY_PREFIX.PASSWORD_RESET}${token}`;
-        await this.client.setex(key, expiresInSeconds, email.toLowerCase());
+        await this.client!.setex(key, expiresInSeconds, email.toLowerCase());
     }
 
     /**
@@ -195,11 +202,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         }
 
         const key = `${this.KEY_PREFIX.PASSWORD_RESET}${token}`;
-        const email = await this.client.get(key);
+        const email = await this.client!.get(key);
 
         if (email) {
             // Consume token (one-time use)
-            await this.client.del(key);
+            await this.client!.del(key);
         }
 
         return email;
@@ -215,9 +222,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
 
         const cacheKey = `${this.KEY_PREFIX.CACHE}${key}`;
         if (ttlSeconds) {
-            await this.client.setex(cacheKey, ttlSeconds, value);
+            await this.client!.setex(cacheKey, ttlSeconds, value);
         } else {
-            await this.client.set(cacheKey, value);
+            await this.client!.set(cacheKey, value);
         }
     }
 
@@ -228,7 +235,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         if (!this.isConnected) return null;
 
         const cacheKey = `${this.KEY_PREFIX.CACHE}${key}`;
-        return this.client.get(cacheKey);
+        return this.client!.get(cacheKey);
     }
 
     /**
@@ -238,7 +245,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         if (!this.isConnected) return;
 
         const cacheKey = `${this.KEY_PREFIX.CACHE}${key}`;
-        await this.client.del(cacheKey);
+        await this.client!.del(cacheKey);
     }
 
     /**
@@ -252,10 +259,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
         const cachePattern = `${this.KEY_PREFIX.CACHE}${pattern}`;
 
         // Find keys matching the pattern
-        const keys = await this.client.keys(cachePattern);
+        const keys = await this.client!.keys(cachePattern);
 
         if (keys.length > 0) {
-            return this.client.del(...keys);
+            return this.client!.del(...keys);
         }
 
         return 0;
@@ -265,6 +272,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
      * Get raw Redis client for advanced operations
      */
     getClient(): Redis {
+        if (!this.client) throw new Error('Redis client is not initialized (REDIS_URL not set)');
         return this.client;
     }
 }
