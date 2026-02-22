@@ -14,7 +14,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import * as nodemailer from 'nodemailer';
+import { EmailProvider } from './providers/email-provider.interface';
+import { SmtpEmailProvider } from './providers/smtp.provider';
+import { GraphEmailProvider } from './providers/graph.provider';
 
 // Email template types
 export enum EmailTemplate {
@@ -35,7 +37,6 @@ export enum EmailTemplate {
     APPROVAL_REJECTED = 'APPROVAL_REJECTED',
     APPROVAL_ESCALATED = 'APPROVAL_ESCALATED',
 
-    // Notifications
     // Notifications
     GENERIC_NOTIFICATION = 'GENERIC_NOTIFICATION',
     REVISION_REQUESTED = 'REVISION_REQUESTED',
@@ -67,25 +68,11 @@ export interface EmailResult {
     timestamp: Date;
 }
 
-// Email configuration
-interface EmailConfig {
-    host: string;
-    port: number;
-    secure: boolean;
-    user: string;
-    pass: string;
-    from: string;
-    fromName: string;
-}
-
 @Injectable()
 export class EmailService {
     private readonly logger = new Logger(EmailService.name);
-    private readonly config: EmailConfig;
+    private readonly provider: EmailProvider;
     private readonly isDevelopment: boolean;
-    private readonly maxRetries = 3;
-    private readonly retryDelayMs = 1000;
-    private transporter: nodemailer.Transporter;
 
     constructor(
         private configService: ConfigService,
@@ -93,59 +80,23 @@ export class EmailService {
     ) {
         this.isDevelopment = this.configService.get('NODE_ENV', 'development') !== 'production';
 
-        this.config = {
-            host: this.configService.get('SMTP_HOST', 'smtp.example.com'),
-            port: this.configService.get('SMTP_PORT', 587),
-            secure: this.configService.get('SMTP_SECURE', 'false') === 'true',
-            user: this.configService.get('SMTP_USER', ''),
-            pass: this.configService.get('SMTP_PASS', ''),
-            from: this.configService.get('EMAIL_FROM', 'noreply@clm-enterprise.com'),
-            fromName: this.configService.get('EMAIL_FROM_NAME', 'CLM Enterprise'),
-        };
+        const providerType = this.configService.get('EMAIL_PROVIDER', 'smtp').toLowerCase();
 
-        // CRITICAL: Validate SMTP config in production
+        if (providerType === 'graph') {
+            this.provider = new GraphEmailProvider(this.configService);
+            this.logger.log('Email provider initialized: Microsoft Graph API');
+        } else {
+            this.provider = new SmtpEmailProvider(this.configService);
+            this.logger.log('Email provider initialized: SMTP');
+        }
+
+        // Verify connection securely if not in development
         if (!this.isDevelopment) {
-            this.validateProductionConfig();
+            this.provider.verifyConnection().catch(err => {
+                this.logger.error(`Failed to verify email provider connection: ${err.message}`);
+                // Optional: Don't crash the server, just log.
+            });
         }
-
-        // Initialize Nodemailer transporter
-        this.transporter = nodemailer.createTransport({
-            host: this.config.host,
-            port: this.config.port,
-            secure: this.config.secure,
-            auth: {
-                user: this.config.user,
-                pass: this.config.pass,
-            },
-        });
-
-        // Verify connection configuration
-        if (!this.isDevelopment) {
-            this.transporter.verify()
-                .then(() => this.logger.log('✅ SMTP connection established successfully'))
-                .catch((err) => this.logger.error(`❌ SMTP connection failed: ${err.message}`));
-        }
-
-        this.logger.log(`Email service initialized (mode: ${this.isDevelopment ? 'development' : 'production'})`);
-    }
-
-    /**
-     * Validate SMTP configuration in production mode
-     * Throws error if required fields are missing
-     */
-    private validateProductionConfig(): void {
-        const required = ['host', 'user', 'pass'];
-        const missing = required.filter(field => !this.config[field as keyof EmailConfig]);
-
-        if (missing.length > 0) {
-            throw new Error(
-                `❌ Email service configuration error in production:\n` +
-                `Missing required SMTP fields: ${missing.join(', ')}\n` +
-                `Set environment variables: ${missing.map(f => `SMTP_${f.toUpperCase()}`).join(', ')}`
-            );
-        }
-
-        this.logger.log('✅ Email service SMTP configuration validated');
     }
 
     /**
@@ -195,73 +146,12 @@ export class EmailService {
                 return this.mockSend(payload, subject, html);
             }
 
-            // In production, send via SMTP with retry
-            return await this.sendWithRetry(payload, subject, html, text);
+            // In production, send via configured provider
+            return await this.provider.sendMail(payload, subject, html, text);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             this.logger.error(`Failed to send email to ${payload.to}: ${errorMessage}`);
             throw error; // Throw so BullMQ knows it failed
-        }
-    }
-
-    /**
-     * Send email with retry logic
-     */
-    /**
-     * Send email with retry logic
-     */
-    private async sendWithRetry(
-        payload: EmailPayload,
-        subject: string,
-        html: string,
-        text: string,
-        attempt = 1,
-    ): Promise<EmailResult> {
-        try {
-            this.logger.log(`Sending email via SMTP (attempt ${attempt}/${this.maxRetries})`);
-
-            // Use payload.from if provided, otherwise config default
-            // If payload.from is just email "foo@bar.com", wrap it: "Service Name <foo@bar.com>"
-            // Or assume caller provides full format if needed. 
-            // Better: use config.fromName with provided email if it's just an email.
-            let from = `"${this.config.fromName}" <${this.config.from}>`;
-
-            if (payload.from) {
-                // If payload.from contains name/angle brackets, use as is. 
-                // If simple email, wrap with Org Name if possible, or just use it.
-                // For now, trust the caller to format it or just pass the email.
-                from = payload.from.includes('<') ? payload.from : `"${this.config.fromName}" <${payload.from}>`;
-            }
-
-            const result = await this.transporter.sendMail({
-                from: from,
-                to: payload.to,
-                cc: payload.cc,
-                bcc: payload.bcc,
-                subject: subject,
-                html: html,
-                text: text,
-                attachments: payload.attachments,
-                priority: payload.priority || 'normal',
-            });
-
-            this.logger.log(`✅ Email sent successfully (ID: ${result.messageId})`);
-
-            return {
-                success: true,
-                messageId: result.messageId,
-                timestamp: new Date(),
-            };
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown SMTP error';
-            this.logger.warn(`Email send failed (attempt ${attempt}): ${errorMessage}`);
-
-            if (attempt < this.maxRetries) {
-                const delay = this.retryDelayMs * Math.pow(2, attempt - 1); // Exponential backoff
-                await this.delay(delay);
-                return this.sendWithRetry(payload, subject, html, text, attempt + 1);
-            }
-            throw error;
         }
     }
 
@@ -697,7 +587,7 @@ export class EmailService {
             return this.mockSend({ to: primaryRecipient, template: EmailTemplate.CONTRACT_SENT_TO_COUNTERPARTY, data: {}, subject: emailSubject }, emailSubject, htmlContent);
         }
 
-        return await this.sendWithRetry(
+        return await this.provider.sendMail(
             { to: primaryRecipient, template: EmailTemplate.CONTRACT_SENT_TO_COUNTERPARTY, data: {}, subject: emailSubject },
             emailSubject,
             htmlContent,

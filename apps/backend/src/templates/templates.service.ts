@@ -45,7 +45,7 @@ export class TemplatesService {
 
         if (!template) throw new NotFoundException('Template not found');
 
-        const storedMainMeta: any[] = Array.isArray(template.variablesConfig) ? template.variablesConfig as any[] : [];
+        const storedMainMeta = Array.isArray(template.variablesConfig) ? (template.variablesConfig as Prisma.JsonArray) as any[] : [];
         const seen = new Set<string>();
         const variables: any[] = [];
 
@@ -54,7 +54,7 @@ export class TemplatesService {
         for (const key of mainKeys) {
             if (seen.has(key)) continue;
             seen.add(key);
-            const meta = storedMainMeta.find((m: any) => m.key === key) || {};
+            const meta = storedMainMeta.find((m: any) => m?.key === key) || {};
             variables.push({
                 key,
                 label: meta.label || keyToLabel(key),
@@ -69,7 +69,7 @@ export class TemplatesService {
         // 2. Scan each annexure
         for (const annexure of template.annexures) {
             const annexKeys = extractVarKeys(annexure.content);
-            const storedAnnexMeta: any[] = Array.isArray(annexure.fieldsConfig) ? annexure.fieldsConfig as any[] : [];
+            const storedAnnexMeta = Array.isArray(annexure.fieldsConfig) ? (annexure.fieldsConfig as Prisma.JsonArray) as any[] : [];
             for (const key of annexKeys) {
                 if (seen.has(key)) continue;
                 seen.add(key);
