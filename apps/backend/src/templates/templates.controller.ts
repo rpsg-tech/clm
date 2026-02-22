@@ -27,6 +27,12 @@ export class TemplatesController {
         return this.templatesService.findForOrganization(user.orgId!, query);
     }
 
+    @Get(':id/variables')
+    @Permissions('template:view')
+    async getVariables(@Param('id') id: string) {
+        return this.templatesService.extractVariables(id);
+    }
+
     @Get(':id')
     @Permissions('template:view')
     async findOne(@Param('id') id: string) {

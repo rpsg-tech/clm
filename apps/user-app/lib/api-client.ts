@@ -345,6 +345,7 @@ export const api = {
       }>(`/templates${queryStr ? `?${queryStr}` : ''}`);
     },
     get: (id: string) => authFetch(`/templates/${id}`),
+    getVariables: (id: string) => authFetch<{ variables: any[]; total: number }>(`/templates/${id}/variables`),
 
     // Admin Methods
     create: (data: { name: string; code: string; category: string; description?: string; baseContent: string; isGlobal?: boolean; annexures?: any[] }) =>
