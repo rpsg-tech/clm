@@ -6,13 +6,89 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Template, TemplateCategory, Prisma } from '@prisma/client';
 
+// Helper: extract all {{VARIABLE_NAME}} from HTML content
+function extractVarKeys(html: string): string[] {
+    const regex = /\{\{([A-Z0-9_]+)\}\}/g;
+    const keys: string[] = [];
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(html)) !== null) {
+        if (!keys.includes(match[1])) {
+            keys.push(match[1]);
+        }
+    }
+    return keys;
+}
+
+// Helper: convert SNAKE_CASE key to human-readable label
+function keyToLabel(key: string): string {
+    return key
+        .split('_')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
+}
+
 @Injectable()
 export class TemplatesService {
     constructor(private prisma: PrismaService) { }
 
     /**
-     * Get templates available for an organization
+     * Extract all {{VARIABLE_NAME}} placeholders from a template's content.
+     * Returns a unified, deduplicated variable schema with metadata.
      */
+    async extractVariables(templateId: string) {
+        const template = await this.prisma.template.findUnique({
+            where: { id: templateId },
+            include: {
+                annexures: { orderBy: { order: 'asc' } },
+            },
+        });
+
+        if (!template) throw new NotFoundException('Template not found');
+
+        const storedMainMeta: any[] = Array.isArray(template.variablesConfig) ? template.variablesConfig as any[] : [];
+        const seen = new Set<string>();
+        const variables: any[] = [];
+
+        // 1. Scan main contract
+        const mainKeys = extractVarKeys(template.baseContent);
+        for (const key of mainKeys) {
+            if (seen.has(key)) continue;
+            seen.add(key);
+            const meta = storedMainMeta.find((m: any) => m.key === key) || {};
+            variables.push({
+                key,
+                label: meta.label || keyToLabel(key),
+                type: meta.type || 'text',
+                required: meta.required ?? true,
+                placeholder: meta.placeholder || '',
+                source: 'main',
+                sourceLabel: 'Main Agreement',
+            });
+        }
+
+        // 2. Scan each annexure
+        for (const annexure of template.annexures) {
+            const annexKeys = extractVarKeys(annexure.content);
+            const storedAnnexMeta: any[] = Array.isArray(annexure.fieldsConfig) ? annexure.fieldsConfig as any[] : [];
+            for (const key of annexKeys) {
+                if (seen.has(key)) continue;
+                seen.add(key);
+                const meta = storedAnnexMeta.find((m: any) => m.key === key) || {};
+                variables.push({
+                    key,
+                    label: meta.label || keyToLabel(key),
+                    type: meta.type || 'text',
+                    required: meta.required ?? true,
+                    placeholder: meta.placeholder || '',
+                    source: 'annexure',
+                    sourceLabel: annexure.title || annexure.name,
+                });
+            }
+        }
+
+        return { variables, total: variables.length };
+    }
+
     /**
      * Get templates available for an organization (Paginated)
      */
@@ -26,7 +102,7 @@ export class TemplatesService {
         },
     ) {
         const page = Number(params?.page) || 1;
-        const limit = Number(params?.limit) || 12; // Grid view usually benefits from larger default pages or multiple of 2/3/4
+        const limit = Number(params?.limit) || 12;
         const skip = (page - 1) * limit;
 
         const where: Prisma.TemplateWhereInput = {
@@ -62,7 +138,6 @@ export class TemplatesService {
                     code: true,
                     category: true,
                     description: true,
-                    baseContent: false, // Explicitly false if using omit, but with select we just omit it
                     isGlobal: true,
                     isActive: true,
                     createdAt: true,
@@ -106,7 +181,7 @@ export class TemplatesService {
                 annexures: {
                     orderBy: { order: 'asc' },
                 },
-                organizationAccess: true, // [New] Include org access for edit mode
+                organizationAccess: true,
             },
         });
 
@@ -120,9 +195,6 @@ export class TemplatesService {
     /**
      * Create a new template with annexures (admin only)
      */
-    /**
-     * Create a new template with annexures (admin only)
-     */
     async create(
         userId: string,
         organizationId: string,
@@ -132,8 +204,9 @@ export class TemplatesService {
             category: TemplateCategory;
             description?: string;
             baseContent: string;
+            variablesConfig?: any[];
             isGlobal?: boolean;
-            targetOrgIds?: string[]; // [New] Specific Org Assignment
+            targetOrgIds?: string[];
             annexures?: {
                 name: string;
                 title: string;
@@ -143,7 +216,6 @@ export class TemplatesService {
         },
     ): Promise<Template> {
         return this.prisma.$transaction(async (tx) => {
-            // 1. Create the Template
             const template = await tx.template.create({
                 data: {
                     name: data.name,
@@ -151,12 +223,12 @@ export class TemplatesService {
                     category: data.category,
                     description: data.description,
                     baseContent: data.baseContent,
+                    variablesConfig: data.variablesConfig || [],
                     isGlobal: data.isGlobal ?? false,
                     createdByUserId: userId,
                 },
             });
 
-            // 2. Create Annexures if any
             if (data.annexures && data.annexures.length > 0) {
                 await tx.annexure.createMany({
                     data: data.annexures.map((annexure, index) => ({
@@ -165,20 +237,16 @@ export class TemplatesService {
                         title: annexure.title,
                         content: annexure.content,
                         fieldsConfig: annexure.fieldsConfig || [],
-                        order: index + 1, // Auto-increment order
+                        order: index + 1,
                     })),
                 });
             }
 
-            // 3. Organization Linking Logic
-            // If Global: No specific org links needed (accessible by all)
-            // If Not Global: Link to specific orgs OR default to creator's org
             if (!data.isGlobal) {
                 const orgsToLink = (data.targetOrgIds && data.targetOrgIds.length > 0)
                     ? data.targetOrgIds
-                    : [organizationId]; // Default to creator's org
+                    : [organizationId];
 
-                // Deduplicate just in case
                 const uniqueOrgs = [...new Set(orgsToLink)];
 
                 await tx.templateOrganization.createMany({
@@ -200,7 +268,7 @@ export class TemplatesService {
     async update(
         id: string,
         data: Prisma.TemplateUpdateInput & {
-            targetOrgIds?: string[]; // [New] Update assignments
+            targetOrgIds?: string[];
             annexures?: {
                 name: string;
                 title: string;
@@ -210,8 +278,6 @@ export class TemplatesService {
         },
     ): Promise<Template> {
         return this.prisma.$transaction(async (tx) => {
-            // 1. Update Template Fields
-            // Extract custom fields to avoid Prisma errors
             const { annexures, targetOrgIds, ...templateData } = data;
 
             const template = await tx.template.update({
@@ -219,14 +285,11 @@ export class TemplatesService {
                 data: templateData,
             });
 
-            // 2. Update Annexures (Full Replacement Strategy)
             if (annexures) {
-                // Delete existing
                 await tx.annexure.deleteMany({
                     where: { templateId: id },
                 });
 
-                // Create new
                 if (annexures.length > 0) {
                     await tx.annexure.createMany({
                         data: annexures.map((annexure, index) => ({
@@ -241,15 +304,11 @@ export class TemplatesService {
                 }
             }
 
-            // 3. Update Organization Assignments if provided
             if (targetOrgIds !== undefined) {
-                // Always clear existing links first (clean slate)
                 await tx.templateOrganization.deleteMany({
                     where: { templateId: id }
                 });
 
-                // If NOT global and targets provided, re-link
-                // (If global, we leave links empty as it's accessible to all)
                 if (template.isGlobal === false && targetOrgIds.length > 0) {
                     await tx.templateOrganization.createMany({
                         data: targetOrgIds.map(orgId => ({

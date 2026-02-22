@@ -157,6 +157,7 @@ model Template {
   description     String?
   
   baseContent     String
+  variablesConfig Json?    // Metadata for {{VARIABLE_NAME}} placeholders in baseContent
   isGlobal        Boolean  @default(false)
   isActive        Boolean  @default(true)
   

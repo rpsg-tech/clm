@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TipTapEditor } from '../editor/tip-tap-editor';
 import { Button, Input, Card, Badge, Textarea } from '@repo/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, ChevronRight, Upload } from 'lucide-react';
+import { Plus, Trash2, ChevronRight, Upload, Braces, Info } from 'lucide-react';
 import { api } from '@/lib/api-client';
 import { useToast } from '@/lib/toast-context';
 import * as mammoth from 'mammoth';
+import { extractVariableKeys, keyToLabel } from '@/lib/variable-utils';
 
 import { useAuth } from '@/lib/auth-context';
 import { useEffect } from 'react';
@@ -97,6 +98,18 @@ export function TemplateBuilder({ mode = 'create', initialData }: TemplateBuilde
 
     // Helpers
     const currentAnnexure = annexures.find(a => a.id === activeAnnexureId);
+
+    // Variable Detection
+    const detectedMainVars = useMemo(() => extractVariableKeys(mainContent), [mainContent]);
+    const detectedAnnexureVars = useMemo(() => {
+        if (!currentAnnexure) return [];
+        return extractVariableKeys(currentAnnexure.content);
+    }, [currentAnnexure]);
+    const allDetectedVars = useMemo(() => {
+        const all = new Set<string>(detectedMainVars);
+        annexures.forEach(a => extractVariableKeys(a.content).forEach(k => all.add(k)));
+        return Array.from(all);
+    }, [detectedMainVars, annexures]);
 
     // --- File Import Logic ---
     const triggerImport = (target: 'main' | 'annexure') => {
@@ -308,6 +321,30 @@ export function TemplateBuilder({ mode = 'create', initialData }: TemplateBuilde
                                 )}
                             </div>
                         </Card>
+
+                        {/* Variable Detection Panel */}
+                        <Card className="p-4 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <Braces className="w-4 h-4 text-orange-500" />
+                                <h3 className="font-semibold text-sm">Detected Variables</h3>
+                                <Badge variant="outline" className="text-[10px] ml-auto">{detectedMainVars.length}</Badge>
+                            </div>
+                            {detectedMainVars.length === 0 ? (
+                                <div className="text-xs text-slate-400 bg-slate-50 rounded-lg p-3 flex items-start gap-2">
+                                    <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                    <span>Use <code className="bg-slate-200 px-1 rounded">{'{{VARIABLE_NAME}}'}</code> in the content to define variables users must fill.</span>
+                                </div>
+                            ) : (
+                                <div className="space-y-1.5">
+                                    {detectedMainVars.map(key => (
+                                        <div key={key} className="flex items-center gap-2 text-xs bg-orange-50 border border-orange-100 rounded-md px-2.5 py-1.5">
+                                            <span className="font-mono text-orange-700 font-medium">{`{{${key}}}`}</span>
+                                            <span className="text-slate-500 ml-auto">{keyToLabel(key)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </Card>
                     </div>
                     <div className="col-span-9 h-full flex flex-col min-h-0">
                         <div className="flex justify-between items-center mb-2">
@@ -414,24 +451,43 @@ export function TemplateBuilder({ mode = 'create', initialData }: TemplateBuilde
             {/* STEP 3: Review */}
             {
                 step === 3 && (
-                    <div className="flex-1 overflow-y-auto bg-slate-100 p-8 rounded-lg border">
-                        <div className="max-w-4xl mx-auto bg-white shadow-lg p-12 min-h-[1000px]">
-                            <div className="mb-8 border-b pb-4">
-                                <h2 className="text-3xl font-bold text-slate-900">{meta.name}</h2>
-                                <p className="text-slate-500">{meta.description}</p>
-                            </div>
-
-                            <div className="prose max-w-none mb-12" dangerouslySetInnerHTML={{ __html: mainContent }} />
-
-                            {annexures.map((annexure, i) => (
-                                <div key={annexure.id} className="mt-8 border-t-2 border-slate-900 pt-8 break-before-page">
-                                    <div className="mb-6">
-                                        <h3 className="text-xl font-bold uppercase tracking-wider text-slate-700">{annexure.name}</h3>
-                                        <h2 className="text-2xl font-bold text-slate-900 mt-1">{annexure.title}</h2>
-                                    </div>
-                                    <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: annexure.content }} />
+                    <div className="flex-1 overflow-y-auto">
+                        {/* Variable Summary Banner */}
+                        {allDetectedVars.length > 0 && (
+                            <div className="mb-4 bg-orange-50 border border-orange-200 rounded-xl p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Braces className="w-4 h-4 text-orange-600" />
+                                    <span className="text-sm font-semibold text-orange-800">{allDetectedVars.length} Variable{allDetectedVars.length !== 1 ? 's' : ''} Detected</span>
+                                    <span className="text-xs text-orange-600 ml-1">— users will be prompted to fill these when creating a contract</span>
                                 </div>
-                            ))}
+                                <div className="flex flex-wrap gap-2">
+                                    {allDetectedVars.map(key => (
+                                        <span key={key} className="inline-flex items-center gap-1 bg-white border border-orange-200 text-orange-700 text-xs font-mono px-2 py-0.5 rounded-full">
+                                            {`{{${key}}}`}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        <div className="bg-slate-100 p-8 rounded-lg border">
+                            <div className="max-w-4xl mx-auto bg-white shadow-lg p-12 min-h-[1000px]">
+                                <div className="mb-8 border-b pb-4">
+                                    <h2 className="text-3xl font-bold text-slate-900">{meta.name}</h2>
+                                    <p className="text-slate-500">{meta.description}</p>
+                                </div>
+
+                                <div className="prose max-w-none mb-12" dangerouslySetInnerHTML={{ __html: mainContent }} />
+
+                                {annexures.map((annexure, i) => (
+                                    <div key={annexure.id} className="mt-8 border-t-2 border-slate-900 pt-8 break-before-page">
+                                        <div className="mb-6">
+                                            <h3 className="text-xl font-bold uppercase tracking-wider text-slate-700">{annexure.name}</h3>
+                                            <h2 className="text-2xl font-bold text-slate-900 mt-1">{annexure.title}</h2>
+                                        </div>
+                                        <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: annexure.content }} />
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )

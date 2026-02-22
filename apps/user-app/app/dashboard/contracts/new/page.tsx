@@ -3,17 +3,19 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, Wand2, Search } from "lucide-react";
-import { WizardStepper } from "@/components/wizard-stepper"; // Likely irrelevant now, but keeping if needed for 'Review' phase only
+import { WizardStepper } from "@/components/wizard-stepper";
 import { ContractLaunchpad } from "@/components/contract-launchpad";
 import { DraftingWorkspace } from "@/components/drafting-workspace";
 import { FinalReviewView } from "@/components/final-review-view";
 import { ContractAssistantSidebar } from "@/components/contract-assistant-sidebar";
 import { ContractMetadataDialog } from "@/components/contract-metadata-dialog";
 import { ContractUploadDialog } from "@/components/contract-upload-dialog";
+import { VariableFillStep } from "@/components/variable-fill-step";
 import { api } from "@/lib/api-client";
 import { Template } from "@repo/types";
 import { Button, Spinner } from '@repo/ui';
 import { useToast } from "@/lib/toast-context";
+import { VariableField, applyVariables } from "@/lib/variable-utils";
 
 // Initial single annexure
 const INITIAL_ANNEXURES = [
@@ -25,9 +27,8 @@ export default function NewContractPage() {
     const router = useRouter();
     const { success: showSuccess, error: showError } = useToast();
 
-    // View Mode: 'draft' (Workspace) or 'review' (Final Check)
-    // Note: 'setup' is now just 'draft' with no template selected.
-    const [viewMode, setViewMode] = useState<"draft" | "review">("draft");
+    // View Mode: 'draft' (Workspace), 'variables' (Fill Variables), or 'review' (Final Check)
+    const [viewMode, setViewMode] = useState<"draft" | "variables" | "review">("draft");
     const [draftStep, setDraftStep] = useState<'main' | 'annexure'>('main');
 
     const [loading, setLoading] = useState(false);
@@ -43,6 +44,11 @@ export default function NewContractPage() {
     const [editorContent, setEditorContent] = useState("");
     const [annexures, setAnnexures] = useState<any[]>(INITIAL_ANNEXURES);
     const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+
+    // Variable System State
+    const [templateVariables, setTemplateVariables] = useState<VariableField[]>([]);
+    const [variableValues, setVariableValues] = useState<Record<string, string>>({});
+    const [isLoadingVariables, setIsLoadingVariables] = useState(false);
 
     // Upload Flow State
     const [pendingUploadFile, setPendingUploadFile] = useState<File | null>(null);
@@ -105,7 +111,7 @@ export default function NewContractPage() {
             // Pre-fill Title logic - ONLY if not already provided in metadata or state
             setContractDetails((prev: any) => {
                 const currentTitle = metadata?.title || prev.title;
-                if (currentTitle) return { ...prev, ...metadata }; // Ensure metadata is merged
+                if (currentTitle) return { ...prev, ...metadata };
 
                 return {
                     ...prev,
@@ -118,11 +124,24 @@ export default function NewContractPage() {
             if ((fullTemplate as any).annexures?.length > 0) {
                 setAnnexures((fullTemplate as any).annexures.map((a: any) => ({
                     id: a.id || `annex-${Math.random().toString(36).substr(2, 9)}`,
-                    title: a.title || a.name, // Handle legacy 'name' vs new 'title'
+                    title: a.title || a.name,
                     content: a.content || ""
                 })));
             } else {
                 setAnnexures(INITIAL_ANNEXURES);
+            }
+
+            // Fetch template variables
+            try {
+                setIsLoadingVariables(true);
+                const varResult = await api.templates.getVariables(template.id);
+                setTemplateVariables(varResult.variables || []);
+                setVariableValues({}); // Reset values for new template
+            } catch (varErr) {
+                console.warn('Could not fetch template variables:', varErr);
+                setTemplateVariables([]);
+            } finally {
+                setIsLoadingVariables(false);
             }
         } catch (error) {
             console.error("Failed to load full template details:", error);
@@ -238,6 +257,9 @@ export default function NewContractPage() {
         setContractDetails({});
         setEditorContent("");
         setPendingTemplate(null);
+        setTemplateVariables([]);
+        setVariableValues({});
+        setViewMode("draft");
     };
 
     // --- Dynamic Annexure Handlers ---
@@ -351,28 +373,43 @@ export default function NewContractPage() {
 
     const handleProceedToReview = () => {
         if (validateForm()) {
-            setViewMode("review");
+            // If template has variables, go to variable fill step first
+            if (templateVariables.length > 0) {
+                setViewMode("variables");
+            } else {
+                setViewMode("review");
+            }
         } else {
             showError("Input Error", "Please correct the highlighted fields.");
         }
     };
 
-    // Helper for saving: only the annexures
+    const handleVariablesFilled = () => {
+        setViewMode("review");
+    };
+
+    // Helper for saving: only the annexures (with variables applied)
     const getOnlyAnnexuresHtml = () => {
         if (annexures.length === 0) return "";
         let finalHtml = "";
-        annexures.forEach((annexure, index) => {
+        annexures.forEach((annexure) => {
+            const content = templateVariables.length > 0
+                ? applyVariables(annexure.content, variableValues, { highlight: false, emptyFallback: '' })
+                : annexure.content;
             finalHtml += `<div class="annexure-section">`;
             finalHtml += `<h3>${annexure.title}</h3>`;
-            finalHtml += `<div>${annexure.content.replace(/\n/g, "<br/>")}</div>`;
+            finalHtml += `<div>${content.replace(/\n/g, "<br/>")}</div>`;
             finalHtml += `</div>`;
         });
         return finalHtml;
     };
 
-    // Compile the final document content for PREVIEW
+    // Compile the final document content for PREVIEW (with variables applied)
     const getFinalDocumentContent = () => {
-        let finalHtml = editorContent;
+        const mainContent = templateVariables.length > 0
+            ? applyVariables(editorContent, variableValues, { highlight: false, emptyFallback: '' })
+            : editorContent;
+        let finalHtml = mainContent;
 
         // Append Annexures
         if (annexures.length > 0) {
@@ -384,9 +421,12 @@ export default function NewContractPage() {
                 }
                 if (index === 0) finalHtml += "<br/>";
 
+                const content = templateVariables.length > 0
+                    ? applyVariables(annexure.content, variableValues, { highlight: false, emptyFallback: '' })
+                    : annexure.content;
                 finalHtml += `<div class="annexure-section">`;
                 finalHtml += `<h3>${annexure.title}</h3>`;
-                finalHtml += `<div>${annexure.content.replace(/\n/g, "<br/>")}</div>`;
+                finalHtml += `<div>${content.replace(/\n/g, "<br/>")}</div>`;
                 finalHtml += `</div>`;
             });
         }
@@ -464,7 +504,8 @@ export default function NewContractPage() {
                 description: contractDetails.description || "",
                 fieldData: {
                     title: contractDetails.title,
-                    termSheet: editorContent, // Send edited content as 'termSheet'
+                    termSheet: editorContent,
+                    variableValues, // Save filled variable values
                     ...contractDetails
                 },
                 annexureData: finalAnnexureData,
@@ -548,6 +589,7 @@ export default function NewContractPage() {
                             {[
                                 { label: 'Main Agreement', active: viewMode === "draft" && draftStep === 'main' },
                                 { label: 'Annexures', active: viewMode === "draft" && draftStep === 'annexure' },
+                                ...(templateVariables.length > 0 ? [{ label: 'Fill Variables', active: viewMode === "variables" }] : []),
                                 { label: 'Final Review', active: viewMode === "review" }
                             ].map((step, index) => (
                                 <div key={step.label} className="flex items-center gap-2">
@@ -555,7 +597,7 @@ export default function NewContractPage() {
                                         {index + 1}
                                     </span>
                                     <span className={`${step.active ? 'text-slate-900' : 'text-slate-400'}`}>{step.label}</span>
-                                    {index < 2 && <span className="h-[1px] w-5 bg-slate-200" />}
+                                    {index < (templateVariables.length > 0 ? 3 : 2) && <span className="h-[1px] w-5 bg-slate-200" />}
                                 </div>
                             ))}
                         </div>
@@ -579,6 +621,21 @@ export default function NewContractPage() {
                     </div>
                 ) : (
                     <>
+                        {viewMode === "variables" && (
+                            <div className="flex flex-col" style={{ height: 'calc(100svh - 140px)' }}>
+                                <VariableFillStep
+                                    variables={templateVariables}
+                                    values={variableValues}
+                                    onChange={setVariableValues}
+                                    previewContent={editorContent}
+                                    annexures={annexures}
+                                    templateName={selectedTemplate?.name}
+                                    onNext={handleVariablesFilled}
+                                    onBack={() => setViewMode("draft")}
+                                />
+                            </div>
+                        )}
+
                         {viewMode === "draft" && (
                             <DraftingWorkspace
                                 contractDetails={contractDetails}
