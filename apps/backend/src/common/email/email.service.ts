@@ -216,10 +216,14 @@ export class EmailService {
                 html: `
                     <h1>Welcome to CLM Enterprise!</h1>
                     <p>Hello {{userName}},</p>
-                    <p>Your account has been created successfully. You can now log in and start managing your contracts.</p>
+                    <p>You have been invited to join CLM Enterprise by {{invitedBy}} and granted access to the following organizations: <strong>{{organizations}}</strong>.</p>
+                    <div class="info-box">
+                        <p><strong>Temporary Password:</strong> {{tempPassword}}</p>
+                    </div>
+                    <p>Please log in and update your password immediately.</p>
                     <p><a href="{{loginUrl}}" class="button">Log In Now</a></p>
                 `,
-                text: 'Welcome to CLM Enterprise! Your account has been created.',
+                text: 'Welcome to CLM Enterprise!\n\nHello {{userName}},\nYou have been invited by {{invitedBy}} to {{organizations}}.\nYour temporary password is: {{tempPassword}}\n\nLog in here: {{loginUrl}}',
             },
 
             [EmailTemplate.PASSWORD_RESET]: {
@@ -246,7 +250,7 @@ export class EmailService {
                     </div>
                     <p><a href="{{contractUrl}}" class="button">View Contract</a></p>
                 `,
-                text: 'New contract created: {{contractTitle}} ({{contractReference}})',
+                text: 'Contract Created\n\nA new contract has been created:\nTitle: {{contractTitle}}\nReference: {{contractReference}}\nCreated by: {{createdBy}}\n\n[{{contractUrl}}] View Contract',
             },
 
             [EmailTemplate.CONTRACT_SUBMITTED]: {
@@ -261,7 +265,7 @@ export class EmailService {
                     </div>
                     <p><a href="{{contractUrl}}" class="button">Review Contract</a></p>
                 `,
-                text: 'Contract submitted for approval: {{contractTitle}} ({{contractReference}})',
+                text: 'Contract Submitted\n\nA contract has been submitted for approval:\nTitle: {{contractTitle}}\nReference: {{contractReference}}\nSubmitted by: {{submittedBy}}\n\n[{{contractUrl}}] Review Contract',
             },
 
             [EmailTemplate.CONTRACT_SENT_TO_COUNTERPARTY]: {
@@ -278,7 +282,7 @@ export class EmailService {
                     <p><a href="{{contractUrl}}" class="button">Review Contract</a></p>
                     <p><small>Please review and respond within {{daysToRespond}} business days.</small></p>
                 `,
-                text: 'A contract is ready for your review: {{contractTitle}}',
+                text: 'Contract Ready for Review\n\nDear {{counterpartyName}},\nA contract has been sent for your review and signature:\nTitle: {{contractTitle}}\nReference: {{contractReference}}\nFrom: {{organizationName}}\n\n[{{contractUrl}}] Review Contract\nPlease review and respond within {{daysToRespond}} business days.',
             },
 
             [EmailTemplate.CONTRACT_SIGNED]: {
@@ -286,14 +290,14 @@ export class EmailService {
                 html: `
                     <h1>Contract Signed</h1>
                     <p>Great news! The following contract has been fully executed:</p>
-                    <div class="info-box">
+                    <div class="info-box success">
                         <p><strong>Title:</strong> {{contractTitle}}</p>
                         <p><strong>Reference:</strong> {{contractReference}}</p>
                         <p><strong>Signed on:</strong> {{signedDate}}</p>
                     </div>
                     <p><a href="{{contractUrl}}" class="button">View Contract</a></p>
                 `,
-                text: 'Contract signed: {{contractTitle}} ({{contractReference}})',
+                text: 'Contract Signed\n\nGreat news! The following contract has been fully executed:\nTitle: {{contractTitle}}\nReference: {{contractReference}}\nSigned on: {{signedDate}}\n\n[{{contractUrl}}] View Contract',
             },
 
             [EmailTemplate.CONTRACT_EXPIRING]: {
@@ -309,7 +313,7 @@ export class EmailService {
                     </div>
                     <p><a href="{{contractUrl}}" class="button">View Contract</a></p>
                 `,
-                text: 'Contract expiring soon: {{contractTitle}} expires on {{expiryDate}}',
+                text: 'Contract Expiring Soon\n\nThe following contract is expiring soon:\nTitle: {{contractTitle}}\nReference: {{contractReference}}\nExpires on: {{expiryDate}}\nDays remaining: {{daysRemaining}}\n\n[{{contractUrl}}] View Contract',
             },
 
             [EmailTemplate.APPROVAL_REQUIRED]: {
@@ -325,7 +329,7 @@ export class EmailService {
                     </div>
                     <p><a href="{{approvalUrl}}" class="button">Review & Approve</a></p>
                 `,
-                text: 'Approval required for: {{contractTitle}}. Review at {{approvalUrl}}',
+                text: 'Approval Required\n\nA contract requires your approval:\nTitle: {{contractTitle}}\nReference: {{contractReference}}\nApproval Type: {{approvalType}}\nRequested by: {{requestedBy}}\n\n[{{approvalUrl}}] Review & Approve',
             },
 
             [EmailTemplate.APPROVAL_APPROVED]: {
@@ -370,7 +374,7 @@ export class EmailService {
                     </div>
                     <p><a href="{{approvalUrl}}" class="button">Review & Approve</a></p>
                 `,
-                text: 'Approval escalated for: {{contractTitle}}',
+                text: 'Approval Escalated\n\nAn approval has been escalated to you:\nTitle: {{contractTitle}}\nEscalated by: {{escalatedBy}}\nOriginal Approver: {{originalApprover}}\n\n[{{approvalUrl}}] Review & Approve',
             },
 
             [EmailTemplate.GENERIC_NOTIFICATION]: {
@@ -385,7 +389,6 @@ export class EmailService {
                 text: '{{title}}: {{message}}',
             },
 
-            // @ts-ignore - dynamic enum addition or missing in interface above (will fix if needed)
             'REVISION_REQUESTED': {
                 subject: '✏️ Revision Requested: {{contractTitle}}',
                 html: `
@@ -398,22 +401,20 @@ export class EmailService {
                     </div>
                     <p><a href="{{contractUrl}}" class="button">Edit Contract</a></p>
                 `,
-                text: 'Revision requested for: {{contractTitle}}. Comment: {{comment}}',
+                text: 'Revision Requested\n\nA revision has been requested for your contract:\nTitle: {{contractTitle}}\nRequested by: {{requestedBy}}\nComments: {{comment}}\n\n[{{contractUrl}}] Edit Contract',
             },
             [EmailTemplate.COUNTERPARTY_UPLOADED_DOCUMENT]: {
                 subject: '📎 Signed Document Received: {{contractTitle}}',
                 html: `
-                    <h1>Document Uploaded</h1>
+                    <p>Document Uploaded</p>
                     <p>Great news! {{counterpartyName}} has uploaded a signed copy:</p>
-                    <div class="info-box success">
-                        <p><strong>Contract:</strong> {{contractTitle}}</p>
-                        <p><strong>Reference:</strong> {{contractReference}}</p>
-                        <p><strong>Uploaded:</strong> {{uploadDate}}</p>
-                    </div>
-                    <p><a href="{{contractUrl}}" class="button">Review Document</a></p>
+                    <p>Contract: {{contractTitle}}</p>
+                    <p>Reference: {{contractReference}}</p>
+                    <p>Uploaded: {{uploadDate}}</p>
+                    <p>[<a href="{{contractUrl}}">{{contractUrl}}</a>] Review Document</p>
                     <p>Next steps: Review the document and activate the contract.</p>
                 `,
-                text: 'Signed document received for {{contractTitle}}',
+                text: `Document Uploaded\nGreat news! {{counterpartyName}} has uploaded a signed copy:\n\nContract: {{contractTitle}}\n\nReference: {{contractReference}}\n\nUploaded: {{uploadDate}}\n\n[{{contractUrl}}] Review Document\n\nNext steps: Review the document and activate the contract.`,
             },
         };
     }

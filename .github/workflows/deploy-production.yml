@@ -1,0 +1,117 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_build:
+        description: 'Skip build (deploy existing dist)'
+        required: false
+        default: 'false'
+
+env:
+  SERVER_HOST: ${{ secrets.PROD_SERVER_HOST }}
+  SERVER_USER: clmadmin
+  APP_DIR: /opt/clm/app
+
+jobs:
+  deploy:
+    name: Deploy CLM Enterprise
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔑 Configure SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+
+      - name: 🔒 Add known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ env.SERVER_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: 🚀 Deploy to Production
+        run: |
+          ssh ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} << 'DEPLOY_SCRIPT'
+          set -euo pipefail
+          
+          echo "═══ CLM Enterprise — Zero-Downtime Deploy ═══"
+          echo "Started: $(date)"
+          
+          cd ${{ env.APP_DIR }}
+          
+          # 1. Pull latest code
+          echo "→ Pulling latest code..."
+          git fetch origin main
+          git reset --hard origin/main
+          
+          # 2. Install dependencies
+          echo "→ Installing dependencies..."
+          export PUPPETEER_SKIP_DOWNLOAD=true
+          npm ci --include=dev
+          
+          # 3. Build
+          if [[ "${{ github.event.inputs.skip_build }}" != "true" ]]; then
+            echo "→ Building applications..."
+            npm run db:generate
+            npm run build
+            
+            # Prepare Next.js standalone
+            STANDALONE_DIR="apps/user-app/.next/standalone"
+            if [[ -d "$STANDALONE_DIR" ]]; then
+              cp -r apps/user-app/public "$STANDALONE_DIR/apps/user-app/public" 2>/dev/null || true
+              mkdir -p "$STANDALONE_DIR/apps/user-app/.next/static"
+              cp -r apps/user-app/.next/static "$STANDALONE_DIR/apps/user-app/.next/" 2>/dev/null || true
+            fi
+          else
+            echo "→ Skipping build (skip_build=true)"
+          fi
+          
+          # 4. Run migrations
+          echo "→ Running database migrations..."
+          PRISMA_SCHEMA=$(find . -name "schema.prisma" -not -path "*/node_modules/*" -not -path "*/dist/*" | head -1)
+          if [[ -n "$PRISMA_SCHEMA" ]]; then
+            npx prisma migrate deploy --schema="$PRISMA_SCHEMA"
+          fi
+          
+          # 5. Zero-downtime reload
+          echo "→ Reloading PM2 processes..."
+          pm2 reload ecosystem.config.js --update-env
+          
+          # 6. Wait for processes to stabilize
+          sleep 5
+          
+          # 7. Health check
+          echo "→ Running health checks..."
+          BACKEND_OK=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api/v1/health 2>/dev/null || echo "000")
+          FRONTEND_OK=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000 2>/dev/null || echo "000")
+          
+          echo "  Backend health:  HTTP $BACKEND_OK"
+          echo "  Frontend health: HTTP $FRONTEND_OK"
+          
+          if [[ "$BACKEND_OK" != "200" ]] || [[ "$FRONTEND_OK" != "200" ]]; then
+            echo "⚠️  Health check warning — some endpoints not returning 200"
+          fi
+          
+          # 8. Show status
+          pm2 status
+          
+          echo ""
+          echo "═══ Deploy Complete: $(date) ═══"
+          DEPLOY_SCRIPT
+
+      - name: 📊 Post-deploy status
+        if: always()
+        run: |
+          ssh ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} "pm2 status" || true
+
+      - name: ❌ Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Deployment to production FAILED!"
+          # Add Slack/email notification here if needed

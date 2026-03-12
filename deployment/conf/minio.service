@@ -1,0 +1,22 @@
+[Unit]
+Description=MinIO Object Storage
+Documentation=https://min.io/docs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=minio-user
+Group=minio-user
+Type=notify
+EnvironmentFile=/etc/default/minio
+ExecStart=/usr/local/bin/minio server $MINIO_VOLUMES $MINIO_OPTS
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+TasksMax=infinity
+TimeoutStartSec=0
+TimeoutStopSec=120
+Environment="MINIO_PROMETHEUS_AUTH_TYPE=public"
+
+[Install]
+WantedBy=multi-user.target

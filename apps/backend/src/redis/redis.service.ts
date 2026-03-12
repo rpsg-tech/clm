@@ -32,7 +32,16 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
             return;
         }
 
-        this.client = new Redis(redisUrl, {
+        // 12-Factor App Standard TLS/SSL Configuration
+        // If the URL is "rediss://" or explicitly enabled via env, we inject the TLS object
+        const isTlsEnabled = redisUrl.startsWith('rediss://') ||
+            this.configService.get<string>('REDIS_TLS_ENABLED') === 'true';
+
+        // Many managed cloud providers require dropping strict cert validation 
+        // to pass through proxies. We allow this to be toggled, defaulting to false.
+        const rejectUnauthorized = this.configService.get<string>('REDIS_TLS_REJECT_UNAUTHORIZED') === 'true';
+
+        let redisOptions: any = {
             retryStrategy: (times: number) => {
                 if (times > 3) {
                     this.logger.warn('Redis connection failed, running without Redis');
@@ -43,7 +52,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
             maxRetriesPerRequest: 3,
             enableReadyCheck: true,
             lazyConnect: false,
-        });
+        };
+
+        // Inject TLS configuration if detected
+        if (isTlsEnabled) {
+            redisOptions.tls = {
+                rejectUnauthorized
+            };
+            this.logger.log(`Redis TLS/SSL Enabled (rejectUnauthorized: ${rejectUnauthorized})`);
+        }
+
+        this.client = new Redis(redisUrl, redisOptions);
 
         this.client.on('error', (error) => {
             this.logger.error(`Redis error: ${error.message}`);
