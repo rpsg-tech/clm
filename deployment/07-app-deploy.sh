@@ -112,7 +112,7 @@ else
         if [[ -f /opt/clm/.pg-credentials ]]; then
             source /opt/clm/.pg-credentials 2>/dev/null || true
             if [[ -n "${DATABASE_URL:-}" ]]; then
-                sed -i "s|DATABASE_URL=.*|DATABASE_URL=\"${DATABASE_URL}\"|" "$APP_DIR/apps/backend/.env"
+                sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"${DATABASE_URL}\"|" "$APP_DIR/apps/backend/.env"
                 log "DATABASE_URL auto-filled from PostgreSQL setup"
             fi
         fi
@@ -120,7 +120,7 @@ else
         if [[ -f /opt/clm/.redis-credentials ]]; then
             source /opt/clm/.redis-credentials 2>/dev/null || true
             if [[ -n "${REDIS_URL:-}" ]]; then
-                sed -i "s|REDIS_URL=.*|REDIS_URL=\"${REDIS_URL}\"|" "$APP_DIR/apps/backend/.env"
+                sed -i "s|^REDIS_URL=.*|REDIS_URL=\"${REDIS_URL}\"|" "$APP_DIR/apps/backend/.env"
                 log "REDIS_URL auto-filled from Redis setup"
             fi
         fi
@@ -128,8 +128,8 @@ else
         # Generate JWT secrets
         JWT_SECRET=$(openssl rand -base64 48 | tr -d '/+=' | head -c 48)
         JWT_REFRESH=$(openssl rand -base64 48 | tr -d '/+=' | head -c 48)
-        sed -i "s|JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET}|" "$APP_DIR/apps/backend/.env"
-        sed -i "s|JWT_REFRESH_SECRET=.*|JWT_REFRESH_SECRET=${JWT_REFRESH}|" "$APP_DIR/apps/backend/.env"
+        sed -i "s|^JWT_SECRET=.*|JWT_SECRET=${JWT_SECRET}|" "$APP_DIR/apps/backend/.env"
+        sed -i "s|^JWT_REFRESH_SECRET=.*|JWT_REFRESH_SECRET=${JWT_REFRESH}|" "$APP_DIR/apps/backend/.env"
         log "JWT secrets auto-generated"
     else
         warn "No env.production template found. Create apps/backend/.env manually."
@@ -194,6 +194,17 @@ fi
 
 # ─── 7. Run Database Migrations ─────────────────────────────────────────────
 info "Running database migrations..."
+
+# Load environment variables so Prisma can find DATABASE_URL
+if [[ -f "$APP_DIR/apps/backend/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$APP_DIR/apps/backend/.env"
+    set +a
+    log "Environment variables loaded for migrations"
+else
+    warn "Backend .env file not found at apps/backend/.env"
+fi
 
 PRISMA_SCHEMA=$(find . -name "schema.prisma" -not -path "*/node_modules/*" -not -path "*/dist/*" | head -1)
 
