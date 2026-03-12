@@ -112,7 +112,9 @@ else
         if [[ -f /opt/clm/.pg-credentials ]]; then
             source /opt/clm/.pg-credentials 2>/dev/null || true
             if [[ -n "${DATABASE_URL:-}" ]]; then
-                sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"${DATABASE_URL}\"|" "$APP_DIR/apps/backend/.env"
+                # Escape & for sed replacement
+                ESC_DB_URL=$(echo "$DATABASE_URL" | sed 's/[&/]/\\&/g')
+                sed -i "s|^DATABASE_URL=.*|DATABASE_URL=\"${ESC_DB_URL}\"|" "$APP_DIR/apps/backend/.env"
                 log "DATABASE_URL auto-filled from PostgreSQL setup"
             fi
         fi
@@ -120,7 +122,9 @@ else
         if [[ -f /opt/clm/.redis-credentials ]]; then
             source /opt/clm/.redis-credentials 2>/dev/null || true
             if [[ -n "${REDIS_URL:-}" ]]; then
-                sed -i "s|^REDIS_URL=.*|REDIS_URL=\"${REDIS_URL}\"|" "$APP_DIR/apps/backend/.env"
+                # Escape & for sed replacement
+                ESC_REDIS_URL=$(echo "$REDIS_URL" | sed 's/[&/]/\\&/g')
+                sed -i "s|^REDIS_URL=.*|REDIS_URL=\"${ESC_REDIS_URL}\"|" "$APP_DIR/apps/backend/.env"
                 log "REDIS_URL auto-filled from Redis setup"
             fi
         fi
