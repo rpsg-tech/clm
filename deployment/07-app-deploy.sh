@@ -195,6 +195,17 @@ fi
 # ─── 7. Run Database Migrations ─────────────────────────────────────────────
 info "Running database migrations..."
 
+# Load environment variables so Prisma can find DATABASE_URL
+if [[ -f "$APP_DIR/apps/backend/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "$APP_DIR/apps/backend/.env"
+    set +a
+    log "Environment variables loaded for migrations"
+else
+    warn "Backend .env file not found at apps/backend/.env"
+fi
+
 PRISMA_SCHEMA=$(find . -name "schema.prisma" -not -path "*/node_modules/*" -not -path "*/dist/*" | head -1)
 
 if [[ -n "$PRISMA_SCHEMA" ]]; then
