@@ -45,7 +45,7 @@ log "npm production settings applied"
 # ─── 3. Install Global Tools ────────────────────────────────────────────────
 info "Installing PM2, Turbo, and NestJS CLI globally..."
 
-npm install -g pm2@latest turbo@latest @nestjs/cli@latest
+npm install -g pm2@latest turbo@latest @nestjs/cli@latest ts-node@latest
 
 PM2_VER=$(pm2 -v)
 TURBO_VER=$(turbo --version 2>/dev/null || echo "installed")
