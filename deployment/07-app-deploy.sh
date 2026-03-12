@@ -172,6 +172,18 @@ npm run db:generate
 # Build everything
 npm run build
 
+# Verify and stabilize build structure
+if [[ -f "$APP_DIR/apps/backend/dist/main.js" ]]; then
+    log "Backend build verified: dist/main.js found"
+elif [[ -f "$APP_DIR/apps/backend/dist/src/main.js" ]]; then
+    warn "Backend build found in nested directory: dist/src/main.js"
+    info "Relocating build artifacts..."
+    cp -r "$APP_DIR/apps/backend/dist/src/"* "$APP_DIR/apps/backend/dist/"
+    log "Backend structure stabilized"
+else
+    err "Backend entry point (dist/main.js) NOT found after build!"
+fi
+
 log "All applications built successfully"
 
 # ─── 6. Prepare Next.js Standalone ──────────────────────────────────────────

@@ -2,7 +2,7 @@
     "extends": "@repo/typescript-config/nestjs.json",
     "compilerOptions": {
         "outDir": "./dist",
-        "rootDir": ".",
+        "rootDir": "src",
         "baseUrl": "./",
         "noImplicitAny": false,
         "isolatedModules": false,
@@ -13,12 +13,12 @@
         }
     },
     "include": [
-        "src/**/*",
-        "scripts/**/*"
+        "src/**/*"
     ],
     "exclude": [
         "node_modules",
         "dist",
-        "test"
+        "test",
+        "scripts"
     ]
 }
