@@ -24,8 +24,8 @@ if [[ ! -f "/opt/clm/app/apps/backend/.env" ]]; then
 fi
 
 # Check for placeholder values
-if grep -q "<FILL_IN>\|<GENERATE>" /opt/clm/app/apps/backend/.env; then
-    warn "Your .env still contains placeholder values (<FILL_IN> or <GENERATE>)!"
+if grep -q "_FILL_IN_\|_GENERATE_" /opt/clm/app/apps/backend/.env; then
+    warn "Your .env still contains placeholder values (_FILL_IN_ or _GENERATE_)!"
     warn "Services may fail to start until these are filled in."
     read -p "Continue anyway? (y/N) " -n 1 -r
     echo
