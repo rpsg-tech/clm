@@ -141,6 +141,10 @@ info "Installing dependencies (npm ci)..."
 
 # Set PUPPETEER_SKIP_DOWNLOAD to avoid downloading Chrome
 export PUPPETEER_SKIP_DOWNLOAD=true
+export NEXT_TELEMETRY_DISABLED=1
+
+# Ensure tracking/environment variables don't skip devDependencies
+export NODE_ENV=development
 
 # Use npm ci for deterministic installs (prefers package-lock.json)
 if [[ -f "package-lock.json" ]]; then
@@ -153,6 +157,10 @@ log "Dependencies installed"
 
 # ─── 5. Build All Applications ──────────────────────────────────────────────
 info "Building all applications (turbo run build)..."
+
+# Note: Next.js 15 requires NODE_ENV=production for next build to work correctly.
+# If it's set to development (from our install phase), prerendering will fail.
+export NODE_ENV=production
 
 # Generate Prisma client first
 npm run db:generate

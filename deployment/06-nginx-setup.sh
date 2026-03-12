@@ -25,20 +25,66 @@ mkdir -p /var/www/certbot
 
 # ─── 3. Remove Default Config ───────────────────────────────────────────────
 info "Cleaning default Nginx configuration..."
-# Comment out the default server block in nginx.conf
-if [[ -f /etc/nginx/nginx.conf ]]; then
-    # Backup original
-    cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
+# Overwrite nginx.conf with a clean, production-ready version
+    # Backup original before overwriting
+    cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak 2>/dev/null || true
 
-    # Remove default server block from nginx.conf (the one inside http{})
-    # Instead we load from conf.d/ only
-    sed -i '/^[[:space:]]*server {/,/^[[:space:]]*}/d' /etc/nginx/nginx.conf 2>/dev/null || true
-fi
+    # This removes the default server block and keeps it clean for conf.d/
+    cat > /etc/nginx/nginx.conf << 'EOF'
+user nginx;
+worker_processes auto;
+worker_rlimit_nofile 65535;
+error_log /var/log/nginx/error.log warn;
+pid /run/nginx.pid;
+
+# Load dynamic modules
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections 4096;
+    multi_accept on;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   65;
+    keepalive_requests  1000;
+    types_hash_max_size 4096;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    # Performance & Security
+    server_tokens       off;
+    gzip                on;
+    gzip_comp_level     5;
+    gzip_min_length     256;
+    gzip_proxied        any;
+    gzip_types          text/plain application/json application/javascript text/css application/xml application/xml+rss text/javascript;
+
+    # Global Security Headers
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Load modular configuration files from the /etc/nginx/conf.d directory
+    include /etc/nginx/conf.d/*.conf;
+}
+EOF
 
 # Remove default.conf if it exists
 rm -f /etc/nginx/conf.d/default.conf
 
-log "Default config cleaned"
+log "Default config cleaned and nginx.conf optimized"
 
 # ─── 4. Deploy CLM Nginx Config ─────────────────────────────────────────────
 info "Deploying CLM Nginx configuration..."
@@ -70,25 +116,7 @@ else
     warn "Certificate already exists, skipping self-signed generation"
 fi
 
-# ─── 6. Optimize Nginx Main Config ──────────────────────────────────────────
-info "Applying Nginx performance settings..."
-
-# Check if our worker settings are already applied
-if ! grep -q "worker_rlimit_nofile" /etc/nginx/nginx.conf; then
-    # Add performance directives at the top of nginx.conf
-    sed -i '1i\
-worker_rlimit_nofile 65535;' /etc/nginx/nginx.conf
-fi
-
-# Ensure worker_processes is set to auto
-sed -i 's/^worker_processes.*/worker_processes auto;/' /etc/nginx/nginx.conf
-
-# Add/update worker_connections
-sed -i 's/worker_connections.*/worker_connections 4096;/' /etc/nginx/nginx.conf
-
-log "Nginx performance settings applied"
-
-# ─── 7. Test Configuration ──────────────────────────────────────────────────
+# ─── 6. Test Configuration ──────────────────────────────────────────────────
 info "Testing Nginx configuration..."
 if nginx -t 2>&1; then
     log "Nginx configuration test passed"
