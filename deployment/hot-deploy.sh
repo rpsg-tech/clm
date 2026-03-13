@@ -6,7 +6,7 @@
 # Covers: Sync, Build, Standalone-Assets, DB Migrations, Nginx-Sync, PM2-Reload
 # ==============================================================================
 # ══════════════════════════════════════════════════════════════════════════════
-# Version: 1.0.7 (Debug & Port Fix)
+# Version: 1.0.8 (DB Push Fix)
 # ══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
@@ -94,9 +94,11 @@ if [[ -n "$PRISMA_SCHEMA" ]]; then
     info "Running migrations using schema: $PRISMA_SCHEMA"
     # generate client again to be safe
     npx prisma generate --schema="$PRISMA_SCHEMA"
-    # apply migrations
+    # apply migrations (official history)
     npx prisma migrate deploy --schema="$PRISMA_SCHEMA"
-    log "Database schema is up-to-date."
+    # force sync schema (absolute safety for hidden column changes)
+    npx prisma db push --schema="$PRISMA_SCHEMA" --skip-generate --accept-data-loss
+    log "Database schema is up-to-date and synchronized."
 else
     warn "No schema.prisma found, skipping migrations."
 fi
