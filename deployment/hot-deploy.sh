@@ -6,7 +6,7 @@
 # Covers: Sync, Build, Standalone-Assets, DB Migrations, Nginx-Sync, PM2-Reload
 # ==============================================================================
 # ══════════════════════════════════════════════════════════════════════════════
-# Version: 1.0.6 (Clean Reload Fix)
+# Version: 1.0.7 (Debug & Port Fix)
 # ══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
@@ -114,6 +114,16 @@ fi
 
 # ─── 6. Zero-Downtime Reload ──────────────────────────────────────────────
 info "Reloading PM2 services..."
+
+# Clean up any zombie processes before reload
+# We use lsof to find processes on our ports and kill them if they belong to clmadmin
+for port in 3000 3001; do
+    PIDS=$(lsof -t -i:"$port" 2>/dev/null || true)
+    if [[ -n "$PIDS" ]]; then
+        info "Clearing zombie processes on port $port: $PIDS"
+        echo "$PIDS" | xargs kill -9 2>/dev/null || true
+    fi
+done
 
 pm2 reload deployment/conf/ecosystem.config.js --update-env
 pm2 save
