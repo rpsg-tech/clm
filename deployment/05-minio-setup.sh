@@ -36,14 +36,16 @@ fi
 
 # ─── 2. Download MinIO Server Binary ────────────────────────────────────────
 info "Downloading MinIO server..."
-curl -fsSL https://dl.min.io/server/minio/release/linux-amd64/minio -o /usr/local/bin/minio
-chmod +x /usr/local/bin/minio
+curl -fsSL https://dl.min.io/server/minio/release/linux-amd64/minio -o /tmp/minio
+chmod +x /tmp/minio
+mv /tmp/minio /usr/local/bin/minio
 log "MinIO binary installed: $(/usr/local/bin/minio --version | head -1)"
 
 # ─── 3. Download MinIO Client (mc) ──────────────────────────────────────────
 info "Downloading MinIO Client (mc)..."
-curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /usr/local/bin/mc
-chmod +x /usr/local/bin/mc
+curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /tmp/mc
+chmod +x /tmp/mc
+mv /tmp/mc /usr/local/bin/mc
 log "MinIO Client installed"
 
 # ─── 4. Create Data Directory ───────────────────────────────────────────────
