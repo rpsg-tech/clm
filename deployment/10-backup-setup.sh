@@ -14,7 +14,7 @@ info() { echo -e "${CYAN}[→]${NC} $*"; }
 [[ $EUID -ne 0 ]] && err "This script must be run as root"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-BACKUP_DIR="/mnt/data/backups/postgres"
+BACKUP_DIR="/opt/clm/backups/postgres"
 
 # ─── 1. Create Backup Directory ─────────────────────────────────────────────
 mkdir -p "$BACKUP_DIR"

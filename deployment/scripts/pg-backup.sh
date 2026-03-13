@@ -6,7 +6,7 @@
 set -euo pipefail
 
 DB_NAME="clm"
-BACKUP_DIR="/mnt/data/backups/postgres"
+BACKUP_DIR="/opt/clm/backups/postgres"
 RETENTION_DAYS=30
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="${BACKUP_DIR}/clm_${TIMESTAMP}.sql.gz"
