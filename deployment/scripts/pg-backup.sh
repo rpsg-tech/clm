@@ -22,7 +22,7 @@ pg_dump -U postgres \
     --compress=6 \
     --verbose \
     --file="$BACKUP_FILE" \
-    "$DB_NAME" 2>/dev/null
+    "$DB_NAME"
 
 # Verify backup file exists and is non-empty
 if [[ -s "$BACKUP_FILE" ]]; then

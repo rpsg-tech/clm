@@ -18,7 +18,8 @@ BACKUP_DIR="/opt/clm/backups/postgres"
 
 # ─── 1. Create Backup Directory ─────────────────────────────────────────────
 mkdir -p "$BACKUP_DIR"
-chown clmadmin:clmadmin "$BACKUP_DIR"
+chown postgres:postgres "$BACKUP_DIR"
+chmod 750 "$BACKUP_DIR"
 log "Backup directory: $BACKUP_DIR"
 
 # ─── 2. Deploy Backup Script ────────────────────────────────────────────────
