@@ -68,6 +68,15 @@ log "Build successful."
 
 # ─── 4. Database Angle (Safety First) ──────────────────────────────────────
 info "Synchronizing database schema..."
+
+# Load environment variables for Prisma
+if [[ -f "apps/backend/.env" ]]; then
+    set -a
+    source apps/backend/.env
+    set +a
+    log "Environment variables loaded."
+fi
+
 PRISMA_SCHEMA=$(find . -name "schema.prisma" -not -path "*/node_modules/*" -not -path "*/dist/*" | head -1)
 if [[ -n "$PRISMA_SCHEMA" ]]; then
     # generate client again to be safe
