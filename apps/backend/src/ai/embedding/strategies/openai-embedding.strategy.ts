@@ -9,9 +9,10 @@ export class OpenAIEmbeddingStrategy implements EmbeddingService {
     private modelName = 'text-embedding-3-small';
 
     constructor(private configService: ConfigService) {
-        this.openai = new OpenAI({
-            apiKey: this.configService.get<string>('OPENAI_API_KEY'),
-        });
+        const apiKey = this.configService.get<string>('OPENAI_API_KEY');
+        if (apiKey) {
+            this.openai = new OpenAI({ apiKey });
+        }
     }
 
     async generateEmbedding(text: string): Promise<number[]> {
