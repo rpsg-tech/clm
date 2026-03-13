@@ -5,6 +5,9 @@
 #
 # Covers: Sync, Build, Standalone-Assets, DB Migrations, Nginx-Sync, PM2-Reload
 # ==============================================================================
+# ══════════════════════════════════════════════════════════════════════════════
+# Version: 1.0.3 (Env-Fix)
+# ══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
@@ -69,16 +72,26 @@ log "Build successful."
 # ─── 4. Database Angle (Safety First) ──────────────────────────────────────
 info "Synchronizing database schema..."
 
-# Load environment variables for Prisma
-if [[ -f "apps/backend/.env" ]]; then
+# Load environment variables for Prisma - Absolute Path & Force Export
+DOTENV_PATH="$APP_DIR/apps/backend/.env"
+if [[ -f "$DOTENV_PATH" ]]; then
+    # Handle both source and manual export just to be doubly sure
     set -a
-    source apps/backend/.env
+    source "$DOTENV_PATH"
     set +a
-    log "Environment variables loaded."
+    
+    # Manual backup export for Prisma
+    DB_URL_VAL=$(grep '^DATABASE_URL=' "$DOTENV_PATH" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+    export DATABASE_URL="$DB_URL_VAL"
+    
+    log "Environment variables exported."
+else
+    warn "Backend .env NOT FOUND at $DOTENV_PATH"
 fi
 
 PRISMA_SCHEMA=$(find . -name "schema.prisma" -not -path "*/node_modules/*" -not -path "*/dist/*" | head -1)
 if [[ -n "$PRISMA_SCHEMA" ]]; then
+    info "Running migrations using schema: $PRISMA_SCHEMA"
     # generate client again to be safe
     npx prisma generate --schema="$PRISMA_SCHEMA"
     # apply migrations
