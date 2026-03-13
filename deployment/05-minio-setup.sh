@@ -81,8 +81,8 @@ MINIO_VOLUMES=${MINIO_DATA}
 MINIO_OPTS="--console-address :9001"
 
 # Subpath Support (Required for Nginx proxying via /s3 and /minio-console)
-MINIO_SERVER_URL="https://${MINIO_PUBLIC_IP}/s3/"
-MINIO_BROWSER_REDIRECT_URL="https://${MINIO_PUBLIC_IP}/minio-console/"
+MINIO_SERVER_URL="https://${MINIO_PUBLIC_IP}/s3"
+MINIO_BROWSER_REDIRECT_URL="https://${MINIO_PUBLIC_IP}/minio-console"
 EOF
 chmod 600 /etc/default/minio
 log "Environment file: /etc/default/minio"
