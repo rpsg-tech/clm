@@ -21,7 +21,12 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MINIO_DATA="/mnt/data/minio"
 MINIO_USER="minio-user"
 MINIO_ROOT_USER="clm-minio-admin"
-MINIO_ROOT_PASS=$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)
+if [[ -f /etc/default/minio ]]; then
+    # Recover password if already generated in a previous run
+    MINIO_ROOT_PASS=$(grep MINIO_ROOT_PASSWORD /etc/default/minio | cut -d= -f2)
+else
+    MINIO_ROOT_PASS=$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)
+fi
 
 # Starting MinIO Setup...
 
@@ -119,8 +124,10 @@ fi
 
 # ─── 9. Create Default Bucket ───────────────────────────────────────────────
 info "Creating default bucket 'clm-documents'..."
-mc alias set clm-local http://127.0.0.1:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASS" 2>/dev/null
-mc mb --ignore-existing clm-local/clm-documents 2>/dev/null
+# mc sometimes exits with 0 but prints noise on first run (initialization)
+# We use || true just for the alias check to ensure initialization noise doesn't trigger set -e
+mc alias set clm-local http://127.0.0.1:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASS" --quiet >/dev/null 2>&1 || true
+mc mb --ignore-existing clm-local/clm-documents >/dev/null 2>&1 || true
 log "Bucket 'clm-documents' created"
 
 # ─── 10. Save Credentials ───────────────────────────────────────────────────
