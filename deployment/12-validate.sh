@@ -50,7 +50,7 @@ VECTOR=$(sudo -u postgres psql -t -d clm -c "SELECT count(*) FROM pg_extension W
 [[ "$VECTOR" == "1" ]] && pass "pgvector extension loaded" || fail "pgvector NOT loaded"
 
 PG_DATA=$(sudo -u postgres psql -t -c "SHOW data_directory;" 2>/dev/null | xargs)
-[[ "$PG_DATA" == "/var/lib/pgsql/16/data" ]] && pass "Data dir: $PG_DATA" || fail "Data dir: $PG_DATA (expected /var/lib/pgsql/16/data)"
+[[ "$PG_DATA" == "/mnt/data/postgres" ]] && pass "Data dir: $PG_DATA" || fail "Data dir: $PG_DATA (expected /mnt/data/postgres)"
 echo ""
 
 # ── 4. Redis ─────────────────────────────────────────────────────────────────
@@ -83,8 +83,8 @@ echo -e "${CYAN}[6/8] HTTP Endpoints${NC}"
 BACKEND_HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api/v1/health 2>/dev/null || echo "000")
 [[ "$BACKEND_HTTP" == "200" ]] && pass "Backend health: HTTP 200" || fail "Backend health: HTTP $BACKEND_HTTP"
 
-FRONTEND_HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000 2>/dev/null || echo "000")
-[[ "$FRONTEND_HTTP" == "200" ]] && pass "Frontend: HTTP 200" || fail "Frontend: HTTP $FRONTEND_HTTP"
+FRONTEND_HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/login 2>/dev/null || echo "000")
+[[ "$FRONTEND_HTTP" == "200" ]] && pass "Frontend Login: HTTP 200" || fail "Frontend Login: HTTP $FRONTEND_HTTP"
 
 NGINX_HTTP=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: clm.rpsg.in" http://127.0.0.1 2>/dev/null || echo "000")
 [[ "$NGINX_HTTP" == "301" ]] && pass "Nginx HTTP→HTTPS redirect: 301" || pass "Nginx: HTTP $NGINX_HTTP"
