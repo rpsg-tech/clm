@@ -112,6 +112,11 @@ export class EnvironmentVariables {
     @IsOptional()
     EMAIL_FROM_NAME?: string = 'CLM Enterprise';
 
+    @IsString()
+    @IsOptional()
+    @IsIn(['smtp', 'graph'])
+    EMAIL_PROVIDER?: string = 'smtp';
+
     // ============ Optional: AI Features ============
 
     @IsString()
@@ -135,6 +140,38 @@ export class EnvironmentVariables {
     @IsString()
     @IsOptional()
     AWS_S3_BUCKET?: string;
+
+    // ============ Azure AD (Login) ============
+
+    @IsString()
+    @IsOptional()
+    AZURE_AD_TENANT_ID?: string;
+
+    @IsString()
+    @IsOptional()
+    AZURE_AD_CLIENT_ID?: string;
+
+    @IsString()
+    @IsOptional()
+    AZURE_AD_CLIENT_SECRET?: string;
+
+    @IsString()
+    @IsOptional()
+    AZURE_AD_CALLBACK_URL?: string;
+
+    // ============ MS Graph (Email) ============
+
+    @IsString()
+    @IsOptional()
+    MS_GRAPH_TENANT_ID?: string;
+
+    @IsString()
+    @IsOptional()
+    MS_GRAPH_CLIENT_ID?: string;
+
+    @IsString()
+    @IsOptional()
+    MS_GRAPH_CLIENT_SECRET?: string;
 }
 
 /**
@@ -190,12 +227,24 @@ function validateProductionRequirements(config: EnvironmentVariables): void {
         const requiredSmtpFields = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'];
         const missingSmtp = requiredSmtpFields.filter(field => !config[field as keyof EnvironmentVariables]);
 
-        if (missingSmtp.length > 0) {
+        if (missingSmtp.length > 0 && config.EMAIL_PROVIDER !== 'graph') {
             throw new Error(
                 `❌ Production environment requires SMTP configuration.\n` +
                 `Missing: ${missingSmtp.join(', ')}\n` +
                 `Email notifications will not work without proper SMTP setup.`
             );
+        }
+
+        // Ensure Graph API is configured if selected
+        if (config.EMAIL_PROVIDER === 'graph') {
+            const requiredGraphFields = ['MS_GRAPH_TENANT_ID', 'MS_GRAPH_CLIENT_ID', 'MS_GRAPH_CLIENT_SECRET'];
+            const missingGraph = requiredGraphFields.filter(field => !config[field as keyof EnvironmentVariables]);
+            if (missingGraph.length > 0) {
+                throw new Error(
+                    `❌ Production environment requires Microsoft Graph configuration when EMAIL_PROVIDER=graph.\n` +
+                    `Missing: ${missingGraph.join(', ')}`
+                );
+            }
         }
 
         // Ensure DATABASE_URL has connection pooling configured
