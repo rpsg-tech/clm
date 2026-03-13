@@ -6,7 +6,7 @@
 # Covers: Sync, Build, Standalone-Assets, DB Migrations, Nginx-Sync, PM2-Reload
 # ==============================================================================
 # ══════════════════════════════════════════════════════════════════════════════
-# Version: 1.0.3 (Env-Fix)
+# Version: 1.0.5 (Non-Sudo Fix)
 # ══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
@@ -114,9 +114,9 @@ fi
 
 # ─── 6. Zero-Downtime Reload ──────────────────────────────────────────────
 info "Reloading PM2 services..."
-# Clean up any zombie processes before reload
-sudo fuser -k 3000/tcp 2>/dev/null || true
-sudo fuser -k 3001/tcp 2>/dev/null || true
+# Clean up any zombie processes before reload - No sudo needed for clmadmin's own ports
+fuser -k 3000/tcp 2>/dev/null || true
+fuser -k 3001/tcp 2>/dev/null || true
 
 pm2 reload deployment/conf/ecosystem.config.js --update-env
 pm2 save
