@@ -42,14 +42,20 @@ export PUPPETEER_SKIP_DOWNLOAD=true
 export NEXT_TELEMETRY_DISABLED=1
 export NODE_ENV=production
 
-# Clean install
-npm ci --include=dev || { warn "npm ci failed, trying npm install..."; npm install; }
+# Ensure we have a local turbo for consistency
+npm install --save-dev turbo || true
+
+# Clean install with permission fallback
+if ! npm ci --include=dev; then
+    warn "npm ci failed (likely permission or lockfile drift), trying npm install..."
+    npm install || err "Dependency installation failed. TIP: Run 'sudo chown -R clmadmin:clmadmin $APP_DIR' to fix permissions."
+fi
 
 # Build
 if ! npx turbo run build; then
     warn "Build failed! Rolling back to $OLD_COMMIT"
     git reset --hard "$OLD_COMMIT"
-    err "Deployment failed during build phase."
+    err "Deployment failed during build. TIP: Check 'pm2 logs' for build-time memory issues."
 fi
 log "Build successful."
 
