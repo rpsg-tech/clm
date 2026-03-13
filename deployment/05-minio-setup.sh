@@ -40,18 +40,28 @@ else
 fi
 
 # ─── 2. Download MinIO Server Binary ────────────────────────────────────────
-info "Downloading MinIO server..."
-curl -L --progress-bar https://dl.min.io/server/minio/release/linux-amd64/minio -o /tmp/minio
-chmod +x /tmp/minio
-mv /tmp/minio /usr/local/bin/minio
-log "MinIO binary installed: $(/usr/local/bin/minio --version | head -1)"
+info "Checking MinIO server..."
+if [[ -x /usr/local/bin/minio ]]; then
+    log "MinIO binary already installed: $(/usr/local/bin/minio --version | head -1)"
+else
+    info "Downloading MinIO server..."
+    curl -L --progress-bar https://dl.min.io/server/minio/release/linux-amd64/minio -o /tmp/minio
+    chmod +x /tmp/minio
+    mv /tmp/minio /usr/local/bin/minio
+    log "MinIO binary installed"
+fi
 
 # ─── 3. Download MinIO Client (mc) ──────────────────────────────────────────
-info "Downloading MinIO Client (mc)..."
-curl -L --progress-bar https://dl.min.io/client/mc/release/linux-amd64/mc -o /tmp/mc
-chmod +x /tmp/mc
-mv /tmp/mc /usr/local/bin/mc
-log "MinIO Client installed"
+info "Checking MinIO Client (mc)..."
+if [[ -x /usr/local/bin/mc ]]; then
+    log "MinIO Client already installed"
+else
+    info "Downloading MinIO Client (mc)..."
+    curl -L --progress-bar https://dl.min.io/client/mc/release/linux-amd64/mc -o /tmp/mc
+    chmod +x /tmp/mc
+    mv /tmp/mc /usr/local/bin/mc
+    log "MinIO Client installed"
+fi
 
 # ─── 4. Create Data Directory ───────────────────────────────────────────────
 info "Setting up MinIO data directory..."
