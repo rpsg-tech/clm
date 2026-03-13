@@ -6,7 +6,7 @@
 # Covers: Sync, Build, Standalone-Assets, DB Migrations, Nginx-Sync, PM2-Reload
 # ==============================================================================
 # ══════════════════════════════════════════════════════════════════════════════
-# Version: 1.0.8 (DB Push Fix)
+# Version: 1.0.9 (PM2 Recovery Fix)
 # ══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
@@ -127,7 +127,7 @@ for port in 3000 3001; do
     fi
 done
 
-pm2 reload deployment/conf/ecosystem.config.js --update-env
+pm2 startOrReload deployment/conf/ecosystem.config.js --update-env
 pm2 save
 log "Services reloaded (Zero-Downtime)."
 
