@@ -40,11 +40,22 @@ export class AppLogger extends ConsoleLogger implements LoggerService {
         const context = optionalParams[optionalParams.length - 1]; // Usually context is last
         const traceId = this.extractTraceId(optionalParams);
 
+        // Enhance error object serialization
+        let formattedMessage = message;
+        if (message instanceof Error) {
+            formattedMessage = {
+                message: message.message,
+                stack: message.stack,
+                name: message.name,
+                ...(message as any),
+            };
+        }
+
         const logObject = {
             timestamp,
             level: level.toUpperCase(),
             context: typeof context === 'string' ? context : 'Application',
-            message: typeof message === 'object' ? JSON.stringify(message) : message,
+            message: formattedMessage,
             traceId, // Correlation ID if passed
         };
 

@@ -65,16 +65,21 @@ import { OracleModule } from './oracle/oracle.module';
             useFactory: async (configService: ConfigService) => {
                 const redisUrl = configService.get<string>('REDIS_URL');
                 if (redisUrl) {
-                    const url = new URL(redisUrl);
-                    return {
-                        connection: {
-                            host: url.hostname,
-                            port: Number(url.port),
-                            username: url.username,
-                            password: url.password,
-                            tls: url.protocol === 'rediss:' ? { rejectUnauthorized: false } : undefined,
-                        },
-                    };
+                    try {
+                        const url = new URL(redisUrl);
+                        return {
+                            connection: {
+                                host: url.hostname,
+                                port: Number(url.port),
+                                username: url.username,
+                                password: url.password,
+                                tls: url.protocol === 'rediss:' ? { rejectUnauthorized: false } : undefined,
+                            },
+                        };
+                    } catch (error) {
+                        console.error('❌ Failed to parse REDIS_URL in BullModule. Ensure password special characters are escaped if necessary.', error);
+                        // Fallback to individual components if URL parsing fails
+                    }
                 }
 
                 return {
