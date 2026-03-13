@@ -21,7 +21,13 @@ fail() { echo -e "  ${RED}❌${NC} $*"; ((FAIL++)); }
 # ── 1. System Services ──────────────────────────────────────────────────────
 echo -e "${CYAN}[1/8] System Services${NC}"
 for svc in nginx postgresql-16 redis; do
-    systemctl is-active --quiet "$svc" 2>/dev/null && pass "$svc running" || fail "$svc NOT running"
+    if systemctl is-active --quiet "$svc" 2>/dev/null; then
+        pass "$svc is active"
+    else
+        # Try a fallback for redis which can sometimes be just 'redis-server' or if pg version differs
+        ACTUAL_STATUS=$(systemctl is-active "$svc" 2>/dev/null || echo "unknown")
+        fail "$svc is $ACTUAL_STATUS (expected active)"
+    fi
 done
 echo ""
 
