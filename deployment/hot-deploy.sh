@@ -34,6 +34,13 @@ git fetch origin "$BRANCH"
 OLD_COMMIT=$(git rev-parse HEAD)
 git reset --hard "origin/$BRANCH"
 git clean -fd
+
+# Check for root-owned traps that block clmadmin
+if find apps/ -user root | grep -q .; then
+    warn "FILES OWNED BY ROOT DETECTED in apps/ folder."
+    warn "This will cause EACCES errors. Run 'sudo chown -R clmadmin:clmadmin $APP_DIR' as root."
+fi
+
 log "Repository synchronized (Commit: $(git rev-parse --short HEAD))"
 
 # ─── 3. Dependencies & Build ───────────────────────────────────────────────
