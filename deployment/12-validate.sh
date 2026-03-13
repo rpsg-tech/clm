@@ -15,8 +15,8 @@ echo ""
 
 PASS=0; FAIL=0
 
-pass() { echo -e "  ${GREEN}✅${NC} $*"; ((PASS++)); }
-fail() { echo -e "  ${RED}❌${NC} $*"; ((FAIL++)); }
+pass() { echo -e "  ${GREEN}✅${NC} $*"; ((PASS++)) || true; }
+fail() { echo -e "  ${RED}❌${NC} $*"; ((FAIL++)) || true; }
 
 # ── 1. System Services ──────────────────────────────────────────────────────
 echo -e "${CYAN}[1/8] System Services${NC}"
