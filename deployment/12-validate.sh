@@ -44,7 +44,7 @@ VECTOR=$(sudo -u postgres psql -t -d clm -c "SELECT count(*) FROM pg_extension W
 [[ "$VECTOR" == "1" ]] && pass "pgvector extension loaded" || fail "pgvector NOT loaded"
 
 PG_DATA=$(sudo -u postgres psql -t -c "SHOW data_directory;" 2>/dev/null | xargs)
-[[ "$PG_DATA" == "/mnt/data/postgres" ]] && pass "Data dir: /mnt/data/postgres" || fail "Data dir: $PG_DATA (expected /mnt/data/postgres)"
+[[ "$PG_DATA" == "/var/lib/pgsql/16/data" ]] && pass "Data dir: $PG_DATA" || fail "Data dir: $PG_DATA (expected /var/lib/pgsql/16/data)"
 echo ""
 
 # ── 4. Redis ─────────────────────────────────────────────────────────────────
