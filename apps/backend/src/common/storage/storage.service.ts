@@ -18,6 +18,8 @@ export class StorageService {
 
         const accessKeyId = this.configService.get('AWS_ACCESS_KEY_ID');
         const secretAccessKey = this.configService.get('AWS_SECRET_ACCESS_KEY');
+        const endpoint = this.configService.get('S3_ENDPOINT');
+        const forcePathStyle = this.configService.get('S3_FORCE_PATH_STYLE') === 'true';
 
         if (!accessKeyId || !secretAccessKey || !this.bucketName) {
             this.logger.warn('⚠️ AWS S3 credentials missing. Storage features will fail.');
@@ -29,6 +31,8 @@ export class StorageService {
                 accessKeyId: accessKeyId || '',
                 secretAccessKey: secretAccessKey || '',
             },
+            endpoint: endpoint,
+            forcePathStyle: forcePathStyle,
         });
     }
 

@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# CLM Enterprise — Phase 5: MinIO Setup (TODO / Future)
+# ==============================================================================
+# CLM Enterprise — Phase 5: MinIO Setup
 # Target: RHEL 9.x | Run as: root
 #
-# STATUS: This script is for FUTURE USE when migrating from AWS S3 to
-#         self-hosted MinIO. Do NOT run during initial deployment.
-#
 # After running this script, you also need to:
-#   1. Update StorageService to add endpoint + forcePathStyle
-#   2. Update .env with MinIO credentials
+#   1. Update .env with MinIO credentials generated in /opt/clm/.minio-credentials
 # ==============================================================================
 set -euo pipefail
 
@@ -26,13 +23,7 @@ MINIO_USER="minio-user"
 MINIO_ROOT_USER="clm-minio-admin"
 MINIO_ROOT_PASS=$(openssl rand -base64 32 | tr -d '/+=' | head -c 32)
 
-echo ""
-warn "═══════════════════════════════════════════════════════════════"
-warn "  This is a TODO script for future MinIO migration from S3."
-warn "  Press Ctrl+C within 5 seconds to abort, or wait to continue."
-warn "═══════════════════════════════════════════════════════════════"
-echo ""
-sleep 5
+# Starting MinIO Setup...
 
 # ─── 1. Create MinIO System User ────────────────────────────────────────────
 info "Creating MinIO system user..."
@@ -163,9 +154,8 @@ echo "  Credentials:     $CRED_FILE"
 echo ""
 
 echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  Phase 5: MinIO Setup — COMPLETE (TODO item ready)${NC}"
+echo -e "${GREEN}  Phase 5: MinIO Setup — COMPLETE${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "${YELLOW}  REMINDER: To use MinIO, you also need to:${NC}"
-echo "  1. Patch StorageService to add endpoint + forcePathStyle"
-echo "  2. Update .env with MinIO credentials from $CRED_FILE"
+echo "  1. Update .env with MinIO credentials from $CRED_FILE"
